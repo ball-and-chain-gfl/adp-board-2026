@@ -96,7 +96,7 @@ HTML = """<!DOCTYPE html>
 :root{--bg:#0e1116;--panel:#161b22;--line:#242c38;--txt:#e6edf3;--dim:#8b949e;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-header{padding:15px 20px 0;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:30}
+header{padding:11px 20px 0;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:30}
 h1{margin:0 0 4px;font-size:17px;letter-spacing:.2px}
 .sub{color:var(--dim);font-size:12px}
 .srcbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:7px}
@@ -120,7 +120,7 @@ button:hover{color:var(--txt)}
      color:var(--dim);cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.2px}
 .tab .t2{display:block;font-weight:500;font-size:10.5px;opacity:.75;letter-spacing:0}
 .tab.on{background:var(--bg);color:var(--txt);position:relative;top:1px}
-.wrap{overflow:auto;max-height:calc(100vh - 205px)}
+.wrap{overflow:auto;max-height:calc(100vh - 118px)}
 table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
 th{position:sticky;top:0;background:#1b222c;z-index:20;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);
    padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line);user-select:none}
@@ -251,16 +251,12 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 }
 </style></head><body>
 <header>
-<h1>2026 ADP Board &mdash; ESPN draft, cross-platform value</h1>
-<div class="sub">12-team, full-PPR &middot; 1QB/2RB/2WR/1TE/1FLEX/1K/1DEF &middot; rounds 1&ndash;14 (168 picks)
-  &middot; data as of <span id="pulled">__DATE__</span></div>
-<div class="srcbar"><span id="srcs"></span><button id="refresh">Refresh</button></div>
 <div class="bar">
   <input type="search" id="q" placeholder="Search player / team">
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
   <button data-f="TE">TE</button><button data-f="K">K</button><button data-f="DST">DEF</button>
-  <div class="legend"><span class="chip c1">1</span><span class="chip c2">2</span><span class="chip c3">3</span><span class="chip c4">4</span><span>consensus score</span></div>
+  <div class="legend"><span class="chip c2">2</span><span class="chip c3">3</span><span class="chip c4">4</span><span>consensus score</span></div>
 </div>
 <div class="tabs">
   <div class="tab on" data-m="adp">ADP vs ADP<span class="t2">ESPN ADP compared to each site's ADP</span></div>
@@ -566,18 +562,25 @@ const WTEAMS = new Set(["texans","rams","seahawks","broncos","eagles","jaguars",
   "cardinals","colts","bears"]);
 function wkey(n){ const k=norm(n); const last=k.split(" ").pop(); return WTEAMS.has(last)?last:k; }
 
+// Source state is still tracked (and logged) even though the status chips were removed from the
+// header, so a fallback is still discoverable from the console rather than silently invisible.
 const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending", underdog:"pending",
              winks:"static Winks' published half-PPR top 300, 7/20"};
 function setStatus(){
-  const label = {live:"live", snapshot:"snapshot", pending:"…", static:"7/20"};
-  const cls   = {live:"ok", snapshot:"warn", pending:"pend", static:"stat"};
-  document.getElementById("srcs").innerHTML = Object.keys(SRC).map(k=>{
-    const v = SRC[k];
-    const st = v.startsWith("live") ? "live" : v.startsWith("static") ? "static"
-             : (v==="pending" ? "pending" : "snapshot");
-    const name = k==="underdog" ? "Underdog" : k==="espn" ? "ESPN" : k[0].toUpperCase()+k.slice(1);
-    return `<span class="src ${cls[st]}" title="${v}">${name} <b>${label[st]}</b></span>`;
-  }).join("");
+  const el = document.getElementById("srcs");
+  if(el){
+    const label = {live:"live", snapshot:"snapshot", pending:"…", static:"7/20"};
+    const cls   = {live:"ok", snapshot:"warn", pending:"pend", static:"stat"};
+    el.innerHTML = Object.keys(SRC).map(k=>{
+      const v = SRC[k];
+      const st = v.startsWith("live") ? "live" : v.startsWith("static") ? "static"
+               : (v==="pending" ? "pending" : "snapshot");
+      const name = k==="underdog" ? "Underdog" : k==="espn" ? "ESPN" : k[0].toUpperCase()+k.slice(1);
+      return `<span class="src ${cls[st]}" title="${v}">${name} <b>${label[st]}</b></span>`;
+    }).join("");
+  }
+  const stale = Object.keys(SRC).filter(k=>SRC[k].startsWith("snapshot"));
+  if(stale.length) console.warn("ADP board: fell back to snapshot for", stale.join(", "), SRC);
 }
 async function grab(path){
   const r = await fetch(path, {cache:"no-store"});
@@ -586,7 +589,8 @@ async function grab(path){
   return j;
 }
 async function loadLive(){
-  document.getElementById("refresh").disabled = true;
+  const btn = document.getElementById("refresh");
+  if(btn) btn.disabled = true;
   Object.keys(SRC).forEach(k=>{ if(k!=="winks") SRC[k]="pending"; }); setStatus();
 
   const [espn, sleeper, yahoo, ud] = await Promise.all(
@@ -596,7 +600,7 @@ async function loadLive(){
   // ESPN defines who is on the board, so without it we keep the snapshot entirely
   if(espn.error || !espn.players){
     Object.keys(SRC).forEach(k=>{ if(k!=="winks") SRC[k]="snapshot ("+(espn.error||"espn unavailable")+")"; });
-    setStatus(); document.getElementById("refresh").disabled=false; return;
+    setStatus(); if(btn) btn.disabled=false; return;
   }
   SRC.espn = "live "+espn.pulled;
 
@@ -645,12 +649,13 @@ async function loadLive(){
   board.slice().sort((a,b)=>a.rank-b.rank).forEach((r,i)=>{ r.rkSeq=i+1; r.rkSlot=slotOf(i+1).label; });
 
   DATA = board;
-  document.getElementById("pulled").textContent = new Date(espn.pulled).toLocaleString();
+  const pulledEl = document.getElementById("pulled");
+  if(pulledEl) pulledEl.textContent = new Date(espn.pulled).toLocaleString();
   setStatus();
   recompute(); computeTiers(); render();
-  document.getElementById("refresh").disabled = false;
+  if(btn) btn.disabled = false;
 }
-document.getElementById("refresh").onclick = loadLive;
+const rb = document.getElementById("refresh"); if(rb) rb.onclick = loadLive;
 
 setStatus();
 recompute(); computeTiers(); render();   // snapshot first, so the board is usable immediately
