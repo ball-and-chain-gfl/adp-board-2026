@@ -155,7 +155,6 @@ tr:hover td{background:#1a2029}
 .hl .alt{color:#e2ecff;opacity:.85}
 .chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;color:#fff}
 /* one hue per consensus score, evenly stepped on the wheel: teal - blue - indigo - purple */
-.chip.c1{background:rgb(18,173,211)}
 .chip.c2{background:rgb(31,111,235)}
 .chip.c3{background:rgb(54,51,230)}
 .chip.c4{background:rgb(138,74,226)}
@@ -290,8 +289,8 @@ Full saturation at &plusmn;25 picks.<br>
 <b>Hayden Winks</b> is his published half-PPR top 300 from Yahoo Fantasy, dated 7/20 &mdash; expert <i>rankings</i>, not ADP, so his column is a board position rather than an average pick. His table is
 injected client-side and the underlying content API blocks cross-origin calls, so unlike the other three he can't be fetched live; the chip reads <b>7/20</b> and needs a re-pull when he republishes.<br>
 <b>The consensus score</b> drives the colour on the ESPN cell: it's simply <b>how many of the four sites take him earlier than ESPN</b>, so it runs 0&ndash;4. Each score gets its own hue, stepped
-evenly around the wheel &mdash; <span class="chip c1">1</span> teal, <span class="chip c2">2</span> blue, <span class="chip c3">3</span> indigo, <span class="chip c4">4</span> purple. The higher the
-number, the more of the market is ahead of ESPN on him. A score of <b>0</b> gets no highlight.
+evenly around the wheel &mdash; <span class="chip c2">2</span> blue, <span class="chip c3">3</span> indigo, <span class="chip c4">4</span> purple. The higher the
+number, the more of the market is ahead of ESPN on him. Scores of <b>0</b> and <b>1</b> get no highlight &mdash; one site out of four disagreeing with ESPN isn't a signal worth colouring.
 <b>Brightness carries the size of the gap</b>: the hue tells you how many sites agree, and how vivid it is tells you by how much. It ramps from dim at the dead-zone edge to fully saturated at an
 average gap of 25 picks &mdash; so a pale blue is two sites a few picks ahead, and a vivid purple is all four sites two rounds ahead.<br>
 A site has to be at least <b>3 picks</b> clear of ESPN to count &mdash; inside that dead zone it's a tie, and those cells render grey for the same reason. Sites that take him <i>later</i> than ESPN
@@ -441,7 +440,8 @@ function pcolor(d){
 // (192 deg, teal). 0 gets no highlight.
 // Hue says how many sites agree; brightness says by how much. Intensity ramps from the dead-zone
 // edge (3 picks, dim) to full saturation at CAP (25 picks), driven by the average gap.
-const SCORE_RGB = {1:"18,173,211", 2:"31,111,235", 3:"54,51,230", 4:"138,74,226"};
+// Scores 0 and 1 get no highlight - a single site disagreeing with ESPN isn't a signal.
+const SCORE_RGB = {2:"31,111,235", 3:"54,51,230", 4:"138,74,226"};
 function hlColor(r){
   const rgb = SCORE_RGB[r.score];
   if(!rgb) return null;
