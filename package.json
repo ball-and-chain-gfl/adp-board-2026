@@ -1,0 +1,7 @@
+{
+  "name": "adp-board-2026",
+  "private": true,
+  "version": "1.0.0",
+  "description": "2026 fantasy football ADP board: ESPN vs Underdog, Yahoo and Sleeper",
+  "type": "module"
+}
