@@ -172,11 +172,14 @@ th.c, td.c{text-align:center;white-space:nowrap}
 .seq{display:inline-flex;flex-direction:column;align-items:flex-end;min-width:34px;line-height:1.15;margin-right:2px}
 .seq b{font-size:12.5px}
 .seq i{font-style:normal;font-size:10px;color:#6e7681}
-/* the three site columns are reference, not the headline: dial them back */
-th.site{color:#6b7482;font-size:10px}
-td.site .cell{font-weight:600;font-size:12px;min-width:66px;opacity:.88}
-td.site .d{font-size:10px;font-weight:600}
-td.site .pr{font-size:9px;opacity:.75;min-width:32px}
+/* the four site columns are reference, not the headline: dial them back and pack them tight,
+   pinning their width so the slack goes to the player column instead of between them */
+th.site{color:#6b7482;font-size:10px;width:72px;padding-left:3px;padding-right:6px}
+td.site{padding-left:3px;padding-right:6px}
+td.site .cell{font-weight:600;font-size:12px;min-width:0;width:100%;padding:3px 5px;opacity:.88;text-align:right}
+td.site .d{font-size:10px;font-weight:600;margin-left:3px}
+td.site .pr{font-size:9px;opacity:.75;min-width:0;padding:1px 3px}
+td.site .stack{width:100%}
 th .sm{display:none}
 .rndsep td{border-bottom:2px solid #3d4b5c}
 tr.rd td{background:#111721;border-top:2px solid #3d4b5c;border-bottom:1px solid #1f2732;
@@ -307,6 +310,7 @@ Sleeper = Sleeper <code>adp_ppr</code> (full PPR). Underdog = Underdog best ball
 noise at pick 140, and no tier exceeds seven players so none of them are un-actionable blobs.
 The orange <span class="cliff">cliff</span> tag marks the last player before a drop: take him now or the next man at that position costs you the gap shown.
 Filter to a single position and the round bands become <b>tier bands</b> instead, which is the view for "do I take this RB or wait." Tiers recompute per tab, so they follow ESPN ADP or ESPN rank.<br>
+<b>Round bands</b> read off whatever order the board is currently in. In draft order they're the real rounds. Sort by a site or a &Delta; and the sorted list becomes its own board, so the top twelve are that board's round 1 &mdash; useful for "if I drafted straight off Winks, who goes in round 3."<br>
 Every rank on this board is an ordinal position on that site's own board (1, 2, 3&hellip; no gaps), which is what makes them comparable. ESPN's raw API rank field is <i>not</i> contiguous &mdash;
 no player holds rank 37&ndash;68, for instance &mdash; so it's been converted to a dense ordinal over ESPN's rank ordering. Same order, clean numbering.
 Because Underdog, Yahoo and Sleeper ranks derive from their own ADP, their two tabs track closely; ESPN's rank is a separate editorial list and diverges hard on kickers and defenses
@@ -495,12 +499,11 @@ function render(){
             + `<span class="pk">${n} player${n===1?"":"s"} &middot; ${fmt(r.base)}&ndash;${fmt(s.filter(x=>x.tier===r.tier).slice(-1)[0].base)}</span></td></tr>`;
       }
     } else if(i % 12 === 0){
-      // Outside draft order a group of 12 isn't a round, so draw the divider with no label
-      // rather than an orphaned "rows 37-48" caption.
-      div = natural
-        ? `<tr class="rd${i===0?" first":""}"><td colspan="7">Round ${Math.floor((r.seq-1)/12)+1}`
-          + `<span class="pk">picks ${r.seq}&ndash;${Math.min(r.seq+11, s[s.length-1].seq)}</span></td></tr>`
-        : (i===0 ? "" : `<tr class="rd soft bare"><td colspan="7"></td></tr>`);
+      // Rounds are read off the CURRENT view: in draft order these are the real rounds, and once
+      // you sort, the sorted list is itself a board, so rows 1-12 are its round 1 and so on.
+      const rd = i/12 + 1;
+      div = `<tr class="rd${i===0?" first":""}${natural?"":" soft"}"><td colspan="7">Round ${rd}`
+          + `<span class="pk">picks ${i+1}&ndash;${Math.min(i+12, s.length)}</span></td></tr>`;
     }
     const sep = tierView ? (r.tierEnd ? ' class="rndsep"' : '')
                          : (((i+1) % 12 === 0) ? ' class="rndsep"' : '');
