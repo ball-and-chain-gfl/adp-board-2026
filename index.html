@@ -15,7 +15,7 @@ button{background:#0b0f14;border:1px solid var(--line);color:var(--dim);padding:
 button.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
 button:hover{color:var(--txt)}
 .legend{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:11px;color:var(--dim)}
-.ramp{width:190px;height:12px;border-radius:6px;background:linear-gradient(90deg,#0f9d4f,#54c47f,#2b323d,#e8736a,#d0342c)}
+.ramp{width:190px;height:12px;border-radius:6px;background:linear-gradient(90deg,#d0342c,#e8736a,#2b323d,#54c47f,#0f9d4f)}
 .tabs{display:flex;gap:4px;margin-top:13px}
 .tab{padding:9px 16px 8px;border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;background:#10151c;
      color:var(--dim);cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.2px}
@@ -57,6 +57,7 @@ tr:hover td{background:#1a2029}
 .chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;color:#fff}
 .chip.p{background:rgb(138,74,226)}
 .chip.b{background:rgb(31,111,235)}
+.chip.o{background:rgb(214,120,28)}
 .ramp2{width:80px;height:12px;border-radius:6px}
 .na{color:#4d5560}
 .alt{color:#6e7681;font-size:11px;margin-left:5px}
@@ -84,7 +85,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
   <button data-f="TE">TE</button><button data-f="K">K</button><button data-f="DST">DEF</button>
-  <div class="legend"><span class="chip p">3 of 3</span><span class="chip b">2 of 3</span><span>sites earlier than ESPN</span>
+  <div class="legend"><span class="chip p">+2</span><span class="chip b">+1</span><span class="chip o">&minus;2</span><span>consensus score</span>
     <span style="margin-left:12px">Goes EARLIER elsewhere</span><div class="ramp"></div><span>Goes LATER elsewhere</span></div>
 </div>
 <div class="tabs">
@@ -111,16 +112,17 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <b>Rank vs Rank</b> puts ESPN's PPR draft rank next to each site's overall rank (each site's own board order) &mdash; where the platforms <i>say</i> players should go.
 The grey number in the ESPN column is the other tab's value, so you can spot ESPN's own rank-vs-ADP disagreement.<br>
 <b>The round.pick under every number</b> is where that figure lands on a 12-team board &mdash; 19.8 is <b>2.08</b>, the 8th pick of round 2. It's shaded by how many <i>rounds</i> away it is from
-the ESPN cell on that row (full colour at 3 rounds), so you can read the practical question directly: green means you can wait that many rounds and still get him, red means you'd have to
-come up that many rounds to beat the field. A big pick gap that doesn't cross a round boundary is usually not worth changing your plan over.<br>
-<b>The ESPN cell itself lights up</b> when ESPN's number is higher than its counterparts &mdash; meaning ESPN is the cheapest room in the market for that player.
-<span class="chip p">Purple</span> = all three sites take him earlier (unanimous). <span class="chip b">Blue</span> = two of the three do.
-Both shade with how far off ESPN is, on the same &plusmn;25 scale as the green and red cells, so a deep purple is a big consensus discount and a faint blue is a coin flip.
-Requires the sites to be reporting, so kickers and defenses never qualify.<br>
+the ESPN cell on that row (full colour at 3 rounds), so you can read the practical question directly: green means that site would let you wait that many rounds longer, red means you'd have to
+come up that many rounds to beat that site's room. A big pick gap that doesn't cross a round boundary is usually not worth changing your plan over.<br>
 <b>Reading the colors.</b> The small number is the gap from ESPN.
-<span style="color:#54c47f"><b>Green = the player goes EARLIER on that site than on ESPN</b></span> &mdash; the rest of the market values him higher than ESPN does, so he's a relative bargain at his ESPN price.
-<span style="color:#e8736a"><b>Red = the player goes LATER on that site than on ESPN</b></span> &mdash; ESPN is paying up; you can likely wait.
+<span style="color:#54c47f"><b>Green = a HIGHER number on that site</b></span> &mdash; he goes later there than on ESPN, so ESPN's room is paying up relative to that market.
+<span style="color:#e8736a"><b>Red = a LOWER number on that site</b></span> &mdash; he goes earlier there, so that market wants him more than ESPN does.
 Full saturation at &plusmn;25 picks.<br>
+<b>The consensus score</b> drives the colour on the ESPN cell. Each site scores <b>+1</b> if its number is higher than ESPN's and <b>&minus;1</b> if lower, and the three are added up:
+<span class="chip p">+2 or more</span> purple &mdash; nearly everyone takes him later than ESPN does.
+<span class="chip b">+1</span> blue.
+<span class="chip o">&minus;2 or less</span> orange &mdash; the market takes him earlier than ESPN does.
+A score of 0 or &minus;1 gets no highlight. Kickers and defenses can only ever reach &plusmn;1 since Yahoo is the only one of the three that prices them.<br>
 <b>Sorting.</b> Click a column header to sort by that site's raw number. Click the small <b>&Delta;</b> beside it to sort by its gap &mdash; first click puts the biggest
 <span style="color:#54c47f">earlier-than-ESPN</span> gaps on top, click again to flip to the biggest <span style="color:#e8736a">later-than-ESPN</span> gaps.<br>
 <b>Sources &amp; caveats.</b> ESPN = live draft results API + PPR draft ranks, ESPN default full-PPR league. Yahoo = Yahoo public fantasy API "all drafts" average pick (Yahoo default is half-PPR).
@@ -162,10 +164,8 @@ function recompute(){
     // market consensus: mean of the three sites' own numbers (= ESPN base + avg gap)
     const vs = KEYS.map(k=>r["v_"+k]).filter(x=>x!==null&&x!==undefined);
     r.avgV = vs.length ? +(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1) : null;
-    // how many counterparts take him EARLIER than ESPN, and by how much on average
-    const neg = KEYS.map(k=>r["g_"+k]).filter(g=>g!==null && g<0);
-    r.nUnder = neg.length;
-    r.underAvg = neg.length ? +(neg.reduce((a,b)=>a+b,0)/neg.length).toFixed(1) : null;
+    // consensus score: +1 for each site whose number is HIGHER than ESPN, -1 for each lower
+    r.score = KEYS.reduce((s,k)=>{ const g=r["g_"+k]; return s + (g===null?0:(g>0?1:(g<0?-1:0))); }, 0);
     // positional-rank gaps
     const bp = prNum(r.basePr);
     r.pg_ud = prGap(bp, r.udPr); r.pg_yahoo = prGap(bp, r.yaPr); r.pg_sleeper = prGap(bp, r.slPr);
@@ -219,13 +219,13 @@ function computeTiers(){
     });
   });
 }
-// gap = other site - ESPN.  negative => goes earlier elsewhere => GREEN
+// gap = other site - ESPN.  HIGHER number there (goes later) => GREEN, lower => RED
 function color(d){
   if(d===null) return "";
   const t = Math.max(-1, Math.min(1, d/CAP));
   if(Math.abs(t) < 0.05) return "background:#2b323d;color:#c9d1d9";
   const a = (0.30 + 0.70*Math.abs(t)).toFixed(3);
-  return `background:rgba(${t<0?"15,157,79":"208,52,44"},${a});color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)`;
+  return `background:rgba(${t>0?"15,157,79":"208,52,44"},${a});color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)`;
 }
 // ---- draft slot: turn any pick number or rank into round.pick for a 12-team board ----
 const TEAMS = 12;
@@ -242,13 +242,17 @@ function pcolor(d){
   const t = Math.max(-1, Math.min(1, d/PCAP));
   if(d===0) return "background:#2b323d;color:#c9d1d9";
   const a = (0.28 + 0.62*Math.abs(t)).toFixed(3);
-  return `background:rgba(${t<0?"15,157,79":"208,52,44"},${a});color:#fff`;
+  return `background:rgba(${t>0?"15,157,79":"208,52,44"},${a});color:#fff`;
 }
-// ESPN cell highlight: 3 of 3 sites earlier => purple, exactly 2 => blue, scaled by how far off ESPN is
+// ESPN cell highlight from the consensus score (+1 per site higher than ESPN, -1 per site lower):
+//   >= +2  purple      +1  blue      <= -2  orange      0 or -1  nothing
 function hlColor(r){
-  if(r.nUnder < 2) return null;
-  const rgb = r.nUnder >= 3 ? "138,74,226" : "31,111,235";
-  const a = (0.28 + 0.72*Math.min(1, Math.abs(r.underAvg)/CAP)).toFixed(3);
+  const s = r.score;
+  let rgb=null, a=0.9;
+  if(s >= 2){ rgb="138,74,226"; a = s>=3 ? 1 : 0.78; }
+  else if(s === 1){ rgb="31,111,235"; a = 0.82; }
+  else if(s <= -2){ rgb="214,120,28"; a = s<=-3 ? 1 : 0.78; }
+  if(!rgb) return null;
   return {bg:`rgba(${rgb},${a})`, rgb};
 }
 const fmt = v => mode==="adp" ? v.toFixed(1) : String(v);
