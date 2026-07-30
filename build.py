@@ -1,6 +1,19 @@
 import json, re, sys
 sys.path.insert(0, "/sessions/festive-sleepy-knuth/mnt/outputs")
-from adp_data import ROWS, UNDERDOG, ID_RANK, TOKENS, UD_META, ESPN_LIVE
+from adp_data import ROWS, UNDERDOG, ID_RANK, TOKENS, UD_META, ESPN_LIVE, WINKS
+
+# --- Hayden Winks (Yahoo) half-PPR top 300, published 7/20 -------------------
+# Expert rankings, so rank = position in his list. Team defenses are listed as
+# "Houston Texans" where ESPN says "Texans D/ST", so DSTs key off the last word.
+_TEAMS = {"texans","rams","seahawks","broncos","eagles","jaguars","steelers","vikings","patriots",
+          "ravens","chargers","packers","chiefs","cowboys","lions","giants","bengals","ers","titans",
+          "bills","buccaneers","falcons","browns","saints","panthers","jets","dolphins","raiders",
+          "commanders","cardinals","colts","bears"}
+
+def wkey(n):
+    k = norm(n)
+    last = k.split(" ")[-1]
+    return last if last in _TEAMS else k
 
 def norm(s):
     s = s.lower().replace(" d/st", "")
@@ -8,6 +21,14 @@ def norm(s):
     s = re.sub(r"\s+(jr|sr|ii|iii|iv|v)$", "", s)
     s = re.sub(r"[^a-z \-]", "", s)
     return re.sub(r"\s+", " ", s).strip()
+
+_wnames = [n.strip() for n in WINKS.split(";") if n.strip()]
+assert len(_wnames) == 300, len(_wnames)
+WK_RANK = {}
+for _i, _n in enumerate(_wnames):
+    _k = wkey(_n)
+    if _k not in WK_RANK:
+        WK_RANK[_k] = _i + 1
 
 pairs = [p for p in ID_RANK.replace("\n", "").split(",") if p.strip()]
 toks  = [t for t in TOKENS.replace("\n", "").split(",") if t.strip()]
@@ -37,7 +58,14 @@ for i, (name, pos, team, _espn_old, yah, sl) in enumerate(ROWS[:168]):
         "ud": ud,  "udRk": udm[0] if udm else None,  "udPr": udm[1] if udm else None,
         "yahoo": yah, "yaRk": num(y_rk), "yaPr": f"{P}{y_pr}" if y_pr else None,
         "sleeper": sl, "slRk": num(s_rk), "slPr": f"{P}{s_pr}" if s_pr else None,
+        "winks": WK_RANK.get(wkey(name)),
     })
+
+# Winks positional rank, derived from his ordering across our board's positions
+_wc = {}
+for d in sorted([x for x in data if x["winks"]], key=lambda x: x["winks"]):
+    _wc[d["pos"]] = _wc.get(d["pos"], 0) + 1
+    d["wkPr"] = ("DEF" if d["pos"] == "DST" else d["pos"]) + str(_wc[d["pos"]])
 
 # ESPN positional rank by ADP (exact: the ADP-sorted top 168 contains everyone ahead of them)
 cnt = {}
@@ -77,6 +105,7 @@ h1{margin:0 0 4px;font-size:17px;letter-spacing:.2px}
 .src.ok{background:#10241a;border-color:#1f5138;color:#79d69f}
 .src.warn{background:#2a2113;border-color:#5a4620;color:#e0b060}
 .src.pend{background:#141a22;color:#6e7681}
+.src.stat{background:#151a26;border-color:#2f3a52;color:#9aa8c4}
 #refresh{padding:3px 10px;font-size:11px}
 #refresh:disabled{opacity:.45;cursor:default}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px}
@@ -130,10 +159,10 @@ tr:hover td{background:#1a2029}
 .ramp2{width:80px;height:12px;border-radius:6px}
 .na{color:#4d5560}
 .alt{color:#6e7681;font-size:11px;margin-left:5px}
-/* column order: [Avg gap | Avg of 3] | Player | ESPN | [Underdog Yahoo Sleeper]
-   dividers close the averages block, the player block and the ESPN block */
-th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3),
-th:nth-child(4), td:nth-child(4){border-right:2px solid #34404f}
+/* column order: Avg of 4 | Player | ESPN | [Underdog Yahoo Sleeper Winks]
+   dividers close the average, the player block and the ESPN block */
+th:nth-child(1), td:nth-child(1), th:nth-child(2), td:nth-child(2),
+th:nth-child(3), td:nth-child(3){border-right:2px solid #34404f}
 th.c, td.c{text-align:center;white-space:nowrap}
 .stack.ctr{align-items:center}
 .rd{font-size:9.5px;font-weight:700;letter-spacing:.3px;color:#6e7681;margin-left:5px;vertical-align:middle}
@@ -155,6 +184,7 @@ tr.rd .pk{color:#5c6675;font-weight:600;letter-spacing:.4px;margin-left:8px;text
 tr.rd.first td{border-top:none}
 tr.rd.soft td{background:#0f141b;color:#5c6675;letter-spacing:.4px}
 tr.rd.soft:hover td{background:#0f141b}
+tr.rd.bare td{padding:0;height:0;background:none;border-bottom:none}
 tr.rd.tierband td{background:#141c17;color:#8fbd9f;border-top-color:#3f5a49}
 tr.rd.tierband:hover td{background:#141c17}
 .cliff{display:inline-block;margin-left:8px;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:700;
@@ -162,10 +192,11 @@ tr.rd.tierband:hover td{background:#141c17}
 tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white-space:normal;line-height:1.65}
 
 /* ---------------------------------------------------------------- mobile ---
-   Stays a real table, just condensed to fit a phone: short column labels, the
-   gap stacked under each value instead of beside it, and the decorative bits
-   (round.pick tags, team, alt value, cliff tags) dropped. */
+   Stays a real table but drops the four site columns entirely - seven columns
+   on a phone was unreadable. What's left is the consensus average, the player,
+   and ESPN, which is the actual draft-day decision. Everything else is desktop. */
 @media (max-width: 820px){
+  th.site, td.site{display:none}
   header{padding:11px 10px 0;position:static}
   h1{font-size:14px}
   .sub{font-size:10.5px}
@@ -187,11 +218,9 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   td{padding:4px 2px;font-size:11px}
   .dbtn{margin-left:2px;padding:0 3px;font-size:9px}
 
-  /* fixed widths: gap | avg | player (flex) | espn | ud | yah | slp */
-  th:nth-child(1),td:nth-child(1){width:38px}
-  th:nth-child(2),td:nth-child(2){width:40px}
-  th:nth-child(4),td:nth-child(4){width:44px}
-  th:nth-child(n+5),td:nth-child(n+5){width:40px}
+  /* only three columns survive: avg | player (flex) | espn */
+  th:nth-child(1),td:nth-child(1){width:62px}
+  th:nth-child(3),td:nth-child(3){width:76px;border-right:none}
 
   /* stack the gap under the value so cells stay narrow */
   .cell{min-width:0;width:100%;box-sizing:border-box;padding:2px 3px;font-size:11px;text-align:center}
@@ -212,14 +241,10 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 }
 @media (max-width: 430px){
   body{overflow-x:hidden}
-  th:nth-child(1),td:nth-child(1){width:34px}
-  th:nth-child(2),td:nth-child(2){width:36px}
-  th:nth-child(4),td:nth-child(4){width:40px}
-  th:nth-child(n+5),td:nth-child(n+5){width:36px}
-  .nm{font-size:10.5px}
-  .av,.av img{width:0;height:0;flex-basis:0;border:none}
-  .cell{font-size:10px}
-  td.site .cell{font-size:9.5px}
+  th:nth-child(1),td:nth-child(1){width:56px}
+  th:nth-child(3),td:nth-child(3){width:68px}
+  .nm{font-size:11px}
+  .cell{font-size:11px}
 }
 </style></head><body>
 <header>
@@ -242,13 +267,13 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <div class="wrap">
 <table id="t">
 <thead><tr>
-<th class="c"><span class="hd" data-k="avgd"><span class="lg">Avg gap</span><span class="sm">GAP</span></span><span class="dbtn" data-d="avg">&Delta;</span></th>
-<th class="c"><span class="hd" data-k="avgV"><span class="lg" id="h1">Avg of 3</span><span class="sm">AVG</span></span></th>
+<th class="c"><span class="hd" data-k="avgV"><span class="lg" id="h1">Avg of 4</span><span class="sm">AVG</span></span><span class="dbtn" data-d="avg">&Delta;</span></th>
 <th class="l"><span class="hd" data-k="seq">#</span> <span class="hd" data-k="name">Player</span></th>
 <th><span class="hd" data-k="base"><span class="lg" id="h0">ESPN ADP</span><span class="sm">ESPN</span></span></th>
-<th class="site"><span class="hd" data-k="v_ud"><span class="lg">Underdog</span><span class="sm">UD</span></span><span class="dbtn" data-d="ud">&Delta;</span></th>
-<th class="site"><span class="hd" data-k="v_yahoo"><span class="lg">Yahoo</span><span class="sm">YAH</span></span><span class="dbtn" data-d="yahoo">&Delta;</span></th>
-<th class="site"><span class="hd" data-k="v_sleeper"><span class="lg">Sleeper</span><span class="sm">SLP</span></span><span class="dbtn" data-d="sleeper">&Delta;</span></th>
+<th class="site"><span class="hd" data-k="v_ud">Underdog</span><span class="dbtn" data-d="ud">&Delta;</span></th>
+<th class="site"><span class="hd" data-k="v_yahoo">Yahoo</span><span class="dbtn" data-d="yahoo">&Delta;</span></th>
+<th class="site"><span class="hd" data-k="v_sleeper">Sleeper</span><span class="dbtn" data-d="sleeper">&Delta;</span></th>
+<th class="site"><span class="hd" data-k="v_winks">Winks</span><span class="dbtn" data-d="winks">&Delta;</span></th>
 </tr></thead>
 <tbody id="b"></tbody>
 <tfoot><tr><td colspan="7">
@@ -263,7 +288,9 @@ come up that many rounds to beat that site's room. A big pick gap that doesn't c
 <span style="color:#54c47f"><b>Green = a LOWER number on that site</b></span> &mdash; he goes earlier there, so that market wants him more than ESPN does and he's a relative bargain at his ESPN price.
 <span style="color:#e8736a"><b>Red = a HIGHER number on that site</b></span> &mdash; he goes later there, so ESPN's room is paying up and you can probably wait.
 Full saturation at &plusmn;25 picks.<br>
-<b>The consensus score</b> drives the colour on the ESPN cell, signed to match: each site scores <b>+1</b> if its number is lower than ESPN's (green) and <b>&minus;1</b> if higher (red), and the three add up.
+<b>Hayden Winks</b> is his published half-PPR top 300 from Yahoo Fantasy, dated 7/20 &mdash; expert <i>rankings</i>, not ADP, so his column is a board position rather than an average pick. His table is
+injected client-side and the underlying content API blocks cross-origin calls, so unlike the other three he can't be fetched live; the chip reads <b>7/20</b> and needs a re-pull when he republishes.<br>
+<b>The consensus score</b> drives the colour on the ESPN cell, signed to match: each site scores <b>+1</b> if its number is lower than ESPN's (green) and <b>&minus;1</b> if higher (red), and the four add up.
 <span class="chip p">+2 or more</span> purple &mdash; the market broadly takes him earlier than ESPN.
 <span class="chip b">+1</span> blue.
 Anything below +1 gets no highlight.
@@ -297,7 +324,7 @@ const FALLBACK = __DATA__;
 let DATA = FALLBACK;
 const CAP = 25;
 const DEAD = 3;               // gaps under 3 picks count as 0 (no lean either way)
-const KEYS = ["ud","yahoo","sleeper"];
+const KEYS = ["ud","yahoo","sleeper","winks"];
 let mode="adp", sortK="seq", asc=true, filt="ALL", q="";
 
 function recompute(){
@@ -306,10 +333,12 @@ function recompute(){
       r.base = r.espn; r.alt = r.rank; r.basePr = r.epaRank;
       r.seq = r.adpSeq; r.slot = r.adpSlot;
       r.v_ud = r.ud; r.v_yahoo = r.yahoo; r.v_sleeper = r.sleeper;
+      r.v_winks = r.winks ?? null;    // a ranking, not an ADP - same scale, different thing
     } else {
       r.base = r.rank; r.alt = r.espn; r.basePr = r.eprRank;
       r.seq = r.rkSeq; r.slot = r.rkSlot;
       r.v_ud = r.udRk; r.v_yahoo = r.yaRk; r.v_sleeper = r.slRk;
+      r.v_winks = r.winks ?? null;
     }
     KEYS.forEach(k=>{ const v=r["v_"+k]; r["g_"+k] = (v===null||v===undefined) ? null : +(v-r.base).toFixed(1); });
     const ds = KEYS.map(k=>r["g_"+k]).filter(x=>x!==null);
@@ -328,7 +357,8 @@ function recompute(){
     // positional-rank gaps
     const bp = prNum(r.basePr);
     r.pg_ud = prGap(bp, r.udPr); r.pg_yahoo = prGap(bp, r.yaPr); r.pg_sleeper = prGap(bp, r.slPr);
-    const ps = [r.udPr, r.yaPr, r.slPr].map(prNum).filter(x=>x!==null);
+    r.pg_winks = prGap(bp, r.wkPr);
+    const ps = [r.udPr, r.yaPr, r.slPr, r.wkPr].map(prNum).filter(x=>x!==null);
     if(ps.length){
       const m = ps.reduce((a,b)=>a+b,0)/ps.length;
       r.avgPr = (r.pos==="DST"?"DEF":r.pos) + Math.round(m);
@@ -442,7 +472,7 @@ function render(){
     return asc?x-y:y-x;
   });
   document.getElementById("h0").textContent = mode==="adp" ? "ESPN ADP" : "ESPN Rank";
-  document.getElementById("h1").textContent = mode==="adp" ? "Avg ADP (3)" : "Avg rank (3)";
+  document.getElementById("h1").textContent = mode==="adp" ? "Avg of 4" : "Avg rank (4)";
   // bands of 12 always. In true draft order they are real rounds and get labelled as such;
   // once sorted or filtered they are just groups of 12 in the current view, labelled honestly.
   const natural = (sortK==="seq" && asc && filt==="ALL" && q==="");
@@ -458,19 +488,18 @@ function render(){
             + `<span class="pk">${n} player${n===1?"":"s"} &middot; ${fmt(r.base)}&ndash;${fmt(s.filter(x=>x.tier===r.tier).slice(-1)[0].base)}</span></td></tr>`;
       }
     } else if(i % 12 === 0){
-      const label = natural
-        ? `Round ${Math.floor((r.seq-1)/12)+1}<span class="pk">picks ${r.seq}&ndash;${Math.min(r.seq+11, s[s.length-1].seq)}</span>`
-        : `<span class="pk">rows ${i+1}&ndash;${Math.min(i+12, s.length)} of this view</span>`;
-      div = `<tr class="rd${i===0?" first":""}${natural?"":" soft"}"><td colspan="7">${label}</td></tr>`;
+      // Outside draft order a group of 12 isn't a round, so draw the divider with no label
+      // rather than an orphaned "rows 37-48" caption.
+      div = natural
+        ? `<tr class="rd${i===0?" first":""}"><td colspan="7">Round ${Math.floor((r.seq-1)/12)+1}`
+          + `<span class="pk">picks ${r.seq}&ndash;${Math.min(r.seq+11, s[s.length-1].seq)}</span></td></tr>`
+        : (i===0 ? "" : `<tr class="rd soft bare"><td colspan="7"></td></tr>`);
     }
     const sep = tierView ? (r.tierEnd ? ' class="rndsep"' : '')
                          : (((i+1) % 12 === 0) ? ' class="rndsep"' : '');
-    const av = r.avgd===null?'<span class="na">&mdash;</span>':
-      `<span class="cell" style="${color(r.avgd)}">${r.avgd>0?"+":""}${r.avgd.toFixed(1)}</span>`;
     const altTxt = mode==="adp" ? ("rk " + r.alt) : ("adp " + r.alt.toFixed(1));
     const hl = hlColor(r);
     return `${div}<tr${sep}>
-      <td class="c">${av}</td>
       ${avgCell(r)}
       <td class="l"><div class="ply">
           <span class="seq"><b>${r.seq}</b><i>${r.slot}</i></span>
@@ -483,7 +512,7 @@ function render(){
       <td><span class="stack"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
             >${fmt(r.base)}<span class="alt">${altTxt}</span></span>
           <span class="pr" style="${hl?`background:rgba(${hl.rgb},.28);color:#fff`:""}">${slotOf(r.base).label}</span></span></td>
-      ${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}</tr>`;
+      ${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}${cell(r.v_winks,r.base)}</tr>`;
   }).join("");
   document.querySelectorAll("th .ar").forEach(a=>a.remove());
   document.querySelectorAll("th .hd").forEach(hd=>{
@@ -520,14 +549,17 @@ document.getElementById("q").oninput=e=>{q=e.target.value.toLowerCase().trim(); 
 const norm = s => (s||"").toLowerCase().replace(/ d\\/st$/,"").replace(/\\./g,"").replace(/'/g,"")
   .replace(/\\s+(jr|sr|ii|iii|iv|v)$/,"").replace(/[^a-z \\-]/g,"").replace(/\\s+/g," ").trim();
 
-const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending", underdog:"pending"};
+const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending", underdog:"pending",
+             winks:"static Winks' published half-PPR top 300, 7/20"};
 function setStatus(){
-  const label = {live:"live", snapshot:"snapshot", pending:"…"};
-  const cls   = {live:"ok", snapshot:"warn", pending:"pend"};
+  const label = {live:"live", snapshot:"snapshot", pending:"…", static:"7/20"};
+  const cls   = {live:"ok", snapshot:"warn", pending:"pend", static:"stat"};
   document.getElementById("srcs").innerHTML = Object.keys(SRC).map(k=>{
-    const st = SRC[k].startsWith("live") ? "live" : (SRC[k]==="pending" ? "pending" : "snapshot");
+    const v = SRC[k];
+    const st = v.startsWith("live") ? "live" : v.startsWith("static") ? "static"
+             : (v==="pending" ? "pending" : "snapshot");
     const name = k==="underdog" ? "Underdog" : k==="espn" ? "ESPN" : k[0].toUpperCase()+k.slice(1);
-    return `<span class="src ${cls[st]}" title="${SRC[k]}">${name} <b>${label[st]}</b></span>`;
+    return `<span class="src ${cls[st]}" title="${v}">${name} <b>${label[st]}</b></span>`;
   }).join("");
 }
 async function grab(path){
@@ -538,7 +570,7 @@ async function grab(path){
 }
 async function loadLive(){
   document.getElementById("refresh").disabled = true;
-  Object.keys(SRC).forEach(k=>SRC[k]="pending"); setStatus();
+  Object.keys(SRC).forEach(k=>{ if(k!=="winks") SRC[k]="pending"; }); setStatus();
 
   const [espn, sleeper, yahoo, ud] = await Promise.all(
     ["/api/espn","/api/sleeper","/api/yahoo","/api/underdog"].map(p=>grab(p).catch(e=>({error:String(e.message||e)})))
@@ -546,7 +578,7 @@ async function loadLive(){
 
   // ESPN defines who is on the board, so without it we keep the snapshot entirely
   if(espn.error || !espn.players){
-    Object.keys(SRC).forEach(k=>SRC[k]="snapshot ("+(espn.error||"espn unavailable")+")");
+    Object.keys(SRC).forEach(k=>{ if(k!=="winks") SRC[k]="snapshot ("+(espn.error||"espn unavailable")+")"; });
     setStatus(); document.getElementById("refresh").disabled=false; return;
   }
   SRC.espn = "live "+espn.pulled;
@@ -579,6 +611,9 @@ async function loadLive(){
       sleeper: s ? s.adp : (sleeper.error ? (f.sleeper ?? null) : null),
       slRk:    s ? s.rk  : (sleeper.error ? (f.slRk    ?? null) : null),
       slPr:    s ? P+s.pr: (sleeper.error ? (f.slPr    ?? null) : null),
+      // Winks is a published article, not a feed: always the baked snapshot
+      winks:   f.winks ?? null,
+      wkPr:    f.wkPr  ?? null,
     };
   });
 
