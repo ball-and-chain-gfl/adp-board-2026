@@ -115,12 +115,12 @@ button.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
 button:hover{color:var(--txt)}
 .legend{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:11px;color:var(--dim)}
 .ramp{width:190px;height:12px;border-radius:6px;background:linear-gradient(90deg,#d0342c,#e8736a,#2b323d,#54c47f,#0f9d4f)}
-.tabs{display:flex;gap:4px;margin-top:13px}
+.tabs{display:flex;gap:4px;margin-top:12px;align-items:flex-end}
 .tab{padding:9px 16px 8px;border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;background:#10151c;
      color:var(--dim);cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.2px}
 .tab .t2{display:block;font-weight:500;font-size:10.5px;opacity:.75;letter-spacing:0}
 .tab.on{background:var(--bg);color:var(--txt);position:relative;top:1px}
-.wrap{overflow:auto;max-height:calc(100vh - 118px)}
+.wrap{overflow:auto;max-height:calc(100vh - 152px)}
 table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
 th{position:sticky;top:0;background:#1b222c;z-index:20;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);
    padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line);user-select:none}
@@ -177,11 +177,13 @@ th.c, td.c{text-align:center;white-space:nowrap}
 .rd{font-size:9.5px;font-weight:700;letter-spacing:.3px;color:#6e7681;margin-left:5px;vertical-align:middle}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px;vertical-align:middle;
      box-shadow:0 0 0 1px rgba(255,255,255,.12) inset}
-/* the pick on the clock: the one number you glance at most during a draft */
-.pickbox{display:inline-flex;align-items:baseline;gap:7px;padding:4px 13px 5px;border-radius:7px;
-  background:#1f6feb;color:#cfe0ff;font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase}
-.pickbox b{font-size:19px;line-height:1;font-weight:800;letter-spacing:0;color:#fff}
-.pickbox i{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.3px;color:#9dc4ff}
+/* the pick on the clock: a tall blue block that runs down to the top of the table */
+.pickbox{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:104px;margin-right:10px;padding:5px 14px 7px;border-radius:8px 8px 0 0;
+  background:#1f6feb;position:relative;top:1px;line-height:1.1}
+.pickbox b{font-size:30px;font-weight:800;letter-spacing:-.5px;color:#fff}
+.pickbox span{font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#cfe0ff;margin-top:1px}
+.pickbox i{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.4px;color:#9dc4ff;margin-top:2px}
 /* the # + round.pick that used to be its own column now leads the player cell */
 .seq{display:inline-flex;flex-direction:column;align-items:flex-end;min-width:34px;line-height:1.15;margin-right:2px}
 .seq b{font-size:12.5px}
@@ -226,6 +228,10 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   input[type=search]{flex:1 1 130px;width:auto;padding:5px 8px;font-size:12px}
   button{padding:5px 8px;font-size:11px}
   .bar,.srcbar{gap:5px}
+  .pickbox{min-width:74px;padding:4px 9px 6px;margin-right:6px}
+  .pickbox b{font-size:22px}
+  .pickbox span{font-size:8.5px;letter-spacing:.8px}
+  .pickbox i{font-size:10px}
   .tab{flex:1;padding:7px 8px 6px;font-size:11.5px}
   .tab .t2{display:none}
   .wrap{max-height:none;overflow:visible}
@@ -268,7 +274,6 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 </style></head><body>
 <header>
 <div class="bar">
-  <span class="pickbox">Pick <b id="pick">1</b><i id="picksl">1.01</i></span>
   <input type="search" id="q" placeholder="Search player / team">
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
@@ -277,8 +282,9 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   <div class="legend"><span class="chip c2">2</span><span class="chip c3">3</span><span class="chip c4">4</span><span>consensus score</span></div>
 </div>
 <div class="tabs">
-  <div class="tab on" data-m="adp">ADP vs ADP<span class="t2">ESPN ADP compared to each site's ADP</span></div>
-  <div class="tab" data-m="rank">Rank vs Rank<span class="t2">ESPN's PPR rank compared to each site's rank</span></div>
+  <div class="pickbox"><b id="pick">1</b><span id="pickrd">Round 1</span><i id="picksl">1.01</i></div>
+  <div class="tab on" data-m="rank">Rank vs Rank<span class="t2">ESPN's PPR rank compared to each site's rank</span></div>
+  <div class="tab" data-m="adp">ADP vs ADP<span class="t2">ESPN ADP compared to each site's ADP</span></div>
 </div>
 </header>
 <div class="wrap">
@@ -306,7 +312,7 @@ let DATA = FALLBACK;
 const CAP = 25;
 const DEAD = 3;               // gaps under 3 picks count as 0 (no lean either way)
 const KEYS = ["ud","yahoo","sleeper","winks"];
-let mode="adp", sortK="seq", asc=true, q="", filt="ALL";
+let mode="rank", sortK="seq", asc=true, q="", filt="ALL";
 const HIDDEN = new Set();     // players clicked off the board, keyed by name so they stay
                               // hidden across re-renders and live refreshes
 
@@ -483,7 +489,9 @@ function render(){
   TAKEN = HIDDEN.size;                    // how deep into the draft we are
   PICK  = TAKEN + 1;                      // the pick actually on the clock
   const pe = document.getElementById("pick"), ps = document.getElementById("picksl");
+  const pr = document.getElementById("pickrd");
   if(pe) pe.textContent = PICK;
+  if(pr) pr.textContent = "Round " + slotOf(PICK).r;
   if(ps) ps.textContent = slotOf(PICK).label;
   const rows = DATA.filter(r=>!HIDDEN.has(r.name) &&
       (filt==="ALL" || r.pos===filt) &&
