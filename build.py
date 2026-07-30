@@ -92,7 +92,7 @@ button:hover{color:var(--txt)}
 .tab .t2{display:block;font-weight:500;font-size:10.5px;opacity:.75;letter-spacing:0}
 .tab.on{background:var(--bg);color:var(--txt);position:relative;top:1px}
 .wrap{overflow:auto;max-height:calc(100vh - 205px)}
-table{border-collapse:separate;border-spacing:0;width:100%;min-width:1000px}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
 th{position:sticky;top:0;background:#1b222c;z-index:20;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);
    padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line);user-select:none}
 th.l{text-align:left}
@@ -131,8 +131,22 @@ tr:hover td{background:#1a2029}
 .ramp2{width:80px;height:12px;border-radius:6px}
 .na{color:#4d5560}
 .alt{color:#6e7681;font-size:11px;margin-left:5px}
-/* vertical group dividers: ESPN | the 3 sites | the 2 averages */
-th:nth-child(3), td:nth-child(3), th:nth-child(6), td:nth-child(6){border-right:2px solid #34404f}
+/* column order: [Avg gap | Avg of 3] | Player | ESPN | [Underdog Yahoo Sleeper]
+   dividers close the averages block, the player block and the ESPN block */
+th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3),
+th:nth-child(4), td:nth-child(4){border-right:2px solid #34404f}
+th.c, td.c{text-align:center}
+.stack.ctr{align-items:center}
+/* the # + round.pick that used to be its own column now leads the player cell */
+.seq{display:inline-flex;flex-direction:column;align-items:flex-end;min-width:34px;line-height:1.15;margin-right:2px}
+.seq b{font-size:12.5px}
+.seq i{font-style:normal;font-size:10px;color:#6e7681}
+/* the three site columns are reference, not the headline: dial them back */
+th.site{color:#6b7482;font-size:10px}
+td.site .cell{font-weight:600;font-size:12px;min-width:66px;opacity:.88}
+td.site .d{font-size:10px;font-weight:600}
+td.site .pr{font-size:9px;opacity:.75;min-width:32px}
+th .sm{display:none}
 .rndsep td{border-bottom:2px solid #3d4b5c}
 tr.rd td{background:#111721;border-top:2px solid #3d4b5c;border-bottom:1px solid #1f2732;
   padding:5px 10px;text-align:left;font-size:10px;font-weight:800;letter-spacing:1.1px;color:#8fa3bd;text-transform:uppercase}
@@ -148,51 +162,64 @@ tr.rd.tierband:hover td{background:#141c17}
 tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white-space:normal;line-height:1.65}
 
 /* ---------------------------------------------------------------- mobile ---
-   Phones can't show 8 columns. Below 820px the table becomes a card list: the
-   player row stays intact and the four number cells reflow into a 2x2 grid,
-   each labelled, so nothing needs horizontal scrolling. */
+   Stays a real table, just condensed to fit a phone: short column labels, the
+   gap stacked under each value instead of beside it, and the decorative bits
+   (round.pick tags, team, alt value, cliff tags) dropped. */
 @media (max-width: 820px){
-  header{padding:12px 12px 0;position:static}
-  h1{font-size:15px}
-  .sub{font-size:11px}
-  .legend{margin-left:0;flex-basis:100%;order:9;margin-top:4px;flex-wrap:wrap;row-gap:4px;min-width:0}
+  header{padding:11px 10px 0;position:static}
+  h1{font-size:14px}
+  .sub{font-size:10.5px}
+  .legend{margin-left:0;flex-basis:100%;order:9;margin-top:4px;flex-wrap:wrap;row-gap:3px;min-width:0;font-size:10px}
   .legend > span{white-space:normal}
   .legend > span[style]{margin-left:0 !important}
-  .ramp{width:110px;flex:0 0 110px}
-  input[type=search]{width:100%}
-  .bar,.srcbar{gap:6px}
-  .tabs{gap:4px}
-  .tab{flex:1;padding:8px 10px 7px;font-size:12px}
+  .ramp{width:100px;flex:0 0 100px}
+  input[type=search]{flex:1 1 130px;width:auto;padding:5px 8px;font-size:12px}
+  button{padding:5px 8px;font-size:11px}
+  .bar,.srcbar{gap:5px}
+  .tab{flex:1;padding:7px 8px 6px;font-size:11.5px}
   .tab .t2{display:none}
   .wrap{max-height:none;overflow:visible}
-  table{min-width:0;width:100%}
-  thead{display:none}
-  tbody tr{display:block;border-bottom:1px solid #1f2732;padding:8px 10px 10px}
-  tbody tr:hover td{background:none}
-  td{display:block;padding:0;border:none;text-align:left}
-  th:nth-child(3),td:nth-child(3),th:nth-child(6),td:nth-child(6){border-right:none}
-  /* # + player on one line */
-  td:nth-child(1){float:right;font-size:11px;color:var(--dim);margin-top:2px}
-  td:nth-child(2){margin-bottom:8px}
-  /* the five value cells become a labelled grid */
-  td:nth-child(n+3){display:inline-block;width:33.3%;vertical-align:top;margin-top:6px}
-  td:nth-child(n+3)::before{content:attr(data-l);display:block;font-size:9px;font-weight:800;
-    letter-spacing:.7px;text-transform:uppercase;color:#5c6675;margin-bottom:2px}
-  .cell{min-width:0;font-size:12.5px;padding:3px 6px}
-  .stack{align-items:flex-start}
-  .pr{min-width:0;margin-top:1px}
-  .cliff{margin-left:0;margin-top:4px}
-  tr.rd td{float:none;width:auto;display:block;margin:0;font-size:9.5px}
-  tr.rd td::before{content:none}
-  tfoot td{display:block;width:auto;font-size:10.5px}
-  tfoot td::before{content:none}
+
+  table{min-width:0;width:100%;table-layout:fixed}
+  th .lg{display:none}
+  th .sm{display:inline}
+  th{padding:6px 2px;font-size:9px;letter-spacing:.3px}
+  td{padding:4px 2px;font-size:11px}
+  .dbtn{margin-left:2px;padding:0 3px;font-size:9px}
+
+  /* fixed widths: gap | avg | player (flex) | espn | ud | yah | slp */
+  th:nth-child(1),td:nth-child(1){width:38px}
+  th:nth-child(2),td:nth-child(2){width:40px}
+  th:nth-child(4),td:nth-child(4){width:44px}
+  th:nth-child(n+5),td:nth-child(n+5){width:40px}
+
+  /* stack the gap under the value so cells stay narrow */
+  .cell{min-width:0;width:100%;box-sizing:border-box;padding:2px 3px;font-size:11px;text-align:center}
+  td.site .cell{min-width:0;font-size:10.5px}
+  .d{display:block;margin-left:0;font-size:9px;line-height:1.1}
+  .stack{align-items:stretch;width:100%}
+  /* drop the decoration */
+  .pr,.alt,.meta,.cliff,.seq i{display:none}
+  .seq{min-width:0;margin-right:0}
+  .seq b{font-size:11px}
+  .av,.av img{width:22px;height:22px;flex-basis:22px}
+  .ply{gap:5px}
+  .nm{font-size:11px;margin-left:4px !important}
+  .pos{min-width:22px;padding:0 3px;font-size:9px}
+  tr.rd td{font-size:9px;letter-spacing:.6px;padding:4px 6px}
+  tr.rd .pk{margin-left:5px}
+  tfoot td{font-size:10px;padding:10px 6px}
 }
-@media (max-width: 480px){
+@media (max-width: 430px){
   body{overflow-x:hidden}
-  td:nth-child(n+3){width:50%}
-  .av,.av img{width:28px;height:28px;flex-basis:28px}
-  .legend{font-size:10px}
-  .ramp{width:90px;flex:0 0 90px}
+  th:nth-child(1),td:nth-child(1){width:34px}
+  th:nth-child(2),td:nth-child(2){width:36px}
+  th:nth-child(4),td:nth-child(4){width:40px}
+  th:nth-child(n+5),td:nth-child(n+5){width:36px}
+  .nm{font-size:10.5px}
+  .av,.av img{width:0;height:0;flex-basis:0;border:none}
+  .cell{font-size:10px}
+  td.site .cell{font-size:9.5px}
 }
 </style></head><body>
 <header>
@@ -216,17 +243,16 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <div class="wrap">
 <table id="t">
 <thead><tr>
-<th class="l"><span class="hd" data-k="seq">#</span></th>
-<th class="l"><span class="hd" data-k="name">Player</span></th>
-<th><span class="hd" data-k="base" id="h0">ESPN ADP</span></th>
-<th><span class="hd" data-k="v_ud">Underdog</span><span class="dbtn" data-d="ud">&Delta;</span></th>
-<th><span class="hd" data-k="v_yahoo">Yahoo</span><span class="dbtn" data-d="yahoo">&Delta;</span></th>
-<th><span class="hd" data-k="v_sleeper">Sleeper</span><span class="dbtn" data-d="sleeper">&Delta;</span></th>
-<th><span class="hd" data-k="avgV" id="h1">Avg of 3</span></th>
-<th><span class="hd" data-k="avgd">Avg gap</span><span class="dbtn" data-d="avg">&Delta;</span></th>
+<th class="c"><span class="hd" data-k="avgd"><span class="lg">Avg gap</span><span class="sm">GAP</span></span><span class="dbtn" data-d="avg">&Delta;</span></th>
+<th class="c"><span class="hd" data-k="avgV" id="h1"><span class="lg">Avg of 3</span><span class="sm">AVG</span></span></th>
+<th class="l"><span class="hd" data-k="seq">#</span> <span class="hd" data-k="name">Player</span></th>
+<th><span class="hd" data-k="base"><span class="lg" id="h0">ESPN ADP</span><span class="sm">ESPN</span></span></th>
+<th class="site"><span class="hd" data-k="v_ud"><span class="lg">Underdog</span><span class="sm">UD</span></span><span class="dbtn" data-d="ud">&Delta;</span></th>
+<th class="site"><span class="hd" data-k="v_yahoo"><span class="lg">Yahoo</span><span class="sm">YAH</span></span><span class="dbtn" data-d="yahoo">&Delta;</span></th>
+<th class="site"><span class="hd" data-k="v_sleeper"><span class="lg">Sleeper</span><span class="sm">SLP</span></span><span class="dbtn" data-d="sleeper">&Delta;</span></th>
 </tr></thead>
 <tbody id="b"></tbody>
-<tfoot><tr><td colspan="8">
+<tfoot><tr><td colspan="7">
 <b>Two tabs, two apples-to-apples comparisons.</b>
 <b>ADP vs ADP</b> puts ESPN's average draft position next to each site's average draft position &mdash; where players are actually being taken.
 <b>Rank vs Rank</b> puts ESPN's PPR draft rank next to each site's overall rank (each site's own board order) &mdash; where the platforms <i>say</i> players should go.
@@ -389,22 +415,21 @@ function hlColor(r){
   return {bg:`rgba(${rgb},${a})`, rgb};
 }
 const fmt = v => mode==="adp" ? v.toFixed(1) : String(v);
-function cell(v, base, label){
-  if(v===null||v===undefined) return `<td data-l="${label}"><span class="na">&mdash;</span></td>`;
+function cell(v, base){
+  if(v===null||v===undefined) return '<td class="site"><span class="na">&mdash;</span></td>';
   const d = +(v - base).toFixed(1);
   const s = (d > 0 ? "+" : "") + d.toFixed(1);
   const sl = slotOf(v), bs = slotOf(base);
-  return `<td data-l="${label}"><span class="stack"><span class="cell" style="${color(d)}">${fmt(v)}<span class="d">${s}</span></span>`
+  return `<td class="site"><span class="stack"><span class="cell" style="${color(d)}">${fmt(v)}<span class="d">${s}</span></span>`
        + `<span class="pr" style="${pcolor(sl.r - bs.r)}">${sl.label}</span></span></td>`;
 }
 // market-consensus column: the average itself, coloured by its gap. The gap number lives in the
 // next column, so it isn't repeated here.
 function avgCell(r){
-  const L = mode==="adp" ? "Avg ADP" : "Avg rank";
-  if(r.avgV===null) return `<td data-l="${L}"><span class="na">&mdash;</span></td>`;
+  if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
   const shown = mode==="adp" ? r.avgV.toFixed(1) : String(Math.round(r.avgV));
   const sl = slotOf(r.avgV), bs = slotOf(r.base);
-  return `<td data-l="${L}"><span class="stack"><span class="cell" style="${color(r.avgd)}">${shown}</span>`
+  return `<td class="c"><span class="stack ctr"><span class="cell" style="${color(r.avgd)}">${shown}</span>`
        + `<span class="pr" style="${pcolor(sl.r - bs.r)}">${sl.label}</span></span></td>`;
 }
 function render(){
@@ -429,7 +454,7 @@ function render(){
     if(tierView){
       if(i===0 || s[i-1].tier!==r.tier){
         const n = s.filter(x=>x.tier===r.tier).length;
-        div = `<tr class="rd tierband${i===0?" first":""}"><td colspan="8">`
+        div = `<tr class="rd tierband${i===0?" first":""}"><td colspan="7">`
             + `${r.pos==="DST"?"DEF":r.pos} &middot; Tier ${r.tier}`
             + `<span class="pk">${n} player${n===1?"":"s"} &middot; ${fmt(r.base)}&ndash;${fmt(s.filter(x=>x.tier===r.tier).slice(-1)[0].base)}</span></td></tr>`;
       }
@@ -437,7 +462,7 @@ function render(){
       const label = natural
         ? `Round ${Math.floor((r.seq-1)/12)+1}<span class="pk">picks ${r.seq}&ndash;${Math.min(r.seq+11, s[s.length-1].seq)}</span>`
         : `<span class="pk">rows ${i+1}&ndash;${Math.min(i+12, s.length)} of this view</span>`;
-      div = `<tr class="rd${i===0?" first":""}${natural?"":" soft"}"><td colspan="8">${label}</td></tr>`;
+      div = `<tr class="rd${i===0?" first":""}${natural?"":" soft"}"><td colspan="7">${label}</td></tr>`;
     }
     const sep = tierView ? (r.tierEnd ? ' class="rndsep"' : '')
                          : (((i+1) % 12 === 0) ? ' class="rndsep"' : '');
@@ -446,20 +471,20 @@ function render(){
     const altTxt = mode==="adp" ? ("rk " + r.alt) : ("adp " + r.alt.toFixed(1));
     const hl = hlColor(r);
     return `${div}<tr${sep}>
-      <td class="l"><b>${r.seq}</b> <span class="slot">${r.slot}</span></td>
+      <td class="c">${av}</td>
+      ${avgCell(r)}
       <td class="l"><div class="ply">
+          <span class="seq"><b>${r.seq}</b><i>${r.slot}</i></span>
           <span class="av${r.pos==="DST"?" lg":""}"><img src="${r.img}" alt="" decoding="async"
                 onerror="this.style.visibility='hidden'"></span>
           <span><span class="pos ${r.pos}">${r.pos==="DST"?"DEF":r.pos}</span>
           <span class="nm" style="margin-left:7px">${r.name}</span><span class="meta">${r.team}</span>
           ${r.tierEnd&&r.tierDrop!==null?`<span class="cliff">cliff &middot; next ${r.pos==="DST"?"DEF":r.pos} +${r.tierDrop}</span>`:""}</span>
         </div></td>
-      <td data-l="${mode==="adp"?"ESPN ADP":"ESPN rank"}"><span class="stack"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
+      <td><span class="stack"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
             >${fmt(r.base)}<span class="alt">${altTxt}</span></span>
           <span class="pr" style="${hl?`background:rgba(${hl.rgb},.28);color:#fff`:""}">${slotOf(r.base).label}</span></span></td>
-      ${cell(r.v_ud,r.base,"Underdog")}${cell(r.v_yahoo,r.base,"Yahoo")}${cell(r.v_sleeper,r.base,"Sleeper")}
-      ${avgCell(r)}
-      <td data-l="Avg gap">${av}</td></tr>`;
+      ${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}</tr>`;
   }).join("");
   document.querySelectorAll("th .ar").forEach(a=>a.remove());
   document.querySelectorAll("th .hd").forEach(hd=>{
