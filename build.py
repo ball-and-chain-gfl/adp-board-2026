@@ -175,6 +175,8 @@ th:nth-child(3), td:nth-child(3){border-right:2px solid #34404f}
 th.c, td.c{text-align:center;white-space:nowrap}
 .stack.ctr{align-items:center}
 .rd{font-size:9.5px;font-weight:700;letter-spacing:.3px;color:#6e7681;margin-left:5px;vertical-align:middle}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px;vertical-align:middle;
+     box-shadow:0 0 0 1px rgba(255,255,255,.12) inset}
 /* the # + round.pick that used to be its own column now leads the player cell */
 .seq{display:inline-flex;flex-direction:column;align-items:flex-end;min-width:34px;line-height:1.15;margin-right:2px}
 .seq b{font-size:12.5px}
@@ -433,14 +435,32 @@ function cell(v, base){
 }
 // market-consensus column: the average itself, coloured by its gap. The gap number lives in the
 // next column, so it isn't repeated here.
+// ---- live draft-position dot -----------------------------------------------
+// The Avg cell itself still colours off the gap to ESPN. The dot next to it uses a moving
+// baseline instead: however many players you've clicked off the board is where the draft
+// stands, so a player whose consensus number is BELOW that has slid past his market price
+// (green), one ABOVE it isn't due yet (red). Only meaningful once the draft is underway,
+// so it stays hidden until at least one player is off the board.
+let TAKEN = 0;
+function dotStyle(avgV){
+  if(TAKEN === 0 || avgV === null) return null;
+  const d = avgV - TAKEN;                       // negative => he has fallen to you
+  if(Math.abs(d) < DEAD) return "background:#4a5464";
+  const t = Math.min(1, Math.abs(d)/CAP);
+  const a = (0.45 + 0.55*t).toFixed(3);
+  return `background:rgba(${d<0?"15,157,79":"208,52,44"},${a})`;
+}
 function avgCell(r){
   if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
   const shown = mode==="adp" ? r.avgV.toFixed(1) : String(Math.round(r.avgV));
   const sl = slotOf(r.avgV);
+  const ds = dotStyle(r.avgV);
   return `<td class="c"><span class="cell" style="${color(r.avgd)}">${shown}</span>`
+       + (ds ? `<span class="dot" style="${ds}" title="vs pick ${TAKEN}"></span>` : "")
        + `<span class="rd">rd ${sl.r}</span></td>`;
 }
 function render(){
+  TAKEN = HIDDEN.size;                    // how deep into the draft we are
   const rows = DATA.filter(r=>!HIDDEN.has(r.name) &&
       (filt==="ALL" || r.pos===filt) &&
       (q===""||r.name.toLowerCase().includes(q)||r.team.toLowerCase().includes(q)));
