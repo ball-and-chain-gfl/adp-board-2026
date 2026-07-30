@@ -154,8 +154,11 @@ tr:hover td{background:#1a2029}
 .hl{color:#fff}
 .hl .alt{color:#e2ecff;opacity:.85}
 .chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;color:#fff}
-.chip.p{background:rgb(138,74,226)}
-.chip.b{background:rgb(31,111,235)}
+/* one hue per consensus score, evenly stepped on the wheel: teal - blue - indigo - purple */
+.chip.c1{background:rgb(18,173,211)}
+.chip.c2{background:rgb(31,111,235)}
+.chip.c3{background:rgb(54,51,230)}
+.chip.c4{background:rgb(138,74,226)}
 .ramp2{width:80px;height:12px;border-radius:6px}
 .na{color:#4d5560}
 .alt{color:#6e7681;font-size:11px;margin-left:5px}
@@ -257,7 +260,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
   <button data-f="TE">TE</button><button data-f="K">K</button><button data-f="DST">DEF</button>
-  <div class="legend"><span class="chip p">+2</span><span class="chip b">+1</span><span>consensus score</span></div>
+  <div class="legend"><span class="chip c1">1</span><span class="chip c2">2</span><span class="chip c3">3</span><span class="chip c4">4</span><span>consensus score</span></div>
 </div>
 <div class="tabs">
   <div class="tab on" data-m="adp">ADP vs ADP<span class="t2">ESPN ADP compared to each site's ADP</span></div>
@@ -290,12 +293,11 @@ come up that many rounds to beat that site's room. A big pick gap that doesn't c
 Full saturation at &plusmn;25 picks.<br>
 <b>Hayden Winks</b> is his published half-PPR top 300 from Yahoo Fantasy, dated 7/20 &mdash; expert <i>rankings</i>, not ADP, so his column is a board position rather than an average pick. His table is
 injected client-side and the underlying content API blocks cross-origin calls, so unlike the other three he can't be fetched live; the chip reads <b>7/20</b> and needs a re-pull when he republishes.<br>
-<b>The consensus score</b> drives the colour on the ESPN cell, signed to match: each site scores <b>+1</b> if its number is lower than ESPN's (green) and <b>&minus;1</b> if higher (red), and the four add up.
-<span class="chip p">+2 or more</span> purple &mdash; the market broadly takes him earlier than ESPN.
-<span class="chip b">+1</span> blue.
-Anything below +1 gets no highlight.
-A site inside <b>3 picks</b> of ESPN counts as <b>0</b> &mdash; the dead zone, close enough to call a tie &mdash; and cells inside it render grey for the same reason.
-Kickers and defenses can only ever reach &plusmn;1 since Yahoo is the only one of the three that prices them.<br>
+<b>The consensus score</b> drives the colour on the ESPN cell: it's simply <b>how many of the four sites take him earlier than ESPN</b>, so it runs 0&ndash;4. Each score gets its own hue, stepped
+evenly around the wheel &mdash; <span class="chip c1">1</span> teal, <span class="chip c2">2</span> blue, <span class="chip c3">3</span> indigo, <span class="chip c4">4</span> purple. The higher the
+number, the more of the market is ahead of ESPN on him. A score of <b>0</b> gets no highlight.<br>
+A site has to be at least <b>3 picks</b> clear of ESPN to count &mdash; inside that dead zone it's a tie, and those cells render grey for the same reason. Sites that take him <i>later</i> than ESPN
+simply don't add to the score, so read the red cells alongside it. Kickers and defenses top out at 2 since Underdog and Sleeper don't price them.<br>
 <b>Live data.</b> All four sources are fetched fresh each time the page loads, and the <b>Refresh</b> button re-pulls on demand. ESPN and Sleeper come through cached serverless proxies to keep
 the payload small; Yahoo and Underdog have to be proxied because neither sends CORS headers. The chips by the title show whether each source came back <b>live</b> or fell back to the
 hand-verified 29 July snapshot, and the fallback is per-source, so one dead feed never blanks the rest of the board. ESPN decides who's on the board at all, so if ESPN is down the whole
@@ -350,12 +352,11 @@ function recompute(){
     // market consensus: mean of the three sites' own numbers (= ESPN base + avg gap)
     const vs = KEYS.map(k=>r["v_"+k]).filter(x=>x!==null&&x!==undefined);
     r.avgV = vs.length ? +(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1) : null;
-    // consensus score, signed to match the colours: +1 per site LOWER than ESPN (green, takes him
-    // earlier), -1 per site HIGHER (red), 0 if within DEAD picks either way
+    // consensus score 0-4: how many of the four sites take him EARLIER than ESPN by at least
+    // DEAD picks. Sites inside the dead zone, or later than ESPN, simply don't count.
     r.score = KEYS.reduce((s,k)=>{
       const g=r["g_"+k];
-      if(g===null) return s;
-      return s + (g <= -DEAD ? 1 : (g >= DEAD ? -1 : 0));
+      return s + ((g !== null && g <= -DEAD) ? 1 : 0);
     }, 0);
     // positional-rank gaps
     const bp = prNum(r.basePr);
@@ -436,15 +437,15 @@ function pcolor(d){
   const a = (0.28 + 0.62*Math.abs(t)).toFixed(3);
   return `background:rgba(${t<0?"15,157,79":"208,52,44"},${a});color:#fff`;
 }
-// ESPN cell highlight from the consensus score (+1 per site higher than ESPN, -1 per site lower):
-//   >= +2  purple      +1  blue      everything else  nothing
+// ESPN cell highlight, one hue per consensus score. The four hues are evenly spaced ~24.4 deg
+// apart on the wheel: 2 is the original blue (216 deg), 4 the original purple (265 deg), 3 sits
+// halfway between them (241 deg), and 1 is the same step the other side of blue, toward green
+// (192 deg, teal). 0 gets no highlight.
+const SCORE_RGB = {1:"18,173,211", 2:"31,111,235", 3:"54,51,230", 4:"138,74,226"};
 function hlColor(r){
-  const s = r.score;
-  let rgb=null, a=0.9;
-  if(s >= 2){ rgb="138,74,226"; a = s>=3 ? 1 : 0.78; }
-  else if(s === 1){ rgb="31,111,235"; a = 0.82; }
+  const rgb = SCORE_RGB[r.score];
   if(!rgb) return null;
-  return {bg:`rgba(${rgb},${a})`, rgb};
+  return {bg:`rgb(${rgb})`, rgb};
 }
 const fmt = v => mode==="adp" ? v.toFixed(1) : String(v);
 function cell(v, base){
