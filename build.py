@@ -134,7 +134,10 @@ th .ar{opacity:.5;font-size:9px}
 .dbtn.act{background:#1f6feb;border-color:#1f6feb;color:#fff}
 td{padding:5px 10px;text-align:right;border-bottom:1px solid #1a212b;white-space:nowrap;font-variant-numeric:tabular-nums}
 td.l{text-align:left}
+tbody tr[data-n]{cursor:pointer}
 tr:hover td{background:#1a2029}
+#unhide{border-color:#3d4756;color:#9aa8c4}
+#unhide:hover{color:#fff;border-color:#5a6a80}
 .ply{display:flex;align-items:center;gap:9px}
 .av{width:34px;height:34px;border-radius:50%;background:#0b0f14;border:1px solid #262f3c;flex:0 0 34px;overflow:hidden}
 /* ESPN headshots are 600x436 with transparent margins; crop to the face, not the empty top */
@@ -258,6 +261,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
   <button data-f="TE">TE</button><button data-f="K">K</button><button data-f="DST">DEF</button>
+  <button id="unhide" style="display:none"></button>
   <div class="legend"><span class="chip c2">2</span><span class="chip c3">3</span><span class="chip c4">4</span><span>consensus score</span></div>
 </div>
 <div class="tabs">
@@ -277,48 +281,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <th class="site"><span class="hd" data-k="v_winks">Winks</span><span class="dbtn" data-d="winks">&Delta;</span></th>
 </tr></thead>
 <tbody id="b"></tbody>
-<tfoot><tr><td colspan="7">
-<b>Two tabs, two apples-to-apples comparisons.</b>
-<b>ADP vs ADP</b> puts ESPN's average draft position next to each site's average draft position &mdash; where players are actually being taken.
-<b>Rank vs Rank</b> puts ESPN's PPR draft rank next to each site's overall rank (each site's own board order) &mdash; where the platforms <i>say</i> players should go.
-The grey number in the ESPN column is the other tab's value, so you can spot ESPN's own rank-vs-ADP disagreement.<br>
-<b>The round.pick under every number</b> is where that figure lands on a 12-team board &mdash; 19.8 is <b>2.08</b>, the 8th pick of round 2. It's shaded by how many <i>rounds</i> away it is from
-the ESPN cell on that row (full colour at 3 rounds), so you can read the practical question directly: green means that site would let you wait that many rounds longer, red means you'd have to
-come up that many rounds to beat that site's room. A big pick gap that doesn't cross a round boundary is usually not worth changing your plan over.<br>
-<b>Reading the colors.</b> The small number is the gap from ESPN.
-<span style="color:#54c47f"><b>Green = a LOWER number on that site</b></span> &mdash; he goes earlier there, so that market wants him more than ESPN does and he's a relative bargain at his ESPN price.
-<span style="color:#e8736a"><b>Red = a HIGHER number on that site</b></span> &mdash; he goes later there, so ESPN's room is paying up and you can probably wait.
-Full saturation at &plusmn;25 picks.<br>
-<b>Hayden Winks</b> is his published half-PPR top 300 from Yahoo Fantasy, dated 7/20 &mdash; expert <i>rankings</i>, not ADP, so his column is a board position rather than an average pick. His table is
-injected client-side and the underlying content API blocks cross-origin calls, so unlike the other three he can't be fetched live; the chip reads <b>7/20</b> and needs a re-pull when he republishes.<br>
-<b>The consensus score</b> drives the colour on the ESPN cell: it's simply <b>how many of the four sites take him earlier than ESPN</b>, so it runs 0&ndash;4. Each score gets its own hue, stepped
-evenly around the wheel &mdash; <span class="chip c2">2</span> blue, <span class="chip c3">3</span> indigo, <span class="chip c4">4</span> purple. The higher the
-number, the more of the market is ahead of ESPN on him. Scores of <b>0</b> and <b>1</b> get no highlight &mdash; one site out of four disagreeing with ESPN isn't a signal worth colouring.
-<b>Brightness carries the size of the gap</b>: the hue tells you how many sites agree, and how vivid it is tells you by how much. It ramps from dim at the dead-zone edge to fully saturated at an
-average gap of 25 picks &mdash; so a pale blue is two sites a few picks ahead, and a vivid purple is all four sites two rounds ahead.<br>
-A site has to be at least <b>3 picks</b> clear of ESPN to count &mdash; inside that dead zone it's a tie, and those cells render grey for the same reason. Sites that take him <i>later</i> than ESPN
-simply don't add to the score, so read the red cells alongside it. Kickers and defenses top out at 2 since Underdog and Sleeper don't price them.<br>
-<b>Live data.</b> All four sources are fetched fresh each time the page loads, and the <b>Refresh</b> button re-pulls on demand. ESPN and Sleeper come through cached serverless proxies to keep
-the payload small; Yahoo and Underdog have to be proxied because neither sends CORS headers. The chips by the title show whether each source came back <b>live</b> or fell back to the
-hand-verified 29 July snapshot, and the fallback is per-source, so one dead feed never blanks the rest of the board. ESPN decides who's on the board at all, so if ESPN is down the whole
-board stays on the snapshot.<br>
-<b>Sorting.</b> Click a column header to sort by that site's raw number. Click the small <b>&Delta;</b> beside it to sort by its gap &mdash; first click puts the biggest
-<span style="color:#54c47f">earlier-than-ESPN</span> gaps on top, click again to flip to the biggest <span style="color:#e8736a">later-than-ESPN</span> gaps.<br>
-<b>Sources &amp; caveats.</b> ESPN = live draft results API + PPR draft ranks, ESPN default full-PPR league. Yahoo = Yahoo public fantasy API "all drafts" average pick (Yahoo default is half-PPR).
-Sleeper = Sleeper <code>adp_ppr</code> (full PPR). Underdog = Underdog best ball, half-PPR, 7/24/26 snapshot &mdash; best ball has no K or DEF, and its QB/TE prices run differently from redraft.
-<b>Tiers.</b> Players are grouped into tiers within their position, cut where the board has a real gap. The threshold scales with ADP, because four picks between two RBs is a cliff at pick 20 and
-noise at pick 140, and no tier exceeds seven players so none of them are un-actionable blobs.
-The orange <span class="cliff">cliff</span> tag marks the last player before a drop: take him now or the next man at that position costs you the gap shown.
-Filter to a single position and the round bands become <b>tier bands</b> instead, which is the view for "do I take this RB or wait." Tiers recompute per tab, so they follow ESPN ADP or ESPN rank.<br>
-<b>Round bands</b> read off whatever order the board is currently in. In draft order they're the real rounds. Sort by a site or a &Delta; and the sorted list becomes its own board, so the top twelve are that board's round 1 &mdash; useful for "if I drafted straight off Winks, who goes in round 3."<br>
-Every rank on this board is an ordinal position on that site's own board (1, 2, 3&hellip; no gaps), which is what makes them comparable. ESPN's raw API rank field is <i>not</i> contiguous &mdash;
-no player holds rank 37&ndash;68, for instance &mdash; so it's been converted to a dense ordinal over ESPN's rank ordering. Same order, clean numbering.
-Because Underdog, Yahoo and Sleeper ranks derive from their own ADP, their two tabs track closely; ESPN's rank is a separate editorial list and diverges hard on kickers and defenses
-(ESPN ranks them ~170&ndash;200 despite drafters taking them in rounds 8&ndash;14) and on veteran QBs.<br>
-<b>Verified 7/29.</b> All 168 rows were re-pulled and diffed field by field against the live sources &mdash; ESPN player IDs, ranks and positional ranks, Yahoo ADP/rank/positional rank,
-Sleeper ADP/rank/positional rank, and all 147 Underdog entries &mdash; with zero mismatches. ESPN ADP is a live feed and drifts a tenth or two through the day.
-Half-PPR sources shade RB-friendly and WR-unfriendly vs your full-PPR league, so treat small gaps as noise.
-</td></tr></tfoot>
+
 </table></div>
 <script>
 // Baked-in snapshot, hand-verified 2026-07-29. Renders instantly and is the fallback for any
@@ -331,7 +294,10 @@ let DATA = FALLBACK;
 const CAP = 25;
 const DEAD = 3;               // gaps under 3 picks count as 0 (no lean either way)
 const KEYS = ["ud","yahoo","sleeper","winks"];
-let mode="adp", sortK="seq", asc=true, filt="ALL", q="";
+let mode="adp", sortK="seq", asc=true, q="";
+const filt = new Set();       // positions selected; empty means all
+const HIDDEN = new Set();     // players clicked off the board, keyed by name so they stay
+                              // hidden across re-renders and live refreshes
 
 function recompute(){
   DATA.forEach(r=>{
@@ -473,7 +439,8 @@ function avgCell(r){
        + `<span class="rd">rd ${sl.r}</span></td>`;
 }
 function render(){
-  const rows = DATA.filter(r=>(filt==="ALL"||r.pos===filt) &&
+  const rows = DATA.filter(r=>!HIDDEN.has(r.name) &&
+      (filt.size===0 || filt.has(r.pos)) &&
       (q===""||r.name.toLowerCase().includes(q)||r.team.toLowerCase().includes(q)));
   const s = rows.slice().sort((a,b)=>{
     let x=a[sortK], y=b[sortK];
@@ -482,13 +449,19 @@ function render(){
     if(typeof x==="string") return asc?x.localeCompare(y):y.localeCompare(x);
     return asc?x-y:y-x;
   });
+  const ub = document.getElementById("unhide");
+  if(ub){
+    ub.style.display = HIDDEN.size ? "" : "none";
+    ub.textContent = HIDDEN.size + " off the board &middot; restore";
+    ub.innerHTML = "<b>" + HIDDEN.size + "</b> off the board &middot; restore";
+  }
   document.getElementById("h0").textContent = mode==="adp" ? "ESPN ADP" : "ESPN Rank";
   document.getElementById("h1").textContent = mode==="adp" ? "Avg of 4" : "Avg rank (4)";
   // bands of 12 always. In true draft order they are real rounds and get labelled as such;
   // once sorted or filtered they are just groups of 12 in the current view, labelled honestly.
-  const natural = (sortK==="seq" && asc && filt==="ALL" && q==="");
-  // one position selected and in board order => the meaningful bands are tiers, not rounds
-  const tierView = (filt!=="ALL" && sortK==="seq" && asc && q==="");
+  const natural = (sortK==="seq" && asc && filt.size===0 && q==="");
+  // exactly one position selected and in board order => the meaningful bands are tiers, not rounds
+  const tierView = (filt.size===1 && sortK==="seq" && asc && q==="");
   document.getElementById("b").innerHTML = s.map((r,i)=>{
     let div = "";
     if(tierView){
@@ -509,7 +482,7 @@ function render(){
                          : (((i+1) % 12 === 0) ? ' class="rndsep"' : '');
     const altTxt = mode==="adp" ? ("rk " + r.alt) : ("adp " + r.alt.toFixed(1));
     const hl = hlColor(r);
-    return `${div}<tr${sep}>
+    return `${div}<tr${sep} data-n="${r.name}">
       ${avgCell(r)}
       <td class="l"><div class="ply">
           <span class="seq"><b>${r.seq}</b><i>${r.slot}</i></span>
@@ -543,10 +516,32 @@ document.querySelectorAll(".dbtn").forEach(d=>d.onclick=()=>{
   if(sortK===k) asc=!asc; else {sortK=k; asc=true;}
   render();
 });
+// position filters are multi-select: each toggles, All clears them
+function syncPos(){
+  document.querySelectorAll("button[data-f]").forEach(x=>{
+    const f = x.dataset.f;
+    x.classList.toggle("on", f==="ALL" ? filt.size===0 : filt.has(f));
+  });
+}
 document.querySelectorAll("button[data-f]").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("button[data-f]").forEach(x=>x.classList.remove("on"));
-  b.classList.add("on"); filt=b.dataset.f; render();
+  const f = b.dataset.f;
+  if(f==="ALL") filt.clear();
+  else if(filt.has(f)) filt.delete(f);
+  else filt.add(f);
+  syncPos(); render();
 });
+
+// click a player row to take him off the board
+document.getElementById("b").addEventListener("click", e=>{
+  const tr = e.target.closest("tr");
+  if(!tr || tr.classList.contains("rd")) return;
+  const n = tr.dataset.n;
+  if(!n) return;
+  HIDDEN.add(n);
+  render();
+});
+const unhide = document.getElementById("unhide");
+unhide.onclick = ()=>{ HIDDEN.clear(); render(); };
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
   t.classList.add("on"); mode=t.dataset.m; recompute(); computeTiers(); render();
