@@ -321,6 +321,9 @@ Half-PPR sources shade RB-friendly and WR-unfriendly vs your full-PPR league, so
 // Baked-in snapshot, hand-verified 2026-07-29. Renders instantly and is the fallback for any
 // source that fails at runtime, so the board can never fail to load during a draft.
 const FALLBACK = __DATA__;
+// Winks' full top 300 keyed by normalised name, so a player the live ESPN pull surfaces still
+// picks up his ranking even if he wasn't in the baked board.
+const WINKS_MAP = __WINKS__;
 let DATA = FALLBACK;
 const CAP = 25;
 const DEAD = 3;               // gaps under 3 picks count as 0 (no lean either way)
@@ -548,6 +551,12 @@ document.getElementById("q").oninput=e=>{q=e.target.value.toLowerCase().trim(); 
 // ---------------------------------------------------------------------------
 const norm = s => (s||"").toLowerCase().replace(/ d\\/st$/,"").replace(/\\./g,"").replace(/'/g,"")
   .replace(/\\s+(jr|sr|ii|iii|iv|v)$/,"").replace(/[^a-z \\-]/g,"").replace(/\\s+/g," ").trim();
+// Winks writes defenses as "Houston Texans", ESPN as "Texans D/ST", so DSTs key off the last word
+const WTEAMS = new Set(["texans","rams","seahawks","broncos","eagles","jaguars","steelers","vikings",
+  "patriots","ravens","chargers","packers","chiefs","cowboys","lions","giants","bengals","ers","titans",
+  "bills","buccaneers","falcons","browns","saints","panthers","jets","dolphins","raiders","commanders",
+  "cardinals","colts","bears"]);
+function wkey(n){ const k=norm(n); const last=k.split(" ").pop(); return WTEAMS.has(last)?last:k; }
 
 const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending", underdog:"pending",
              winks:"static Winks' published half-PPR top 300, 7/20"};
@@ -611,10 +620,17 @@ async function loadLive(){
       sleeper: s ? s.adp : (sleeper.error ? (f.sleeper ?? null) : null),
       slRk:    s ? s.rk  : (sleeper.error ? (f.slRk    ?? null) : null),
       slPr:    s ? P+s.pr: (sleeper.error ? (f.slPr    ?? null) : null),
-      // Winks is a published article, not a feed: always the baked snapshot
-      winks:   f.winks ?? null,
-      wkPr:    f.wkPr  ?? null,
+      // Winks is a published article, not a feed: always the baked top 300, keyed by name
+      winks:   WINKS_MAP[wkey(e.name)] ?? null,
+      wkPr:    null,   // filled in below, once the whole board is known
     };
+  });
+
+  // Winks positional rank, derived from his ordering across the players on this board
+  const wc = {};
+  board.filter(r=>r.winks).sort((a,b)=>a.winks-b.winks).forEach(r=>{
+    wc[r.pos] = (wc[r.pos]||0) + 1;
+    r.wkPr = (r.pos==="DST"?"DEF":r.pos) + wc[r.pos];
   });
 
   board.slice().sort((a,b)=>a.espn-b.espn).forEach((r,i)=>{ r.adpSeq=i+1; r.adpSlot=slotOf(i+1).label; });
@@ -634,7 +650,9 @@ loadLive();
 </script></body></html>
 """
 
-out = HTML.replace("__DATA__", json.dumps(data)).replace("__DATE__", "July 29, 2026")
+out = (HTML.replace("__DATA__", json.dumps(data))
+          .replace("__WINKS__", json.dumps(WK_RANK))
+          .replace("__DATE__", "July 29, 2026"))
 p = "/sessions/festive-sleepy-knuth/mnt/outputs/2026_ADP_Board_ESPN_vs_UD_Yahoo_Sleeper.html"
 open(p, "w", encoding="utf-8").write(out)
 print("wrote", p, len(out), "bytes")
