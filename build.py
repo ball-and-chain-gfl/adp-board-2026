@@ -147,8 +147,12 @@ tr:hover td{background:#1a2029}
 .meta{color:var(--dim);font-size:11px;margin-left:6px}
 .slot{color:#6e7681;font-size:11px}
 .pos{display:inline-block;min-width:30px;text-align:center;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700}
-.QB{background:#3d2a4d;color:#d6a8ff}.RB{background:#123a2c;color:#71e0a8}.WR{background:#12324d;color:#79c0ff}
-.TE{background:#4a3312;color:#ffbe6b}.K{background:#3a3a3a;color:#c9d1d9}.DST{background:#3d1f24;color:#ff9c9c}
+.QB{background:#4a1f36;color:#ff9ecb}   /* pink   */
+.RB{background:#4a2c12;color:#ffb066}   /* orange */
+.WR{background:#12324d;color:#79c0ff}   /* blue   */
+.TE{background:#123f39;color:#5fe0c0}   /* teal   */
+.K{background:#362a52;color:#c2a8ff}    /* purple */
+.DST{background:#453f0f;color:#f2d75e}  /* yellow */
 .stack{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.25}
 .cell{display:inline-block;min-width:76px;padding:4px 8px;border-radius:5px;font-weight:700;font-size:13px}
 .d{font-size:11px;opacity:.95;margin-left:5px;font-weight:700}
@@ -273,12 +277,12 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <table id="t">
 <thead><tr>
 <th class="c"><span class="hd" data-k="avgV"><span class="lg" id="h1">Avg of 4</span><span class="sm">AVG</span></span><span class="dbtn" data-d="avg">&Delta;</span></th>
-<th class="l"><span class="hd" data-k="seq">#</span> <span class="hd" data-k="name">Player</span></th>
+<th class="l"><span class="hd" data-k="seq"># Player</span></th>
 <th><span class="hd" data-k="base"><span class="lg" id="h0">ESPN ADP</span><span class="sm">ESPN</span></span></th>
+<th class="site"><span class="hd" data-k="v_winks">Winks</span><span class="dbtn" data-d="winks">&Delta;</span></th>
 <th class="site"><span class="hd" data-k="v_ud">Underdog</span><span class="dbtn" data-d="ud">&Delta;</span></th>
 <th class="site"><span class="hd" data-k="v_yahoo">Yahoo</span><span class="dbtn" data-d="yahoo">&Delta;</span></th>
 <th class="site"><span class="hd" data-k="v_sleeper">Sleeper</span><span class="dbtn" data-d="sleeper">&Delta;</span></th>
-<th class="site"><span class="hd" data-k="v_winks">Winks</span><span class="dbtn" data-d="winks">&Delta;</span></th>
 </tr></thead>
 <tbody id="b"></tbody>
 
@@ -294,8 +298,7 @@ let DATA = FALLBACK;
 const CAP = 25;
 const DEAD = 3;               // gaps under 3 picks count as 0 (no lean either way)
 const KEYS = ["ud","yahoo","sleeper","winks"];
-let mode="adp", sortK="seq", asc=true, q="";
-const filt = new Set();       // positions selected; empty means all
+let mode="adp", sortK="seq", asc=true, q="", filt="ALL";
 const HIDDEN = new Set();     // players clicked off the board, keyed by name so they stay
                               // hidden across re-renders and live refreshes
 
@@ -421,13 +424,12 @@ function hlColor(r){
   return {bg:`rgba(${rgb},${a})`, rgb, a:+a};
 }
 const fmt = v => mode==="adp" ? v.toFixed(1) : String(v);
+// site columns show the number and its gap only - no round.pick line
 function cell(v, base){
   if(v===null||v===undefined) return '<td class="site"><span class="na">&mdash;</span></td>';
   const d = +(v - base).toFixed(1);
   const s = (d > 0 ? "+" : "") + d.toFixed(1);
-  const sl = slotOf(v), bs = slotOf(base);
-  return `<td class="site"><span class="stack"><span class="cell" style="${color(d)}">${fmt(v)}<span class="d">${s}</span></span>`
-       + `<span class="pr" style="${pcolor(sl.r - bs.r)}">${sl.label}</span></span></td>`;
+  return `<td class="site"><span class="cell" style="${color(d)}">${fmt(v)}<span class="d">${s}</span></span></td>`;
 }
 // market-consensus column: the average itself, coloured by its gap. The gap number lives in the
 // next column, so it isn't repeated here.
@@ -440,7 +442,7 @@ function avgCell(r){
 }
 function render(){
   const rows = DATA.filter(r=>!HIDDEN.has(r.name) &&
-      (filt.size===0 || filt.has(r.pos)) &&
+      (filt==="ALL" || r.pos===filt) &&
       (q===""||r.name.toLowerCase().includes(q)||r.team.toLowerCase().includes(q)));
   const s = rows.slice().sort((a,b)=>{
     let x=a[sortK], y=b[sortK];
@@ -459,9 +461,9 @@ function render(){
   document.getElementById("h1").textContent = mode==="adp" ? "Avg of 4" : "Avg rank (4)";
   // bands of 12 always. In true draft order they are real rounds and get labelled as such;
   // once sorted or filtered they are just groups of 12 in the current view, labelled honestly.
-  const natural = (sortK==="seq" && asc && filt.size===0 && q==="");
-  // exactly one position selected and in board order => the meaningful bands are tiers, not rounds
-  const tierView = (filt.size===1 && sortK==="seq" && asc && q==="");
+  const natural = (sortK==="seq" && asc && filt==="ALL" && q==="");
+  // one position selected and in board order => the meaningful bands are tiers, not rounds
+  const tierView = (filt!=="ALL" && sortK==="seq" && asc && q==="");
   document.getElementById("b").innerHTML = s.map((r,i)=>{
     let div = "";
     if(tierView){
@@ -495,7 +497,7 @@ function render(){
       <td><span class="stack"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
             >${fmt(r.base)}<span class="alt">${altTxt}</span></span>
           <span class="pr" style="${hl?`background:rgba(${hl.rgb},.28);color:#fff`:""}">${slotOf(r.base).label}</span></span></td>
-      ${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}${cell(r.v_winks,r.base)}</tr>`;
+      ${cell(r.v_winks,r.base)}${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}</tr>`;
   }).join("");
   document.querySelectorAll("th .ar").forEach(a=>a.remove());
   document.querySelectorAll("th .hd").forEach(hd=>{
@@ -516,19 +518,9 @@ document.querySelectorAll(".dbtn").forEach(d=>d.onclick=()=>{
   if(sortK===k) asc=!asc; else {sortK=k; asc=true;}
   render();
 });
-// position filters are multi-select: each toggles, All clears them
-function syncPos(){
-  document.querySelectorAll("button[data-f]").forEach(x=>{
-    const f = x.dataset.f;
-    x.classList.toggle("on", f==="ALL" ? filt.size===0 : filt.has(f));
-  });
-}
 document.querySelectorAll("button[data-f]").forEach(b=>b.onclick=()=>{
-  const f = b.dataset.f;
-  if(f==="ALL") filt.clear();
-  else if(filt.has(f)) filt.delete(f);
-  else filt.add(f);
-  syncPos(); render();
+  document.querySelectorAll("button[data-f]").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); filt=b.dataset.f; render();
 });
 
 // click a player row to take him off the board
