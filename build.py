@@ -155,8 +155,10 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   header{padding:12px 12px 0;position:static}
   h1{font-size:15px}
   .sub{font-size:11px}
-  .legend{margin-left:0;flex-basis:100%;order:9;margin-top:4px}
-  .ramp{width:120px}
+  .legend{margin-left:0;flex-basis:100%;order:9;margin-top:4px;flex-wrap:wrap;row-gap:4px;min-width:0}
+  .legend > span{white-space:normal}
+  .legend > span[style]{margin-left:0 !important}
+  .ramp{width:110px;flex:0 0 110px}
   input[type=search]{width:100%}
   .bar,.srcbar{gap:6px}
   .tabs{gap:4px}
@@ -186,8 +188,11 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   tfoot td::before{content:none}
 }
 @media (max-width: 480px){
+  body{overflow-x:hidden}
   td:nth-child(n+3){width:50%}
   .av,.av img{width:28px;height:28px;flex-basis:28px}
+  .legend{font-size:10px}
+  .ramp{width:90px;flex:0 0 90px}
 }
 </style></head><body>
 <header>
