@@ -177,6 +177,11 @@ th.c, td.c{text-align:center;white-space:nowrap}
 .rd{font-size:9.5px;font-weight:700;letter-spacing:.3px;color:#6e7681;margin-left:5px;vertical-align:middle}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px;vertical-align:middle;
      box-shadow:0 0 0 1px rgba(255,255,255,.12) inset}
+/* the pick on the clock: the one number you glance at most during a draft */
+.pickbox{display:inline-flex;align-items:baseline;gap:7px;padding:4px 13px 5px;border-radius:7px;
+  background:#1f6feb;color:#cfe0ff;font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase}
+.pickbox b{font-size:19px;line-height:1;font-weight:800;letter-spacing:0;color:#fff}
+.pickbox i{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.3px;color:#9dc4ff}
 /* the # + round.pick that used to be its own column now leads the player cell */
 .seq{display:inline-flex;flex-direction:column;align-items:flex-end;min-width:34px;line-height:1.15;margin-right:2px}
 .seq b{font-size:12.5px}
@@ -263,6 +268,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 </style></head><body>
 <header>
 <div class="bar">
+  <span class="pickbox">Pick <b id="pick">1</b><i id="picksl">1.01</i></span>
   <input type="search" id="q" placeholder="Search player / team">
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
@@ -436,31 +442,45 @@ function cell(v, base){
 // market-consensus column: the average itself, coloured by its gap. The gap number lives in the
 // next column, so it isn't repeated here.
 // ---- live draft-position dot -----------------------------------------------
-// The Avg cell itself still colours off the gap to ESPN. The dot next to it uses a moving
-// baseline instead: however many players you've clicked off the board is where the draft
-// stands, so a player whose consensus number is BELOW that has slid past his market price
-// (green), one ABOVE it isn't due yet (red). Only meaningful once the draft is underway,
-// so it stays hidden until at least one player is off the board.
-let TAKEN = 0;
-function dotStyle(avgV){
-  if(TAKEN === 0 || avgV === null) return null;
-  const d = avgV - TAKEN;                       // negative => he has fallen to you
-  if(Math.abs(d) < DEAD) return "background:#4a5464";
-  const t = Math.min(1, Math.abs(d)/CAP);
-  const a = (0.45 + 0.55*t).toFixed(3);
-  return `background:rgba(${d<0?"15,157,79":"208,52,44"},${a})`;
+// The Avg cell itself still colours off the gap to ESPN. The dot next to it works off the pick
+// on the clock instead: PICK = players you've taken off the board + 1.
+//   below the pick        -> GREEN   he has slid past his market price, he's there for you
+//   pick .. pick+7        -> grey    going about on schedule
+//   pick+8 .. pick+15     -> YELLOW  not due yet, but the market likes him more than ESPN does,
+//                                    so he's worth waiting on rather than writing off.
+//                                    Only for players whose Avg reads green; otherwise red.
+//   pick+16 and beyond    -> RED     not close to due
+// Hidden until the draft is underway, since at pick 1 almost everything would be red.
+let TAKEN = 0, PICK = 1;
+const GREY_END = 8, YEL_END = 16;
+function dotStyle(r){
+  if(TAKEN === 0 || r.avgV === null) return null;
+  const d = r.avgV - PICK;
+  if(d < 0){
+    const a = (0.45 + 0.55*Math.min(1, -d/CAP)).toFixed(3);
+    return `background:rgba(15,157,79,${a})`;
+  }
+  if(d < GREY_END) return "background:#4a5464";
+  const avgIsGreen = r.avgd !== null && r.avgd <= -DEAD;
+  if(d < YEL_END && avgIsGreen) return "background:rgba(230,180,40,.92)";
+  const a = (0.45 + 0.55*Math.min(1, (d-GREY_END)/CAP)).toFixed(3);
+  return `background:rgba(208,52,44,${a})`;
 }
 function avgCell(r){
   if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
   const shown = mode==="adp" ? r.avgV.toFixed(1) : String(Math.round(r.avgV));
   const sl = slotOf(r.avgV);
-  const ds = dotStyle(r.avgV);
+  const ds = dotStyle(r);
   return `<td class="c"><span class="cell" style="${color(r.avgd)}">${shown}</span>`
-       + (ds ? `<span class="dot" style="${ds}" title="vs pick ${TAKEN}"></span>` : "")
+       + (ds ? `<span class="dot" style="${ds}" title="vs pick ${PICK}"></span>` : "")
        + `<span class="rd">rd ${sl.r}</span></td>`;
 }
 function render(){
   TAKEN = HIDDEN.size;                    // how deep into the draft we are
+  PICK  = TAKEN + 1;                      // the pick actually on the clock
+  const pe = document.getElementById("pick"), ps = document.getElementById("picksl");
+  if(pe) pe.textContent = PICK;
+  if(ps) ps.textContent = slotOf(PICK).label;
   const rows = DATA.filter(r=>!HIDDEN.has(r.name) &&
       (filt==="ALL" || r.pos===filt) &&
       (q===""||r.name.toLowerCase().includes(q)||r.team.toLowerCase().includes(q)));
