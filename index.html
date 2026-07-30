@@ -392,7 +392,6 @@ function render(){
     }
     const sep = tierView ? (r.tierEnd ? ' class="rndsep"' : '')
                          : (((i+1) % 12 === 0) ? ' class="rndsep"' : '');
-    const altTxt = mode==="adp" ? ("rk " + r.alt) : ("adp " + r.alt.toFixed(1));
     const hl = hlColor(r);
     return `${div}<tr${sep} data-n="${r.name}">
       ${avgCell(r)}
@@ -404,9 +403,8 @@ function render(){
           <span class="nm" style="margin-left:7px">${r.name}</span><span class="meta">${r.team}</span>
           ${r.tierEnd&&r.tierDrop!==null?`<span class="cliff">cliff &middot; next ${r.pos==="DST"?"DEF":r.pos} +${r.tierDrop}</span>`:""}</span>
         </div></td>
-      <td><span class="stack"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
-            >${fmt(r.base)}<span class="alt">${altTxt}</span></span>
-          <span class="pr" style="${hl?`background:rgba(${hl.rgb},.28);color:#fff`:""}">${slotOf(r.base).label}</span></span></td>
+      <td><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
+            >${fmt(r.base)}</span></td>
       ${cell(r.v_winks,r.base)}${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}</tr>`;
   }).join("");
   document.querySelectorAll("th .ar").forEach(a=>a.remove());
