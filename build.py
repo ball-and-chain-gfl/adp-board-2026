@@ -127,7 +127,6 @@ tr:hover td{background:#1a2029}
 .chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;color:#fff}
 .chip.p{background:rgb(138,74,226)}
 .chip.b{background:rgb(31,111,235)}
-.chip.o{background:rgb(214,120,28)}
 .ramp2{width:80px;height:12px;border-radius:6px}
 .na{color:#4d5560}
 .alt{color:#6e7681;font-size:11px;margin-left:5px}
@@ -135,8 +134,9 @@ tr:hover td{background:#1a2029}
    dividers close the averages block, the player block and the ESPN block */
 th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3),
 th:nth-child(4), td:nth-child(4){border-right:2px solid #34404f}
-th.c, td.c{text-align:center}
+th.c, td.c{text-align:center;white-space:nowrap}
 .stack.ctr{align-items:center}
+.rd{font-size:9.5px;font-weight:700;letter-spacing:.3px;color:#6e7681;margin-left:5px;vertical-align:middle}
 /* the # + round.pick that used to be its own column now leads the player cell */
 .seq{display:inline-flex;flex-direction:column;align-items:flex-end;min-width:34px;line-height:1.15;margin-right:2px}
 .seq b{font-size:12.5px}
@@ -199,7 +199,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   .d{display:block;margin-left:0;font-size:9px;line-height:1.1}
   .stack{align-items:stretch;width:100%}
   /* drop the decoration */
-  .pr,.alt,.meta,.cliff,.seq i{display:none}
+  .pr,.alt,.meta,.cliff,.seq i,.rd{display:none}
   .seq{min-width:0;margin-right:0}
   .seq b{font-size:11px}
   .av,.av img{width:22px;height:22px;flex-basis:22px}
@@ -232,8 +232,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
   <button data-f="TE">TE</button><button data-f="K">K</button><button data-f="DST">DEF</button>
-  <div class="legend"><span class="chip p">+2</span><span class="chip b">+1</span><span class="chip o">&minus;2</span><span>consensus score</span>
-    <span style="margin-left:12px">Goes EARLIER elsewhere</span><div class="ramp"></div><span>Goes LATER elsewhere</span></div>
+  <div class="legend"><span class="chip p">+2</span><span class="chip b">+1</span><span>consensus score</span></div>
 </div>
 <div class="tabs">
   <div class="tab on" data-m="adp">ADP vs ADP<span class="t2">ESPN ADP compared to each site's ADP</span></div>
@@ -261,15 +260,15 @@ The grey number in the ESPN column is the other tab's value, so you can spot ESP
 the ESPN cell on that row (full colour at 3 rounds), so you can read the practical question directly: green means that site would let you wait that many rounds longer, red means you'd have to
 come up that many rounds to beat that site's room. A big pick gap that doesn't cross a round boundary is usually not worth changing your plan over.<br>
 <b>Reading the colors.</b> The small number is the gap from ESPN.
-<span style="color:#54c47f"><b>Green = a HIGHER number on that site</b></span> &mdash; he goes later there than on ESPN, so ESPN's room is paying up relative to that market.
-<span style="color:#e8736a"><b>Red = a LOWER number on that site</b></span> &mdash; he goes earlier there, so that market wants him more than ESPN does.
+<span style="color:#54c47f"><b>Green = a LOWER number on that site</b></span> &mdash; he goes earlier there, so that market wants him more than ESPN does and he's a relative bargain at his ESPN price.
+<span style="color:#e8736a"><b>Red = a HIGHER number on that site</b></span> &mdash; he goes later there, so ESPN's room is paying up and you can probably wait.
 Full saturation at &plusmn;25 picks.<br>
-<b>The consensus score</b> drives the colour on the ESPN cell. Each site scores <b>+1</b> if its number is higher than ESPN's and <b>&minus;1</b> if lower, and the three are added up:
-<span class="chip p">+2 or more</span> purple &mdash; nearly everyone takes him later than ESPN does.
+<b>The consensus score</b> drives the colour on the ESPN cell, signed to match: each site scores <b>+1</b> if its number is lower than ESPN's (green) and <b>&minus;1</b> if higher (red), and the three add up.
+<span class="chip p">+2 or more</span> purple &mdash; the market broadly takes him earlier than ESPN.
 <span class="chip b">+1</span> blue.
-<span class="chip o">&minus;2 or less</span> orange &mdash; the market takes him earlier than ESPN does.
-A site inside <b>3 picks</b> of ESPN counts as <b>0</b> &mdash; that's the dead zone, close enough to call a tie &mdash; which is why 0 and &plusmn;2 are reachable at all.
-Cells inside the dead zone render grey for the same reason. Kickers and defenses can only ever reach &plusmn;1 since Yahoo is the only one of the three that prices them.<br>
+Anything below +1 gets no highlight.
+A site inside <b>3 picks</b> of ESPN counts as <b>0</b> &mdash; the dead zone, close enough to call a tie &mdash; and cells inside it render grey for the same reason.
+Kickers and defenses can only ever reach &plusmn;1 since Yahoo is the only one of the three that prices them.<br>
 <b>Live data.</b> All four sources are fetched fresh each time the page loads, and the <b>Refresh</b> button re-pulls on demand. ESPN and Sleeper come through cached serverless proxies to keep
 the payload small; Yahoo and Underdog have to be proxied because neither sends CORS headers. The chips by the title show whether each source came back <b>live</b> or fell back to the
 hand-verified 29 July snapshot, and the fallback is per-source, so one dead feed never blanks the rest of the board. ESPN decides who's on the board at all, so if ESPN is down the whole
@@ -319,11 +318,12 @@ function recompute(){
     // market consensus: mean of the three sites' own numbers (= ESPN base + avg gap)
     const vs = KEYS.map(k=>r["v_"+k]).filter(x=>x!==null&&x!==undefined);
     r.avgV = vs.length ? +(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1) : null;
-    // consensus score: +1 per site HIGHER than ESPN, -1 per site LOWER, 0 if within DEAD picks
+    // consensus score, signed to match the colours: +1 per site LOWER than ESPN (green, takes him
+    // earlier), -1 per site HIGHER (red), 0 if within DEAD picks either way
     r.score = KEYS.reduce((s,k)=>{
       const g=r["g_"+k];
       if(g===null) return s;
-      return s + (g >= DEAD ? 1 : (g <= -DEAD ? -1 : 0));
+      return s + (g <= -DEAD ? 1 : (g >= DEAD ? -1 : 0));
     }, 0);
     // positional-rank gaps
     const bp = prNum(r.basePr);
@@ -378,13 +378,13 @@ function computeTiers(){
     });
   });
 }
-// gap = other site - ESPN.  HIGHER number there (goes later) => GREEN, lower => RED
+// gap = other site - ESPN.  LOWER number there (goes earlier, market wants him more) => GREEN
 function color(d){
   if(d===null) return "";
   const t = Math.max(-1, Math.min(1, d/CAP));
   if(Math.abs(d) < DEAD) return "background:#2b323d;color:#c9d1d9";   // inside the dead zone
   const a = (0.30 + 0.70*Math.abs(t)).toFixed(3);
-  return `background:rgba(${t>0?"15,157,79":"208,52,44"},${a});color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)`;
+  return `background:rgba(${t<0?"15,157,79":"208,52,44"},${a});color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)`;
 }
 // ---- draft slot: turn any pick number or rank into round.pick for a 12-team board ----
 const TEAMS = 12;
@@ -401,16 +401,15 @@ function pcolor(d){
   const t = Math.max(-1, Math.min(1, d/PCAP));
   if(d===0) return "background:#2b323d;color:#c9d1d9";
   const a = (0.28 + 0.62*Math.abs(t)).toFixed(3);
-  return `background:rgba(${t>0?"15,157,79":"208,52,44"},${a});color:#fff`;
+  return `background:rgba(${t<0?"15,157,79":"208,52,44"},${a});color:#fff`;
 }
 // ESPN cell highlight from the consensus score (+1 per site higher than ESPN, -1 per site lower):
-//   >= +2  purple      +1  blue      <= -2  orange      0 or -1  nothing
+//   >= +2  purple      +1  blue      everything else  nothing
 function hlColor(r){
   const s = r.score;
   let rgb=null, a=0.9;
   if(s >= 2){ rgb="138,74,226"; a = s>=3 ? 1 : 0.78; }
   else if(s === 1){ rgb="31,111,235"; a = 0.82; }
-  else if(s <= -2){ rgb="214,120,28"; a = s<=-3 ? 1 : 0.78; }
   if(!rgb) return null;
   return {bg:`rgba(${rgb},${a})`, rgb};
 }
@@ -428,9 +427,9 @@ function cell(v, base){
 function avgCell(r){
   if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
   const shown = mode==="adp" ? r.avgV.toFixed(1) : String(Math.round(r.avgV));
-  const sl = slotOf(r.avgV), bs = slotOf(r.base);
-  return `<td class="c"><span class="stack ctr"><span class="cell" style="${color(r.avgd)}">${shown}</span>`
-       + `<span class="pr" style="${pcolor(sl.r - bs.r)}">${sl.label}</span></span></td>`;
+  const sl = slotOf(r.avgV);
+  return `<td class="c"><span class="cell" style="${color(r.avgd)}">${shown}</span>`
+       + `<span class="rd">rd ${sl.r}</span></td>`;
 }
 function render(){
   const rows = DATA.filter(r=>(filt==="ALL"||r.pos===filt) &&
