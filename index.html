@@ -356,25 +356,29 @@ function cell(v, base){
 // on the clock instead: PICK = players you've taken off the board + 1.
 //   below the pick        -> GREEN   he has slid past his market price, he's there for you
 //   pick .. pick+7        -> grey    going about on schedule
-//   pick+8 .. pick+15     -> YELLOW  not due yet, but the market likes him more than ESPN does,
-//                                    so he's worth waiting on rather than writing off.
-//                                    Only for players whose Avg reads green; otherwise red.
-//   pick+16 and beyond    -> RED     not close to due
+//   pick+8 and beyond     -> RED     not due yet
+//
+// YELLOW overrides green/grey when ESPN's own number is still more than WAIT picks away. Those
+// are the players the consensus says are due now but that ESPN's room won't touch for a while -
+// buried far enough down ESPN's board that nobody there is reaching for them. You can wait. Once
+// the clock gets within WAIT of his ESPN number the override lifts and grey/green resume.
+// Red is left alone: if the consensus doesn't have him due either, "wait" is not the message.
 // Hidden until the draft is underway, since at pick 1 almost everything would be red.
 let TAKEN = 0, PICK = 1;
-const GREY_END = 8, YEL_END = 16;
+const GREY_END = 8, WAIT = 10;
 function dotStyle(r){
   if(TAKEN === 0 || r.avgV === null) return null;
-  const d = r.avgV - PICK;
+  const d = r.avgV - PICK;                 // consensus clock
+  if(d >= GREY_END){
+    const a = (0.45 + 0.55*Math.min(1, (d-GREY_END)/CAP)).toFixed(3);
+    return `background:rgba(208,52,44,${a})`;
+  }
+  if(r.base - PICK > WAIT) return "background:rgba(230,180,40,.92)";
   if(d < 0){
     const a = (0.45 + 0.55*Math.min(1, -d/CAP)).toFixed(3);
     return `background:rgba(15,157,79,${a})`;
   }
-  if(d < GREY_END) return "background:#4a5464";
-  const avgIsGreen = r.avgd !== null && r.avgd <= -DEAD;
-  if(d < YEL_END && avgIsGreen) return "background:rgba(230,180,40,.92)";
-  const a = (0.45 + 0.55*Math.min(1, (d-GREY_END)/CAP)).toFixed(3);
-  return `background:rgba(208,52,44,${a})`;
+  return "background:#4a5464";
 }
 function avgCell(r){
   if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
