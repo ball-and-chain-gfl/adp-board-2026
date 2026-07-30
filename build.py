@@ -100,7 +100,8 @@ td.l{text-align:left}
 tr:hover td{background:#1a2029}
 .ply{display:flex;align-items:center;gap:9px}
 .av{width:34px;height:34px;border-radius:50%;background:#0b0f14;border:1px solid #262f3c;flex:0 0 34px;overflow:hidden}
-.av img{width:34px;height:34px;object-fit:cover;object-position:top center;display:block}
+/* ESPN headshots are 600x436 with transparent margins; crop to the face, not the empty top */
+.av img{width:34px;height:34px;object-fit:cover;object-position:center 25%;display:block}
 .av.lg img{object-fit:contain;padding:3px}
 .nm{font-weight:600}
 .meta{color:var(--dim);font-size:11px;margin-left:6px}
