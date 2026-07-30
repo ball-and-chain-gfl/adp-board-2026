@@ -372,7 +372,7 @@ function render(){
     return `${div}<tr${sep}>
       <td class="l"><b>${r.seq}</b> <span class="slot">${r.slot}</span></td>
       <td class="l"><div class="ply">
-          <span class="av${r.pos==="DST"?" lg":""}"><img loading="lazy" src="${r.img}" alt=""
+          <span class="av${r.pos==="DST"?" lg":""}"><img src="${r.img}" alt="" decoding="async"
                 onerror="this.style.visibility='hidden'"></span>
           <span><span class="pos ${r.pos}">${r.pos==="DST"?"DEF":r.pos}</span>
           <span class="nm" style="margin-left:7px">${r.name}</span><span class="meta">${r.team}</span>
