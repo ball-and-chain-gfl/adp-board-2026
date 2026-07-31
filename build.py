@@ -461,7 +461,10 @@ function draftColor(r){
     const a = (0.45 + 0.55*Math.min(1, (d-GREY_END)/CAP)).toFixed(3);
     return `background:rgba(208,52,44,${a})`;
   }
-  if(r.base - PICK > WAIT) return "background:rgba(230,180,40,.92)";
+  // always measured against ESPN's RANK, on both tabs: how far down ESPN's board he sits is what
+  // decides whether that room reaches for him, and rank is the cleaner read of that than ADP.
+  // On the Rank tab r.rank IS r.base, so this leaves that tab untouched.
+  if(r.rank - PICK > WAIT) return "background:rgba(230,180,40,.92)";
   if(d < 0){
     const a = (0.45 + 0.55*Math.min(1, -d/CAP)).toFixed(3);
     return `background:rgba(15,157,79,${a})`;
