@@ -174,6 +174,8 @@ tr:hover td{background:#1a2029}
    dividers close the average, the player block and the ESPN block */
 th:nth-child(1), td:nth-child(1), th:nth-child(2), td:nth-child(2),
 th:nth-child(3), td:nth-child(3){border-right:2px solid #34404f}
+/* ESPN sits against the player column, so read it left-aligned */
+th:nth-child(3), td:nth-child(3){text-align:left}
 th.c, td.c{text-align:center;white-space:nowrap}
 .stack.ctr{align-items:center}
 .rd{font-size:9.5px;font-weight:700;letter-spacing:.3px;color:#6e7681;margin-left:5px;vertical-align:middle}
