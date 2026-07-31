@@ -432,9 +432,11 @@ function cell(v, base){
 }
 // market-consensus column: the average itself, coloured by its gap. The gap number lives in the
 // next column, so it isn't repeated here.
-// ---- live draft-position dot -----------------------------------------------
-// The Avg cell itself still colours off the gap to ESPN. The dot next to it works off the pick
-// on the clock instead: PICK = players you've taken off the board + 1.
+// ---- live draft position -> the Avg NUMBER; ESPN gap -> the dot -------------
+// The Avg number carries the live read, worked off the pick on the clock:
+// PICK = players you've taken off the board + 1. The small dot beside it keeps the static
+// comparison, the gap between the consensus and ESPN, on the same green/red scale as the
+// site columns.
 //   below the pick        -> GREEN   he has slid past his market price, he's there for you
 //   pick .. pick+7        -> grey    going about on schedule
 //   pick+8 and beyond     -> RED     not due yet
@@ -444,10 +446,10 @@ function cell(v, base){
 // buried far enough down ESPN's board that nobody there is reaching for them. You can wait. Once
 // the clock gets within WAIT of his ESPN number the override lifts and grey/green resume.
 // Red is left alone: if the consensus doesn't have him due either, "wait" is not the message.
-// Hidden until the draft is underway, since at pick 1 almost everything would be red.
+// Neutral until the draft is underway, since at pick 1 almost everything would be red.
 let TAKEN = 0, PICK = 1;
 const GREY_END = 8, WAIT = 10;
-function dotStyle(r){
+function draftColor(r){
   if(TAKEN === 0 || r.avgV === null) return null;
   const d = r.avgV - PICK;                 // consensus clock
   if(d >= GREY_END){
@@ -465,9 +467,12 @@ function avgCell(r){
   if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
   const shown = mode==="adp" ? r.avgV.toFixed(1) : String(Math.round(r.avgV));
   const sl = slotOf(r.avgV);
-  const ds = dotStyle(r);
-  return `<td class="c"><span class="cell" style="${color(r.avgd)}">${shown}</span>`
-       + (ds ? `<span class="dot" style="${ds}" title="vs pick ${PICK}"></span>` : "")
+  // number = live draft position, dot = gap to ESPN
+  const live = draftColor(r) || "background:#2b323d;color:#c9d1d9";
+  const gap  = r.avgd===null ? "" : color(r.avgd);
+  const gapT = r.avgd===null ? "" : (r.avgd>0?"+":"") + r.avgd.toFixed(1) + " vs ESPN";
+  return `<td class="c"><span class="cell" style="${live}" title="vs pick ${PICK}">${shown}</span>`
+       + (gap ? `<span class="dot" style="${gap}" title="${gapT}"></span>` : "")
        + `<span class="rd">rd ${sl.r}</span></td>`;
 }
 function render(){
