@@ -136,8 +136,10 @@ td{padding:5px 10px;text-align:right;border-bottom:1px solid #1a212b;white-space
 td.l{text-align:left}
 tbody tr[data-n]{cursor:pointer}
 tr:hover td{background:#1a2029}
-#unhide{border-color:#3d4756;color:#9aa8c4}
-#unhide:hover{color:#fff;border-color:#5a6a80}
+#unhide,#undo{border-color:#3d4756;color:#9aa8c4}
+#unhide:hover,#undo:hover{color:#fff;border-color:#5a6a80}
+#undo{background:#1b2430;border-color:#48566b;color:#d6e2f2}
+#undo i{font-style:normal;font-weight:700;color:#9dc4ff;margin-left:3px}
 .ply{display:flex;align-items:center;gap:9px}
 .av{width:34px;height:34px;border-radius:50%;background:#0b0f14;border:1px solid #262f3c;flex:0 0 34px;overflow:hidden}
 /* ESPN headshots are 600x436 with transparent margins; crop to the face, not the empty top */
@@ -263,6 +265,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   <button data-f="ALL" class="on">All</button>
   <button data-f="QB">QB</button><button data-f="RB">RB</button><button data-f="WR">WR</button>
   <button data-f="TE">TE</button><button data-f="K">K</button><button data-f="DST">DEF</button>
+  <button id="undo" style="display:none"></button>
   <button id="unhide" style="display:none"></button>
   <div class="legend"><span class="chip c2">2</span><span class="chip c3">3</span><span class="chip c4">4</span><span>consensus score</span></div>
 </div>
@@ -493,11 +496,18 @@ function render(){
     if(typeof x==="string") return asc?x.localeCompare(y):y.localeCompare(x);
     return asc?x-y:y-x;
   });
+  // Set preserves insertion order, so the last entry is the most recent pick
+  const last = HIDDEN.size ? [...HIDDEN][HIDDEN.size-1] : null;
+  const un = document.getElementById("undo");
+  if(un){
+    un.style.display = last ? "" : "none";
+    un.innerHTML = last ? "&#8630; Undo <i>" + last + "</i>" : "";
+    un.title = last ? "Put " + last + " back on the board" : "";
+  }
   const ub = document.getElementById("unhide");
   if(ub){
     ub.style.display = HIDDEN.size ? "" : "none";
-    ub.textContent = HIDDEN.size + " off the board &middot; restore";
-    ub.innerHTML = "<b>" + HIDDEN.size + "</b> off the board &middot; restore";
+    ub.innerHTML = "<b>" + HIDDEN.size + "</b> off the board &middot; restore all";
   }
   document.getElementById("h0").textContent = mode==="adp" ? "ESPN ADP" : "ESPN Rank";
   document.getElementById("h1").textContent = mode==="adp" ? "Avg of 4" : "Avg rank (4)";
@@ -574,6 +584,20 @@ document.getElementById("b").addEventListener("click", e=>{
 });
 const unhide = document.getElementById("unhide");
 unhide.onclick = ()=>{ HIDDEN.clear(); render(); };
+// put the most recently taken player back; everything downstream recomputes in render()
+const undoBtn = document.getElementById("undo");
+undoBtn.onclick = ()=>{
+  const arr = [...HIDDEN];
+  if(!arr.length) return;
+  HIDDEN.delete(arr[arr.length-1]);
+  render();
+};
+// ctrl/cmd+Z does the same, since a misclick mid-draft wants the reflex to work
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z" && document.activeElement.tagName!=="INPUT"){
+    e.preventDefault(); undoBtn.onclick();
+  }
+});
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
   t.classList.add("on"); mode=t.dataset.m; recompute(); computeTiers(); render();
