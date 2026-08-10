@@ -2,7 +2,15 @@ import json, re, sys
 sys.path.insert(0, "/sessions/festive-sleepy-knuth/mnt/outputs")
 from adp_data import ROWS, UNDERDOG, ID_RANK, TOKENS, UD_META, ESPN_LIVE, WINKS
 
-# --- Hayden Winks (Yahoo) half-PPR top 300, published 7/20 -------------------
+TEAMS_N = 12
+DEPTH = TEAMS_N * 18   # 216 - how deep the LIVE board goes (18 rounds)
+SNAP  = len(ROWS)      # how deep the baked offline fallback goes, bounded by adp_data.ROWS
+# DEPTH and SNAP are allowed to differ: the live ESPN pull defines board membership at runtime,
+# while the snapshot below is only reached if ESPN's feed is down. If you extend ROWS, SNAP
+# follows automatically.
+
+# --- Hayden Winks (Yahoo) FULL-PPR top 300, table dated 08/06 ----------------
+# Full point PPR to match the league. His half-PPR list is NOT used and is not stored.
 # Expert rankings, so rank = position in his list. Team defenses are listed as
 # "Houston Texans" where ESPN says "Texans D/ST", so DSTs key off the last word.
 _TEAMS = {"texans","rams","seahawks","broncos","eagles","jaguars","steelers","vikings","patriots",
@@ -33,13 +41,13 @@ for _i, _n in enumerate(_wnames):
 pairs = [p for p in ID_RANK.replace("\n", "").split(",") if p.strip()]
 toks  = [t for t in TOKENS.replace("\n", "").split(",") if t.strip()]
 live  = [l for l in ESPN_LIVE.replace("\n", "").split(",") if l.strip()]
-assert len(pairs) == 168 and len(toks) == 168 and len(live) == 168, (len(pairs), len(toks), len(live))
+assert len(pairs) == SNAP and len(toks) == SNAP and len(live) == SNAP, (len(pairs), len(toks), len(live))
 
 def num(x):
     return int(x) if x not in ("", None) else None
 
 data = []
-for i, (name, pos, team, _espn_old, yah, sl) in enumerate(ROWS[:168]):
+for i, (name, pos, team, _espn_old, yah, sl) in enumerate(ROWS[:SNAP]):
     pid, _raw_rank = pairs[i].split(":")
     dense, espn_s = live[i].split(":")
     espn, erank = float(espn_s), dense          # dense ordinal on ESPN's rank board
@@ -67,7 +75,7 @@ for d in sorted([x for x in data if x["winks"]], key=lambda x: x["winks"]):
     _wc[d["pos"]] = _wc.get(d["pos"], 0) + 1
     d["wkPr"] = ("DEF" if d["pos"] == "DST" else d["pos"]) + str(_wc[d["pos"]])
 
-# ESPN positional rank by ADP (exact: the ADP-sorted top 168 contains everyone ahead of them)
+# ESPN positional rank by ADP (exact: the ADP-sorted board contains everyone ahead of them)
 cnt = {}
 for d in sorted(data, key=lambda x: x["espn"]):
     cnt[d["pos"]] = cnt.get(d["pos"], 0) + 1
@@ -241,7 +249,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   .pickbox i{font-size:10px}
   .wrap{max-height:calc(100vh - 104px)}
 
-  /* tighter rows so more of the 168 is visible per screen */
+  /* tighter rows so more of the board is visible per screen */
   th{padding:5px 8px;font-size:10px}
   td{padding:2px 8px;font-size:12px}
   .av,.av img{width:24px;height:24px;flex-basis:24px}
@@ -294,6 +302,9 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <script>
 // Baked-in snapshot, hand-verified 2026-07-29. Renders instantly and is the fallback for any
 // source that fails at runtime, so the board can never fail to load during a draft.
+/* How deep the live board runs: 18 rounds x 12 teams. The baked FALLBACK below can be
+   shallower - it is only reached if ESPN's feed is down. */
+const DEPTH = __DEPTH__;
 const FALLBACK = __DATA__;
 // Winks' full top 300 keyed by normalised name, so a player the live ESPN pull surfaces still
 // picks up his ranking even if he wasn't in the baked board.
@@ -672,7 +683,7 @@ async function loadLive(){
   // fall back per-source, keyed by player name, so one dead source doesn't blank a column
   const FB = {}; FALLBACK.forEach(r=>FB[norm(r.name)]=r);
 
-  const board = espn.players.slice().sort((a,b)=>a.adp-b.adp).slice(0,168).map(e=>{
+  const board = espn.players.slice().sort((a,b)=>a.adp-b.adp).slice(0,DEPTH).map(e=>{
     const n = norm(e.name), f = FB[n] || {};
     const P = e.pos==="DST" ? "DEF" : e.pos;
     const s = S[n], y = Y[n], u = U[n];
@@ -724,7 +735,9 @@ loadLive();
 
 out = (HTML.replace("__DATA__", json.dumps(data))
           .replace("__WINKS__", json.dumps(WK_RANK))
+          .replace("__DEPTH__", str(DEPTH))
           .replace("__DATE__", "July 29, 2026"))
+assert "__DEPTH__" not in out
 p = "/sessions/festive-sleepy-knuth/mnt/outputs/2026_ADP_Board_ESPN_vs_UD_Yahoo_Sleeper.html"
 open(p, "w", encoding="utf-8").write(out)
 print("wrote", p, len(out), "bytes")
