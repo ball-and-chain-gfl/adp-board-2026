@@ -5,7 +5,8 @@
 <style>
 :root{--bg:#0e1116;--panel:#161b22;--line:#242c38;--txt:#e6edf3;--dim:#8b949e;}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 header{padding:11px 20px 0;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:30}
 h1{margin:0 0 4px;font-size:17px;letter-spacing:.2px}
 .sub{color:var(--dim);font-size:12px}
@@ -30,7 +31,11 @@ button:hover{color:var(--txt)}
      color:var(--dim);cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.2px}
 .tab .t2{display:block;font-weight:500;font-size:10.5px;opacity:.75;letter-spacing:0}
 .tab.on{background:var(--bg);color:var(--txt);position:relative;top:1px}
-.wrap{overflow:auto;max-height:calc(100vh - 152px)}
+/* The table takes whatever height the header leaves. This used to be
+   calc(100vh - 152px), which silently broke every time the header wrapped to a
+   different number of lines - i.e. exactly as the window got squished. dvh also
+   keeps mobile browser chrome from cropping the last row. */
+.wrap{overflow:auto;flex:1 1 auto;min-height:0}
 table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
 th{position:sticky;top:0;background:#1b222c;z-index:20;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);
    padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line);user-select:none}
@@ -73,7 +78,7 @@ tr:hover td{background:#1a2029}
 .hl{color:#fff}
 .hl .alt{color:#e2ecff;opacity:.85}
 .chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;color:#fff}
-/* one hue per consensus score, evenly stepped on the wheel: teal - blue - indigo - purple */
+/* one hue per consensus score, evenly stepped on the wheel: blue - indigo - purple */
 .chip.c2{background:rgb(31,111,235)}
 .chip.c3{background:rgb(54,51,230)}
 .chip.c4{background:rgb(138,74,226)}
@@ -127,13 +132,22 @@ tr.rd.tierband:hover td{background:#141c17}
 tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white-space:normal;line-height:1.65}
 
 /* ------------------------------------------------------------- narrow ---
-   Below 1024px the four site columns are dropped. What's left is the consensus
-   average, the player and ESPN - the three things you actually act on - and the
-   chrome is condensed so as much of the board as possible is on screen at once
-   with no sideways scrolling. No phone-specific layout: this is the same table,
-   just tighter. */
+   Below 1024px the board drops to three columns: the consensus average, the
+   player, and Winks. ESPN gives up its slot here rather than Winks doing so -
+   Winks is the closest full-PPR read available, and the ESPN baseline is still
+   in every number on screen because each site cell shows its gap to it. The
+   chrome condenses so as much of the board as possible is on screen at once
+   with no sideways scrolling. A tighter phone layout follows below. */
 @media (max-width: 1024px){
   th.site, td.site{display:none}
+  /* ...except Winks, which takes ESPN's slot rather than being dropped alongside the
+     other three. It is the closest full-PPR read on the board, and ESPN has not really
+     left: the +/- on the Winks cell IS the gap to ESPN, and the consensus hue that used
+     to sit on the ESPN cell moves to the Avg cell's left edge (see --hl on each row). */
+  th.site.wk, td.site.wk{display:table-cell}
+  th.espn, td.espn{display:none}
+  th.c, td.c{width:132px}
+  td.c{border-left:3px solid var(--hl,transparent)}
   table{min-width:0}
   th:nth-child(3), td:nth-child(3){border-right:none}
 
@@ -149,7 +163,6 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   .pickbox b{font-size:23px}
   .pickbox span{font-size:9px;letter-spacing:1px}
   .pickbox i{font-size:10px}
-  .wrap{max-height:calc(100vh - 104px)}
 
   /* tighter rows so more of the board is visible per screen */
   th{padding:5px 8px;font-size:10px}
@@ -169,6 +182,48 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   .dot{width:8px;height:8px;margin-left:5px}
   .cliff{display:none}
   tr.rd td{padding:2px 8px;font-size:9px}
+}
+
+/* --------------------------------------------------------------- phone ---
+   At this width the board is three columns: the consensus average, the player,
+   and Winks. Everything else is chrome, so the chrome gives up its space first.
+   Target is no sideways scrolling at 360px with the name still readable. */
+@media (max-width: 640px){
+  header{padding:7px 10px 0}
+  .bar{gap:5px;margin-top:7px}
+  /* search takes a row of its own so the seven position filters get a clean one */
+  input[type=search]{flex:1 1 100%;width:auto;min-width:0;padding:6px 9px;font-size:12px}
+  button{padding:5px 8px;font-size:11px}
+  .legend{margin-left:0;gap:5px;font-size:10px}
+  .legend > span:not([class]){display:none}   /* keep the chips, drop the caption */
+  .tabs{margin-top:7px;gap:3px}
+  .tab{padding:6px 10px 5px;font-size:11.5px}
+  .pickbox{min-width:64px;margin-right:6px;padding:3px 9px 5px}
+  .pickbox b{font-size:20px}
+  .pickbox span{font-size:8px;letter-spacing:.7px}
+  .pickbox i{font-size:9px}
+
+  /* the short header labels finally earn their keep: "AVG" not "Avg rank (4)" */
+  th .lg{display:none}
+  th .sm{display:inline}
+
+  th{padding:5px 6px;font-size:9.5px}
+  td{padding:3px 6px;font-size:12px}
+  th.site, td.site{width:62px;padding-left:2px;padding-right:5px}
+  th.c, td.c{width:auto}
+  .cell{min-width:0;padding:2px 6px;font-size:12px}
+  .dbtn{margin-left:4px;padding:0 4px}
+  .rd{display:none}          /* the "rd n" beside the average */
+  .dot{width:7px;height:7px;margin-left:4px}
+  .av,.av img{width:22px;height:22px;flex-basis:22px}
+  .ply{gap:6px;min-width:0}
+  .seq{min-width:24px;margin-right:0}
+  .pos{min-width:22px;font-size:9px;padding:1px 3px}
+  .nm{font-size:12px}
+  .meta{font-size:9.5px;margin-left:4px}
+  /* let the player column shrink and ellipsis instead of widening the table */
+  td.l{max-width:0;width:100%}
+  .ply > span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 </style></head><body>
 <header>
@@ -192,8 +247,8 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <thead><tr>
 <th class="c"><span class="hd" data-k="avgV"><span class="lg" id="h1">Avg of 4</span><span class="sm">AVG</span></span><span class="dbtn" data-d="avg">&Delta;</span></th>
 <th class="l"><span class="hd" data-k="seq"># Player</span></th>
-<th><span class="hd" data-k="base"><span class="lg" id="h0">ESPN ADP</span><span class="sm">ESPN</span></span></th>
-<th class="site"><span class="hd" data-k="v_winks">Winks</span><span class="dbtn" data-d="winks">&Delta;</span></th>
+<th class="espn"><span class="hd" data-k="base"><span class="lg" id="h0">ESPN ADP</span><span class="sm">ESPN</span></span></th>
+<th class="site wk"><span class="hd" data-k="v_winks">Winks</span><span class="dbtn" data-d="winks">&Delta;</span></th>
 <th class="site"><span class="hd" data-k="v_ud">Underdog</span><span class="dbtn" data-d="ud">&Delta;</span></th>
 <th class="site"><span class="hd" data-k="v_yahoo">Yahoo</span><span class="dbtn" data-d="yahoo">&Delta;</span></th>
 <th class="site"><span class="hd" data-k="v_sleeper">Sleeper</span><span class="dbtn" data-d="sleeper">&Delta;</span></th>
@@ -336,15 +391,17 @@ function hlColor(r){
   const mag = r.avgd===null ? 0 : Math.abs(r.avgd);
   const t = Math.max(0, Math.min(1, (mag - DEAD) / (CAP - DEAD)));
   const a = (0.26 + 0.74*t).toFixed(3);
-  return {bg:`rgba(${rgb},${a})`, rgb, a:+a};
+  const edgeA = Math.max(.62, +a).toFixed(3);   // 3px of colour needs a floor to read
+  return {bg:`rgba(${rgb},${a})`, edge:`rgba(${rgb},${edgeA})`, rgb, a:+a};
 }
 const fmt = v => mode==="adp" ? v.toFixed(1) : String(v);
 // site columns show the number and its gap only - no round.pick line
-function cell(v, base){
-  if(v===null||v===undefined) return '<td class="site"><span class="na">&mdash;</span></td>';
+function cell(v, base, cls){
+  const td = `<td class="site${cls ? " " + cls : ""}">`;
+  if(v===null||v===undefined) return td + '<span class="na">&mdash;</span></td>';
   const d = +(v - base).toFixed(1);
   const s = (d > 0 ? "+" : "") + d.toFixed(1);
-  return `<td class="site"><span class="cell" style="${color(d)}">${fmt(v)}<span class="d">${s}</span></span></td>`;
+  return `${td}<span class="cell" style="${color(d)}">${fmt(v)}<span class="d">${s}</span></span></td>`;
 }
 // market-consensus column: the average itself, coloured by its gap. The gap number lives in the
 // next column, so it isn't repeated here.
@@ -451,7 +508,7 @@ function render(){
     const sep = tierView ? (r.tierEnd ? ' class="rndsep"' : '')
                          : (((i+1) % 12 === 0) ? ' class="rndsep"' : '');
     const hl = hlColor(r);
-    return `${div}<tr${sep} data-n="${r.name}">
+    return `${div}<tr${sep} data-n="${r.name}" style="--hl:${hl ? hl.edge : "transparent"}">
       ${avgCell(r)}
       <td class="l"><div class="ply">
           <span class="seq"><b>${r.seq}</b><i>${r.slot}</i></span>
@@ -461,9 +518,9 @@ function render(){
           <span class="nm" style="margin-left:7px">${r.name}</span><span class="meta">${r.team}</span>
           ${r.tierEnd&&r.tierDrop!==null?`<span class="cliff">cliff &middot; next ${r.pos==="DST"?"DEF":r.pos} +${r.tierDrop}</span>`:""}</span>
         </div></td>
-      <td><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
+      <td class="espn"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
             >${fmt(r.base)}</span></td>
-      ${cell(r.v_winks,r.base)}${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}</tr>`;
+      ${cell(r.v_winks,r.base,"wk")}${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}</tr>`;
   }).join("");
   document.querySelectorAll("th .ar").forEach(a=>a.remove());
   document.querySelectorAll("th .hd").forEach(hd=>{

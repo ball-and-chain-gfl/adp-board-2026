@@ -77,8 +77,12 @@ Players are grouped into positional **tiers**, cut where the board has a real ga
 - **Undo**, or Ctrl/Cmd+Z — restores the most recent
 - **restore all** — clears the board, pick back to 1
 - position filter is single-select
-- below 1024px the four site columns are hidden and rows condense; there is deliberately no
-  phone layout
+- below 1024px the board narrows to three columns — average, player, Winks. **ESPN gives up
+  its column, not Winks**: Winks is the closest full-PPR read on the board, and the ESPN
+  baseline is still in every number, since each site cell prints its gap to it. The
+  consensus hue moves off the ESPN cell onto the average cell's left edge
+- below 640px a tighter phone layout takes over: short header labels, condensed chrome, and
+  the player name truncates rather than forcing the table sideways. Fits 360px
 
 ## Data sources
 
