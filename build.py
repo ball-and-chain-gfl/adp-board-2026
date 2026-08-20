@@ -164,12 +164,17 @@ tr:hover td{background:#1a2029}
 #undo{background:#1b2430;border-color:#48566b;color:#d6e2f2}
 #undo i{font-style:normal;font-weight:700;color:#9dc4ff;margin-left:3px}
 .ply{display:flex;align-items:center;gap:9px}
-.av{width:34px;height:34px;border-radius:50%;background:#0b0f14;border:1px solid #262f3c;flex:0 0 34px;overflow:hidden}
+/* Square and frameless: no circle crop and no ring, so the headshot reads as sitting on the
+   row rather than in a chip. The transparent PNG blends into the row background. */
+.av{width:40px;height:40px;border-radius:4px;flex:0 0 40px;overflow:hidden}
 /* ESPN headshots are 600x436 with transparent margins; crop to the face, not the empty top */
-.av img{width:34px;height:34px;object-fit:cover;object-position:center 25%;display:block}
+.av img{width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block}
 .av.lg img{object-fit:contain;padding:3px}
-.nm{font-weight:600}
-.meta{color:var(--dim);font-size:11px;margin-left:6px}
+.nm{font-weight:600;display:block;line-height:1.25}
+/* name on top, then team and the position pill on their own line */
+.who{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+.sub{display:flex;align-items:center;gap:6px}
+.meta{color:var(--dim);font-size:11px}
 .slot{color:#6e7681;font-size:11px}
 .pos{display:inline-block;min-width:30px;text-align:center;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700}
 .QB{background:#4a1f36;color:#ff9ecb}   /* pink   */
@@ -273,7 +278,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   /* tighter rows so more of the board is visible per screen */
   th{padding:5px 8px;font-size:10px}
   td{padding:2px 8px;font-size:12px}
-  .av,.av img{width:24px;height:24px;flex-basis:24px}
+  .av,.av img{width:34px;height:34px;flex-basis:34px}
   .ply{gap:7px}
   .nm{font-size:12.5px}
   .meta{font-size:10px}
@@ -324,15 +329,16 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
      match the round-band rows, which are <tr class="rd">, and display:block on a table
      row breaks the band. */
   td.c .rd{display:block;margin-left:0;margin-top:1px;font-size:9px;letter-spacing:.4px}
-  .av,.av img{width:22px;height:22px;flex-basis:22px}
+  .av,.av img{width:30px;height:30px;flex-basis:30px}
   .ply{gap:6px;min-width:0}
   .seq{min-width:24px;margin-right:0}
   .pos{min-width:22px;font-size:9px;padding:1px 3px}
   .nm{font-size:12px}
-  .meta{font-size:9.5px;margin-left:4px}
+  .meta{font-size:9.5px}
   /* let the player column shrink and ellipsis instead of widening the table */
   td.l{max-width:0;width:100%}
-  .ply > span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .who{min-width:0;max-width:100%}
+  .who .nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 </style></head><body>
 <header>
@@ -464,26 +470,16 @@ function computeTiers(){
   });
 }
 // gap = other site - ESPN.  LOWER number there (goes earlier, market wants him more) => GREEN
-// The gap-to-ESPN hue lives in one place, because the sign convention is shared: negative means
-// earlier than ESPN, which is green. color() paints it as a cell fill, gapEdge() as the divider
-// running down the side of the average column.
+// The gap-to-ESPN hue, kept in one place because the sign convention is shared across the
+// colour functions and has been inverted by accident before: negative means earlier than ESPN,
+// which is green.
 const GAP_RGB = d => d < 0 ? "15,157,79" : "208,52,44";
-const DIVIDER = "#34404f";
 function color(d){
   if(d===null) return "";
   const t = Math.max(-1, Math.min(1, d/CAP));
   if(Math.abs(d) < DEAD) return "background:#2b323d;color:#c9d1d9";   // inside the dead zone
   const a = (0.30 + 0.70*Math.abs(t)).toFixed(3);
   return `background:rgba(${GAP_RGB(d)},${a});color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)`;
-}
-// Same reading as a 2px edge. Inside the dead zone it stays the plain divider colour, so the
-// border only lights up when there is a gap worth acting on. Alpha is floored because 2px
-// cannot carry the dim end of the ramp the way a filled cell can.
-function gapEdge(d){
-  if(d===null || Math.abs(d) < DEAD) return DIVIDER;
-  const t = Math.max(-1, Math.min(1, d/CAP));
-  const a = Math.max(.55, 0.30 + 0.70*Math.abs(t)).toFixed(3);
-  return `rgba(${GAP_RGB(d)},${a})`;
 }
 // ---- draft slot: turn any pick number or rank into round.pick for a 12-team board ----
 const TEAMS = 12;
@@ -528,11 +524,11 @@ function cell(v, base, cls){
 }
 // market-consensus column: the average itself, coloured by its gap. The gap number lives in the
 // next column, so it isn't repeated here.
-// ---- live draft position -> the Avg NUMBER; ESPN gap -> the DIVIDER ---------
+// ---- live draft position -> the Avg NUMBER ---------------------------------
 // The Avg number carries the live read, worked off the pick on the clock:
-// PICK = players you've taken off the board + 1. The divider running down the player side of
-// the column keeps the static comparison, the gap between the consensus and ESPN, on the same
-// green/red scale as the site columns. It stays the plain divider colour inside the dead zone.
+// PICK = players you've taken off the board + 1. The static gap between the consensus and
+// ESPN is in the cell's tooltip only - it had a dot, then the column divider, and both read
+// as more noise than signal next to the live colour.
 //   below the pick        -> GREEN   he has slid past his market price, he's there for you
 //   pick .. pick+7        -> grey    going about on schedule
 //   pick+8 and beyond     -> RED     not due yet
@@ -569,7 +565,7 @@ function avgCell(r){
   // number = live draft position; the divider on the player side = gap to ESPN
   const live = draftColor(r) || "background:#2b323d;color:#c9d1d9";
   const gapT = r.avgd===null ? "" : " · " + (r.avgd>0?"+":"") + r.avgd.toFixed(1) + " vs ESPN";
-  return `<td class="c" style="border-right-color:${gapEdge(r.avgd)}">`
+  return `<td class="c">`
        + `<span class="cell" style="${live}" title="vs pick ${PICK}${gapT}">${shown}</span>`
        + `<span class="rd">rd ${sl.r}</span></td>`;
 }
@@ -636,9 +632,9 @@ function render(){
           <span class="seq"><b>${r.seq}</b><i>${r.slot}</i></span>
           <span class="av${r.pos==="DST"?" lg":""}"><img src="${r.img}" alt="" decoding="async"
                 onerror="this.style.visibility='hidden'"></span>
-          <span><span class="pos ${r.pos}">${r.pos==="DST"?"DEF":r.pos}</span>
-          <span class="nm" style="margin-left:7px">${r.name}</span><span class="meta">${r.team}</span>
-          ${r.tierEnd&&r.tierDrop!==null?`<span class="cliff">cliff &middot; next ${r.pos==="DST"?"DEF":r.pos} +${r.tierDrop}</span>`:""}</span>
+          <span class="who"><span class="nm">${r.name}</span>
+          <span class="sub"><span class="meta">${r.team}</span><span class="pos ${r.pos}">${r.pos==="DST"?"DEF":r.pos}</span>
+          ${r.tierEnd&&r.tierDrop!==null?`<span class="cliff">cliff &middot; next ${r.pos==="DST"?"DEF":r.pos} +${r.tierDrop}</span>`:""}</span></span>
         </div></td>
       <td class="espn"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
             >${fmt(r.base)}</span></td>
