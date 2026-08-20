@@ -213,7 +213,18 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   th.c, td.c{width:auto}
   .cell{min-width:0;padding:2px 6px;font-size:12px}
   .dbtn{margin-left:4px;padding:0 4px}
-  .rd{display:none}          /* the "rd n" beside the average */
+  /* Keep the round readout on phones - it is the whole point of the average column.
+     Stack it under the number instead of beside it, so the column stays narrow and the
+     row grows a little taller instead. Scoped to td.c on purpose: bare .rd would also
+     match the round-band rows, which are <tr class="rd">, and display:block on a table
+     row breaks the band. */
+  td.c{position:relative}
+  td.c .rd{display:block;margin-left:0;margin-top:1px;font-size:9px;letter-spacing:.4px}
+  /* Take the dot out of the flow. In flow it shares the first line with the number, so the
+     pair gets centred as a group and the number lands ~5px left of the cell axis while the
+     round line below sits on the axis - they read as misaligned. Out of flow, the number and
+     the round line share one centre. */
+  td.c .dot{position:absolute;right:3px;top:10px;margin-left:0}
   .dot{width:7px;height:7px;margin-left:4px}
   .av,.av img{width:22px;height:22px;flex-basis:22px}
   .ply{gap:6px;min-width:0}
