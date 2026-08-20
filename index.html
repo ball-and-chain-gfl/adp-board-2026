@@ -112,9 +112,11 @@ th.c, td.c{text-align:center;white-space:nowrap}
 .seq i{font-style:normal;font-size:10px;color:#6e7681}
 /* the four site columns are reference, not the headline: dial them back and pack them tight,
    pinning their width so the slack goes to the player column instead of between them */
-th.site{color:#6b7482;font-size:10px;width:72px;padding-left:3px;padding-right:6px}
-td.site{padding-left:3px;padding-right:6px}
-td.site .cell{font-weight:600;font-size:12px;min-width:0;width:100%;padding:3px 5px;opacity:.88;text-align:right}
+th.site{color:#6b7482;font-size:10px;width:72px;padding-left:5px;padding-right:5px;text-align:center}
+td.site{padding-left:5px;padding-right:5px;text-align:center}
+/* content-width and centred, like the Avg chip, rather than filling the column right-aligned.
+   Still dialled back a touch: these columns are reference, not the headline. */
+td.site .cell{font-weight:600;font-size:12px;min-width:0;padding:3px 5px;opacity:.88;text-align:center}
 td.site .d{font-size:10px;font-weight:600;margin-left:3px}
 td.site .pr{font-size:9px;opacity:.75;min-width:0;padding:1px 3px}
 td.site .stack{width:100%}
@@ -211,7 +213,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 
   th{padding:5px 6px;font-size:9.5px}
   td{padding:3px 6px;font-size:12px}
-  th.site, td.site{width:62px;padding-left:2px;padding-right:5px}
+  th.site, td.site{width:62px;padding-left:3px;padding-right:3px}
   th.c, td.c{width:auto}
   /* The player block is two lines now, so it sets the row height and the average column no
      longer has to stack to stay short. The round readout sits beside the number again (it
@@ -360,10 +362,10 @@ function computeTiers(){
     });
   });
 }
-// gap = other site - ESPN.  LOWER number there (goes earlier, market wants him more) => GREEN
-// The gap-to-ESPN hue, kept in one place because the sign convention is shared across the
-// colour functions and has been inverted by accident before: negative means earlier than ESPN,
-// which is green.
+// gap = other site - ESPN. LOWER number there (goes earlier, market wants him more) => GREEN.
+// Kept in one place because the sign convention is shared across the colour functions and has
+// been inverted by accident before. This is what the site columns show BEFORE the draft starts,
+// when a clock reading would be meaningless.
 const GAP_RGB = d => d < 0 ? "15,157,79" : "208,52,44";
 function color(d){
   if(d===null) return "";
@@ -405,21 +407,34 @@ function hlColor(r){
   return {bg:`rgba(${rgb},${a})`, edge:`rgba(${rgb},${edgeA})`, rgb, a:+a};
 }
 const fmt = v => mode==="adp" ? v.toFixed(1) : String(v);
-// site columns show the number and its gap only - no round.pick line
-function cell(v, base, cls){
+// Site columns run the same draft-clock colour as the Avg column, each off its own number, so
+// a green Sleeper cell means Sleeper's market has already passed him at the current pick. The
+// small signed number stays the static gap to ESPN - that is the one thing these cells say
+// that the colour does not. No round.pick line here; only the Avg column carries that.
+function cell(r, v, cls){
   const td = `<td class="site${cls ? " " + cls : ""}">`;
   if(v===null||v===undefined) return td + '<span class="na">&mdash;</span></td>';
-  const d = +(v - base).toFixed(1);
+  const d = +(v - r.base).toFixed(1);
   const s = (d > 0 ? "+" : "") + d.toFixed(1);
-  return `${td}<span class="cell" style="${color(d)}">${fmt(v)}<span class="d">${s}</span></span></td>`;
+  // Two states, and the handover is TAKEN going above zero. Before the draft starts a clock
+  // reading says nothing - every number is ahead of pick 1 - so the cell shows its static gap
+  // to ESPN and the whole market is readable at a glance. Once players start coming off,
+  // draftColor takes over and the column goes live. draftColor returns null while TAKEN is 0,
+  // which is exactly the handover, so the order of this || chain IS the behaviour.
+  const live = draftColor(r, v) || color(d) || "background:#2b323d;color:#c9d1d9";
+  const tip = TAKEN === 0 ? `${s} vs ESPN` : `vs pick ${PICK} &middot; ${s} vs ESPN`;
+  return `${td}<span class="cell" style="${live}" title="${tip}">${fmt(v)}<span class="d">${s}</span></span></td>`;
 }
-// market-consensus column: the average itself, coloured by its gap. The gap number lives in the
-// next column, so it isn't repeated here.
-// ---- live draft position -> the Avg NUMBER ---------------------------------
-// The Avg number carries the live read, worked off the pick on the clock:
-// PICK = players you've taken off the board + 1. The static gap between the consensus and
-// ESPN is in the cell's tooltip only - it had a dot, then the column divider, and both read
-// as more noise than signal next to the live colour.
+// ---- live draft position -> EVERY number column ----------------------------
+// Once the draft is under way all five number columns carry the same live read, worked off the
+// pick on the clock: PICK = players you've taken off the board + 1. The Avg column clocks the
+// consensus average; each site column clocks its own number. So a green Sleeper cell and a red
+// Yahoo cell on the same row means Sleeper's market has passed him and Yahoo's has not.
+//
+// Before the first pick the site columns show their static gap to ESPN instead, so the board is
+// fully readable while you prep. The Avg column stays neutral there: its gap is the consensus-
+// vs-ESPN number, which was tried as a dot and then as the column divider and read as noise
+// both times. It is in the tooltip.
 //   below the pick        -> GREEN   he has slid past his market price, he's there for you
 //   pick .. pick+7        -> grey    going about on schedule
 //   pick+8 and beyond     -> RED     not due yet
@@ -432,9 +447,13 @@ function cell(v, base, cls){
 // Neutral until the draft is underway, since at pick 1 almost everything would be red.
 let TAKEN = 0, PICK = 1;
 const GREY_END = 8, WAIT = 10;
-function draftColor(r){
-  if(TAKEN === 0 || r.avgV === null) return null;
-  const d = r.avgV - PICK;                 // consensus clock
+// v is the number being clocked - the consensus average for the Avg column, that site's own
+// number for each of the four site columns. Everything else is identical, so all five number
+// columns answer the same question: is he due yet, against the pick actually on the clock.
+function draftColor(r, v){
+  const val = v === undefined ? r.avgV : v;
+  if(TAKEN === 0 || val === null || val === undefined) return null;
+  const d = val - PICK;                    // clock for whichever number this is
   if(d >= GREY_END){
     const a = (0.45 + 0.55*Math.min(1, (d-GREY_END)/CAP)).toFixed(3);
     return `background:rgba(208,52,44,${a})`;
@@ -453,7 +472,7 @@ function avgCell(r){
   if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
   const shown = mode==="adp" ? r.avgV.toFixed(1) : String(Math.round(r.avgV));
   const sl = slotOf(r.avgV);
-  // number = live draft position; the divider on the player side = gap to ESPN
+  // number = live draft position; the static gap to ESPN is in the tooltip
   const live = draftColor(r) || "background:#2b323d;color:#c9d1d9";
   const gapT = r.avgd===null ? "" : " · " + (r.avgd>0?"+":"") + r.avgd.toFixed(1) + " vs ESPN";
   return `<td class="c">`
@@ -529,7 +548,7 @@ function render(){
         </div></td>
       <td class="espn"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
             >${fmt(r.base)}</span></td>
-      ${cell(r.v_winks,r.base,"wk")}${cell(r.v_ud,r.base)}${cell(r.v_yahoo,r.base)}${cell(r.v_sleeper,r.base)}</tr>`;
+      ${cell(r,r.v_winks,"wk")}${cell(r,r.v_ud)}${cell(r,r.v_yahoo)}${cell(r,r.v_sleeper)}</tr>`;
   }).join("");
   document.querySelectorAll("th .ar").forEach(a=>a.remove());
   document.querySelectorAll("th .hd").forEach(hd=>{
