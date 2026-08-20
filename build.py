@@ -10,7 +10,7 @@ SNAP  = len(ROWS)      # how deep the baked offline fallback goes, bounded by ad
 # while the snapshot below is only reached if ESPN's feed is down. If you extend ROWS, SNAP
 # follows automatically.
 
-# --- Hayden Winks (Yahoo) FULL-PPR top 300, table dated 08/06 ----------------
+# --- Hayden Winks (Yahoo) FULL-PPR top 300, re-pulled 08/19 -----------------
 # Full point PPR to match the league. His half-PPR list is NOT used and is not stored.
 # Expert rankings, so rank = position in his list. Team defenses are listed as
 # "Houston Texans" where ESPN says "Texans D/ST", so DSTs key off the last word.
@@ -32,7 +32,9 @@ def norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 _wnames = [n.strip() for n in WINKS.split(";") if n.strip()]
-assert len(_wnames) == 300, len(_wnames)
+# He publishes "top 300" but the table has run to 301 rows; allow a little slack so a
+# re-pull does not fail the build over an off-by-one, while still catching a short scrape.
+assert 295 <= len(_wnames) <= 310, "WINKS looks truncated: %d names" % len(_wnames)
 WK_RANK = {}
 for _i, _n in enumerate(_wnames):
     _k = wkey(_n)
@@ -698,11 +700,11 @@ function wkey(n){ const k=norm(n); const last=k.split(" ").pop(); return WTEAMS.
 // Source state is still tracked (and logged) even though the status chips were removed from the
 // header, so a fallback is still discoverable from the console rather than silently invisible.
 const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending", underdog:"pending",
-             winks:"static Winks' published FULL-PPR top 300, updated 8/06"};
+             winks:"static Winks' published FULL-PPR top 300, updated 8/19"};
 function setStatus(){
   const el = document.getElementById("srcs");
   if(el){
-    const label = {live:"live", snapshot:"snapshot", pending:"…", static:"8/06"};
+    const label = {live:"live", snapshot:"snapshot", pending:"…", static:"8/19"};
     const cls   = {live:"ok", snapshot:"warn", pending:"pend", static:"stat"};
     el.innerHTML = Object.keys(SRC).map(k=>{
       const v = SRC[k];

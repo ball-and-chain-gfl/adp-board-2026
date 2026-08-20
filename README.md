@@ -86,21 +86,32 @@ Players are grouped into positional **tiers**, cut where the board has a real ga
 
 ## Data sources
 
-Two of the five are not full PPR. That is the most important thing to hold onto.
+Two of the five are not full PPR, and the ESPN baseline is only full PPR on one of the two
+tabs. That is the most important thing to hold onto.
 
-| Source | Scoring | Matches league | Access | Coverage at 216 |
-|---|---|---|---|---|
-| ESPN | Full PPR | **Yes** | Live API | 216 |
-| Sleeper | Full PPR (`adp_ppr`) | **Yes** | Live API | 212 |
-| Hayden Winks | Full PPR | **Yes** | Static snapshot, 8/06 | 210 |
-| Yahoo | Half PPR | No | Live API | 202 |
-| Underdog | Half PPR, best ball | No | Scraped | 175 |
+Verified against the live sources on 2026-08-20; the method for each is in the notes below.
 
-Yahoo and Underdog underprice reception volume. Sleeper and Winks are the cleanest
-comparisons. Underdog best ball drafts no kickers or defenses at all, which is most of why its
-coverage is lowest.
+| Source | Scoring | Matches league | How that was verified |
+|---|---|---|---|
+| ESPN **rank** | Full PPR | **Yes** | `leaguedefaults/3` is "FFL PPR Scoring" with `playerRankType: PPR` and statId 53 (receptions) = 1.0 |
+| ESPN **ADP** | Not scoring-specific | **No** | `ownership.averageDraftPosition` is byte-identical in `leaguedefaults/1` (standard) and `/3` (PPR), while the draft ranks differ for 16 of 40 players |
+| Sleeper | Full PPR (`adp_ppr`) | **Yes** | `adp_ppr`, `adp_half_ppr` and `adp_std` are all published and all differ; Chase (109 rec) is 3.3 PPR vs 6.6 standard |
+| Hayden Winks | Full PPR | **Yes** | Source article is his Full-PPR hub; list opens Gibbs / Nacua / Chase / Bijan, and his half-PPR list opens Bijan 2 / Nacua 4 |
+| Yahoo | Unqualified | **No** | The public API exposes a single `draft_analysis.average_pick` with no scoring dimension — an aggregate over Yahoo's whole league population, not a PPR figure |
+| Underdog | Half PPR, best ball | **No** | The source page states it: "Underdog Best Ball ADP 2026: Half-PPR Fantasy Draft Position" |
 
-The Winks column is a hand-pulled snapshot rather than a feed: it shows `8/06` where the others
+**ESPN's ADP is the one to watch.** The Rank tab's baseline is genuine full PPR, but the ADP
+tab's baseline is ESPN's global cross-format ADP, so on that tab every gap is measured against
+a number that is not the league's scoring. Underdog's half PPR is inherent to the format —
+there is no full-PPR Underdog ADP to switch to — and Yahoo's is a population average rather
+than a scoring choice, so neither can be fixed by picking a different field.
+
+Practically: Yahoo and Underdog underprice reception volume, so **Sleeper and Winks are the
+cleanest comparisons** and the only two that match the league on both tabs. Underdog also has
+the thinnest coverage of the 216-pick board, because best ball drafts no kickers or defenses
+at all.
+
+The Winks column is a hand-pulled snapshot rather than a feed: it shows `8/19` where the others
 show `live <timestamp>`, and it needs re-pulling when he republishes. It must be his
 **full-PPR** table — his separate half-PPR list is a materially different ranking, so
 `build.py` asserts the fingerprint (Nacua 2, Bijan 4) at build time.
