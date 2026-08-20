@@ -114,9 +114,10 @@ th.c, td.c{text-align:center;white-space:nowrap}
    pinning their width so the slack goes to the player column instead of between them */
 th.site{color:#6b7482;font-size:10px;width:72px;padding-left:5px;padding-right:5px;text-align:center}
 td.site{padding-left:5px;padding-right:5px;text-align:center}
-/* content-width and centred, like the Avg chip, rather than filling the column right-aligned.
+/* Full column width, as it always was - shrinking it to content made the chips tiny. The
+   centring lives inside the chip instead: it fills the cell and the number sits centred in it.
    Still dialled back a touch: these columns are reference, not the headline. */
-td.site .cell{font-weight:600;font-size:12px;min-width:0;padding:3px 5px;opacity:.88;text-align:center}
+td.site .cell{font-weight:600;font-size:12px;min-width:0;width:100%;padding:3px 5px;opacity:.88;text-align:center}
 td.site .d{font-size:10px;font-weight:600;margin-left:3px}
 td.site .pr{font-size:9px;opacity:.75;min-width:0;padding:1px 3px}
 td.site .stack{width:100%}
