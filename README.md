@@ -107,9 +107,15 @@ there is no full-PPR Underdog ADP to switch to — and Yahoo's is a population a
 than a scoring choice, so neither can be fixed by picking a different field.
 
 Practically: Yahoo and Underdog underprice reception volume, so **Sleeper and Winks are the
-cleanest comparisons** and the only two that match the league on both tabs. Underdog also has
-the thinnest coverage of the 216-pick board, because best ball drafts no kickers or defenses
-at all.
+cleanest comparisons** and the only two that match the league on both tabs.
+
+Coverage of the 216-pick board, measured live on 2026-08-20:
+
+| ESPN | Sleeper | Winks | Yahoo | Underdog |
+|---|---|---|---|---|
+| 216 | 215 | 211 | 201 | 174 |
+
+Underdog is thinnest because best ball drafts no kickers or defenses at all.
 
 The Winks column is a hand-pulled snapshot rather than a feed: it shows `8/19` where the others
 show `live <timestamp>`, and it needs re-pulling when he republishes. It must be his
