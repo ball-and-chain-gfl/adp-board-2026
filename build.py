@@ -1,5 +1,6 @@
-import json, re, sys
-sys.path.insert(0, "/sessions/festive-sleepy-knuth/mnt/outputs")
+import json, os, re, sys
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)   # adp_data.py sits next to this script
 from adp_data import ROWS, UNDERDOG, ID_RANK, TOKENS, UD_META, ESPN_LIVE, WINKS
 
 TEAMS_N = 12
@@ -37,6 +38,13 @@ for _i, _n in enumerate(_wnames):
     _k = wkey(_n)
     if _k not in WK_RANK:
         WK_RANK[_k] = _i + 1
+
+# WINKS must be the FULL-PPR table to match the league. The half-PPR list is a materially
+# different ranking (Bijan 2 / Nacua 4) and averaging it in misprices the top of the board.
+assert (WK_RANK.get("puka nacua"), WK_RANK.get("bijan robinson")) == (2, 4), (
+    "WINKS looks like the retired half-PPR list; full PPR is Nacua 2, Bijan 4")
+# Ranks must be a dense 1..N. A gap here means duplicate names collapsed in wkey().
+assert sorted(WK_RANK.values()) == list(range(1, len(WK_RANK) + 1)), "WK_RANK is not contiguous"
 
 pairs = [p for p in ID_RANK.replace("\n", "").split(",") if p.strip()]
 toks  = [t for t in TOKENS.replace("\n", "").split(",") if t.strip()]
@@ -422,10 +430,8 @@ function pcolor(d){
   const a = (0.28 + 0.62*Math.abs(t)).toFixed(3);
   return `background:rgba(${t<0?"15,157,79":"208,52,44"},${a});color:#fff`;
 }
-// ESPN cell highlight, one hue per consensus score. The four hues are evenly spaced ~24.4 deg
-// apart on the wheel: 2 is the original blue (216 deg), 4 the original purple (265 deg), 3 sits
-// halfway between them (241 deg), and 1 is the same step the other side of blue, toward green
-// (192 deg, teal). 0 gets no highlight.
+// ESPN cell highlight, one hue per consensus score, ~24.4 deg apart on the wheel:
+// 2 is blue (216 deg), 3 sits halfway to purple (241 deg), 4 is purple (265 deg).
 // Hue says how many sites agree; brightness says by how much. Intensity ramps from the dead-zone
 // edge (3 picks, dim) to full saturation at CAP (25 picks), driven by the average gap.
 // Scores 0 and 1 get no highlight - a single site disagreeing with ESPN isn't a signal.
@@ -635,11 +641,11 @@ function wkey(n){ const k=norm(n); const last=k.split(" ").pop(); return WTEAMS.
 // Source state is still tracked (and logged) even though the status chips were removed from the
 // header, so a fallback is still discoverable from the console rather than silently invisible.
 const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending", underdog:"pending",
-             winks:"static Winks' published half-PPR top 300, 7/20"};
+             winks:"static Winks' published FULL-PPR top 300, updated 8/06"};
 function setStatus(){
   const el = document.getElementById("srcs");
   if(el){
-    const label = {live:"live", snapshot:"snapshot", pending:"…", static:"7/20"};
+    const label = {live:"live", snapshot:"snapshot", pending:"…", static:"8/06"};
     const cls   = {live:"ok", snapshot:"warn", pending:"pend", static:"stat"};
     el.innerHTML = Object.keys(SRC).map(k=>{
       const v = SRC[k];
@@ -733,11 +739,14 @@ loadLive();
 </script></body></html>
 """
 
-out = (HTML.replace("__DATA__", json.dumps(data))
-          .replace("__WINKS__", json.dumps(WK_RANK))
+COMPACT = (",", ":")   # byte-stable output, so rebuild-and-diff shows only real changes
+out = (HTML.replace("__DATA__", json.dumps(data, separators=COMPACT))
+          .replace("__WINKS__", json.dumps(WK_RANK, separators=COMPACT))
           .replace("__DEPTH__", str(DEPTH))
           .replace("__DATE__", "July 29, 2026"))
 assert "__DEPTH__" not in out
-p = "/sessions/festive-sleepy-knuth/mnt/outputs/2026_ADP_Board_ESPN_vs_UD_Yahoo_Sleeper.html"
-open(p, "w", encoding="utf-8").write(out)
+p = os.path.join(HERE, "index.html")   # generated but committed; Vercel serves it statically
+# Force LF. Windows text mode would emit CRLF and every rebuild would then show a
+# whitespace-only diff on all 635 lines against the LF blob stored in the repo.
+open(p, "w", encoding="utf-8", newline="\n").write(out)
 print("wrote", p, len(out), "bytes")
