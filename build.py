@@ -10,7 +10,7 @@ SNAP  = len(ROWS)      # how deep the baked offline fallback goes, bounded by ad
 # while the snapshot below is only reached if ESPN's feed is down. If you extend ROWS, SNAP
 # follows automatically.
 
-# --- Hayden Winks (Yahoo) FULL-PPR top 300, re-pulled 08/19 -----------------
+# --- Hayden Winks (Yahoo) FULL-PPR top 300, re-pulled 08/26 -----------------
 # Full point PPR to match the league. His half-PPR list is NOT used and is not stored.
 # Expert rankings, so rank = position in his list. Team defenses are listed as
 # "Houston Texans" where ESPN says "Texans D/ST", so DSTs key off the last word.
@@ -42,9 +42,17 @@ for _i, _n in enumerate(_wnames):
         WK_RANK[_k] = _i + 1
 
 # WINKS must be the FULL-PPR table to match the league. The half-PPR list is a materially
-# different ranking (Bijan 2 / Nacua 4) and averaging it in misprices the top of the board.
-assert (WK_RANK.get("puka nacua"), WK_RANK.get("bijan robinson")) == (2, 4), (
-    "WINKS looks like the retired half-PPR list; full PPR is Nacua 2, Bijan 4")
+# different ranking and averaging it in misprices the top of the board.
+#
+# Guard on the ORDER of these two, not their absolute ranks. The first version of this
+# assert pinned Nacua==2 and Bijan==4, which was just where they sat in one pull - his
+# 08/26 re-rank moved Nacua to 3 and the build failed on a perfectly good update. What
+# actually separates the two lists is that full PPR lifts a high-reception WR above
+# Bijan; half PPR has Bijan 2 and Nacua 4. That survives re-ranking.
+_nacua, _bijan = WK_RANK.get("puka nacua"), WK_RANK.get("bijan robinson")
+assert _nacua and _bijan and _nacua < _bijan, (
+    "WINKS looks like the retired half-PPR list: full PPR ranks Nacua ahead of Bijan, "
+    "got Nacua %s / Bijan %s" % (_nacua, _bijan))
 # Ranks must be a dense 1..N. A gap here means duplicate names collapsed in wkey().
 assert sorted(WK_RANK.values()) == list(range(1, len(WK_RANK) + 1)), "WK_RANK is not contiguous"
 
@@ -729,11 +737,11 @@ function wkey(n){ const k=norm(n); const last=k.split(" ").pop(); return WTEAMS.
 // Source state is still tracked (and logged) even though the status chips were removed from the
 // header, so a fallback is still discoverable from the console rather than silently invisible.
 const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending", underdog:"pending",
-             winks:"static Winks' published FULL-PPR top 300, updated 8/19"};
+             winks:"static Winks' published FULL-PPR top 300, updated 8/26"};
 function setStatus(){
   const el = document.getElementById("srcs");
   if(el){
-    const label = {live:"live", snapshot:"snapshot", pending:"…", static:"8/19"};
+    const label = {live:"live", snapshot:"snapshot", pending:"…", static:"8/26"};
     const cls   = {live:"ok", snapshot:"warn", pending:"pend", static:"stat"};
     el.innerHTML = Object.keys(SRC).map(k=>{
       const v = SRC[k];

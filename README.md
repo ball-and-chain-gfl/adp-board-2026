@@ -96,7 +96,7 @@ Verified against the live sources on 2026-08-20; the method for each is in the n
 | ESPN **rank** | Full PPR | **Yes** | `leaguedefaults/3` is "FFL PPR Scoring" with `playerRankType: PPR` and statId 53 (receptions) = 1.0 |
 | ESPN **ADP** | Not scoring-specific | **No** | `ownership.averageDraftPosition` is byte-identical in `leaguedefaults/1` (standard) and `/3` (PPR), while the draft ranks differ for 16 of 40 players |
 | Sleeper | Full PPR (`adp_ppr`) | **Yes** | `adp_ppr`, `adp_half_ppr` and `adp_std` are all published and all differ; Chase (109 rec) is 3.3 PPR vs 6.6 standard |
-| Hayden Winks | Full PPR | **Yes** | Source article is his Full-PPR hub; list opens Gibbs / Nacua / Chase / Bijan, and his half-PPR list opens Bijan 2 / Nacua 4 |
+| Hayden Winks | Full PPR | **Yes** | Source article is his Full-PPR hub, and the list ranks Nacua ahead of Bijan; his separate half-PPR list has Bijan 2 / Nacua 4 |
 | Yahoo | Unqualified | **No** | The public API exposes a single `draft_analysis.average_pick` with no scoring dimension — an aggregate over Yahoo's whole league population, not a PPR figure |
 | Underdog | Half PPR, best ball | **No** | The source page states it: "Underdog Best Ball ADP 2026: Half-PPR Fantasy Draft Position" |
 
@@ -117,10 +117,12 @@ Coverage of the 216-pick board, measured live on 2026-08-20:
 
 Underdog is thinnest because best ball drafts no kickers or defenses at all.
 
-The Winks column is a hand-pulled snapshot rather than a feed: it shows `8/19` where the others
+The Winks column is a hand-pulled snapshot rather than a feed: it shows `8/26` where the others
 show `live <timestamp>`, and it needs re-pulling when he republishes. It must be his
 **full-PPR** table — his separate half-PPR list is a materially different ranking, so
-`build.py` asserts the fingerprint (Nacua 2, Bijan 4) at build time.
+`build.py` asserts that ordering at build time — the *order*, not absolute ranks: he reorders
+the top freely between publishes, and an absolute fingerprint failed the build on a legitimate
+re-rank.
 
 Serverless functions in `api/*.js` are CORS proxies, payload trimmers and edge caches. Yahoo
 sends no CORS headers, Sleeper's raw payload is ~4.7 MB, and Underdog publishes no open ADP
