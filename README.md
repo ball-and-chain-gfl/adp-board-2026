@@ -102,9 +102,24 @@ Verified against the live sources on 2026-08-20; the method for each is in the n
 
 **ESPN's ADP is the one to watch.** The Rank tab's baseline is genuine full PPR, but the ADP
 tab's baseline is ESPN's global cross-format ADP, so on that tab every gap is measured against
-a number that is not the league's scoring. Underdog's half PPR is inherent to the format —
-there is no full-PPR Underdog ADP to switch to — and Yahoo's is a population average rather
-than a scoring choice, so neither can be fixed by picking a different field.
+a number that is not the league's scoring.
+
+### Full-PPR alternatives, already searched (2026-08-29)
+
+Don't redo this. Neither mismatched column can be fixed by picking a different field or feed:
+
+- **Yahoo has no PPR split at all.** One game key (470, type `full`), one
+  `draft_analysis.average_pick` aggregated over their entire league population. Passing
+  `;is_ppr=1`, `;is_ppr=0` or `;scoring_type=ppr` returns byte-identical ADP, so the parameters
+  are simply ignored — it is not a field we chose wrong.
+- **Sharp does publish a full-PPR ADP page** —
+  `fantasy-football-adp-ppr-draftkings-best-ball` (DraftKings is full PPR, and the page says so)
+  — **but it is a season stale.** `datePublished` and `dateModified` are both 2025-08-29, and it
+  contains none of the 2026 rookies that the Underdog page has. Worth re-checking next
+  preseason: if Sharp refreshes it, it is a drop-in full-PPR replacement for the Underdog
+  column and their table markup is the same.
+- Underdog's own half PPR is inherent to best ball, so there is nothing to switch to there.
+
 
 Practically: Yahoo and Underdog underprice reception volume, so **Sleeper and Winks are the
 cleanest comparisons** and the only two that match the league on both tabs.
