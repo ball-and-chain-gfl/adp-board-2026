@@ -1,9 +1,9 @@
-# 2026 ADP Board — ESPN vs Winks / Underdog / Yahoo / Sleeper
+# 2026 ADP Board — ESPN vs Winks / Yahoo / Sleeper
 
 Draft-day board for one specific league: 12-team ESPN, **full PPR**,
 1QB / 2RB / 2WR / 1TE / 1FLEX / 1K / 1DEF.
 
-It puts ESPN's valuation of every draftable player next to four other sources, so you can see
+It puts ESPN's valuation of every draftable player next to three other sources, so you can see
 where your ESPN room is mispricing someone — and it doubles as a live board you click players
 off of as they go.
 
@@ -30,7 +30,7 @@ Two tabs, both apples-to-apples:
 - **Rank vs Rank** (default) — ESPN's PPR draft rank against each site's overall board rank
 - **ADP vs ADP** — ESPN's average draft position against each site's ADP
 
-Column order is fixed: `Avg of 4 | # Player | ESPN | Winks | Underdog | Yahoo | Sleeper`.
+Column order is fixed: `Avg of 3 | # Player | ESPN | Winks | Yahoo | Sleeper`.
 
 The live board runs 18 rounds / 216 picks. Depth is `TEAMS_N * 18` in `build.py`; ESPN's live
 pull defines board membership at runtime.
@@ -45,15 +45,14 @@ beside each number:
 - **red** — he goes *later*; ESPN is paying up
 - gaps under 3 picks are a flat dead zone, full saturation at ±25
 
-The **ESPN cell** carries the consensus hue — how many of the four other sites take him at
+The **ESPN cell** carries the consensus hue — how many of the three other sites take him at
 least 3 picks earlier than ESPN:
 
 | Sites agreeing | Colour |
 |---|---|
 | 0–1 | none — one site disagreeing isn't a signal |
 | 2 | blue |
-| 3 | indigo |
-| 4 | purple |
+| 3 | purple |
 
 Hue says how many sites agree; brightness says by how much.
 
@@ -98,7 +97,6 @@ Verified against the live sources on 2026-08-20; the method for each is in the n
 | Sleeper | Full PPR (`adp_ppr`) | **Yes** | `adp_ppr`, `adp_half_ppr` and `adp_std` are all published and all differ; Chase (109 rec) is 3.3 PPR vs 6.6 standard |
 | Hayden Winks | Full PPR | **Yes** | Source article is his Full-PPR hub, and the list ranks Nacua ahead of Bijan; his separate half-PPR list has Bijan 2 / Nacua 4 |
 | Yahoo | Unqualified | **No** | The public API exposes a single `draft_analysis.average_pick` with no scoring dimension — an aggregate over Yahoo's whole league population, not a PPR figure |
-| Underdog | Half PPR, best ball | **No** | The source page states it: "Underdog Best Ball ADP 2026: Half-PPR Fantasy Draft Position" |
 
 **ESPN's ADP is the one to watch.** The Rank tab's baseline is genuine full PPR, but the ADP
 tab's baseline is ESPN's global cross-format ADP, so on that tab every gap is measured against
@@ -115,22 +113,20 @@ Don't redo this. Neither mismatched column can be fixed by picking a different f
 - **Sharp does publish a full-PPR ADP page** —
   `fantasy-football-adp-ppr-draftkings-best-ball` (DraftKings is full PPR, and the page says so)
   — **but it is a season stale.** `datePublished` and `dateModified` are both 2025-08-29, and it
-  contains none of the 2026 rookies that the Underdog page has. Worth re-checking next
-  preseason: if Sharp refreshes it, it is a drop-in full-PPR replacement for the Underdog
-  column and their table markup is the same.
-- Underdog's own half PPR is inherent to best ball, so there is nothing to switch to there.
+  carries none of the 2026 rookies. Worth re-checking next preseason: if Sharp refreshes it, it
+  is a genuine full-PPR ADP feed and their table markup is the same shape the retired Underdog
+  scraper handled, so it would be cheap to add as a fourth comparison column.
 
 
-Practically: Yahoo and Underdog underprice reception volume, so **Sleeper and Winks are the
-cleanest comparisons** and the only two that match the league on both tabs.
+Practically: Yahoo underprices reception volume, so **Sleeper and Winks are the cleanest
+comparisons** and the only two that match the league on both tabs.
 
 Coverage of the 216-pick board, measured live on 2026-08-20:
 
-| ESPN | Sleeper | Winks | Yahoo | Underdog |
-|---|---|---|---|---|
-| 216 | 215 | 211 | 201 | 174 |
+| ESPN | Sleeper | Winks | Yahoo |
+|---|---|---|---|
+| 216 | 216 | 212 | 206 |
 
-Underdog is thinnest because best ball drafts no kickers or defenses at all.
 
 The Winks column is a hand-pulled snapshot rather than a feed: it shows `8/26` where the others
 show `live <timestamp>`, and it needs re-pulling when he republishes. It must be his
@@ -140,8 +136,13 @@ the top freely between publishes, and an absolute fingerprint failed the build o
 re-rank.
 
 Serverless functions in `api/*.js` are CORS proxies, payload trimmers and edge caches. Yahoo
-sends no CORS headers, Sleeper's raw payload is ~4.7 MB, and Underdog publishes no open ADP
-endpoint at all — that column is scraped from a server-rendered table.
+sends no CORS headers and Sleeper's raw payload is ~4.7 MB.
+
+**Underdog was removed on 2026-08-29.** It was half PPR, best ball, had the thinnest coverage of
+the board (no kickers or defenses at all), and was the only scraped source — the most brittle
+thing in the project. `api/underdog.js`, the `UNDERDOG` / `UD_META` tables and the column are all
+gone. The consensus score is now out of three, so its top hue moved from purple-at-4 to
+purple-at-3.
 
 ## Failure behaviour
 
@@ -156,4 +157,5 @@ endpoint at all — that column is scraped from a server-rendered table.
 
 **Known gap:** the baked offline snapshot is 168 rows against a 216-pick live board, so an
 ESPN outage mid-draft would cost you rounds 15–18. Closing it means extending `ROWS`,
-`TOKENS`, `ID_RANK`, `ESPN_LIVE` and `UD_META` in `adp_data.py` by 48 players.
+`TOKENS`, `ID_RANK` and `ESPN_LIVE` in `adp_data.py` by 48 players (one structure fewer
+since `UD_META` went with the Underdog column).
