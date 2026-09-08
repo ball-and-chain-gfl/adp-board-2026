@@ -1,14 +1,15 @@
 import json, os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)   # adp_data.py sits next to this script
-from adp_data import ROWS, ID_RANK, TOKENS, ESPN_LIVE, WINKS
+from adp_data import SNAPSHOT, WINKS
 
 TEAMS_N = 12
 DEPTH = TEAMS_N * 18   # 216 - how deep the LIVE board goes (18 rounds)
-SNAP  = len(ROWS)      # how deep the baked offline fallback goes, bounded by adp_data.ROWS
-# DEPTH and SNAP are allowed to differ: the live ESPN pull defines board membership at runtime,
-# while the snapshot below is only reached if ESPN's feed is down. If you extend ROWS, SNAP
-# follows automatically.
+SNAP  = len(SNAPSHOT)  # how deep the baked offline fallback goes
+# Sleeper is the spine: its live ADP defines board membership at runtime, and the snapshot is
+# only reached if Sleeper's feed is down. The snapshot is cut to DEPTH too, so an outage no
+# longer costs you the back rounds.
+assert SNAP == DEPTH, (SNAP, DEPTH)
 
 # --- Hayden Winks (Yahoo) FULL-PPR top 300, re-pulled 08/26 -----------------
 # Full point PPR to match the league. His half-PPR list is NOT used and is not stored.
@@ -56,31 +57,25 @@ assert _nacua and _bijan and _nacua < _bijan, (
 # Ranks must be a dense 1..N. A gap here means duplicate names collapsed in wkey().
 assert sorted(WK_RANK.values()) == list(range(1, len(WK_RANK) + 1)), "WK_RANK is not contiguous"
 
-pairs = [p for p in ID_RANK.replace("\n", "").split(",") if p.strip()]
-toks  = [t for t in TOKENS.replace("\n", "").split(",") if t.strip()]
-live  = [l for l in ESPN_LIVE.replace("\n", "").split(",") if l.strip()]
-assert len(pairs) == SNAP and len(toks) == SNAP and len(live) == SNAP, (len(pairs), len(toks), len(live))
-
-def num(x):
-    return int(x) if x not in ("", None) else None
+# The snapshot is stored in Sleeper's ADP order, which IS the board order.
+_adps = [r[4] for r in SNAPSHOT]
+assert _adps == sorted(_adps), "SNAPSHOT is not in Sleeper ADP order"
 
 data = []
-for i, (name, pos, team, _espn_old, yah, sl) in enumerate(ROWS[:SNAP]):
-    pid, _raw_rank = pairs[i].split(":")
-    dense, espn_s = live[i].split(":")
-    espn, erank = float(espn_s), dense          # dense ordinal on ESPN's rank board
-    epr_rank, y_rk, y_pr, s_rk, s_pr = toks[i].split(".")
+for name, pos, team, pid, sl_adp, sl_pr, e_adp, e_pr, y_adp, y_pr in SNAPSHOT:
     img = (f"https://a.espncdn.com/i/teamlogos/nfl/500/{team.lower()}.png" if pos == "DST"
-           else f"https://a.espncdn.com/i/headshots/nfl/players/full/{pid}.png")
+           else (f"https://a.espncdn.com/i/headshots/nfl/players/full/{pid}.png" if pid else ""))
     P = "DEF" if pos == "DST" else pos
     data.append({
         "name": name, "pos": pos, "team": team, "img": img,
-        # ESPN
-        "espn": espn, "rank": int(erank), "eprRank": f"{P}{epr_rank}" if epr_rank else None,
-        # other platforms: adp, overall rank, positional rank
-        "yahoo": yah, "yaRk": num(y_rk), "yaPr": f"{P}{y_pr}" if y_pr else None,
-        "sleeper": sl, "slRk": num(s_rk), "slPr": f"{P}{s_pr}" if s_pr else None,
+        # Sleeper is the baseline every gap is measured against
+        "sleeper": sl_adp, "slPr": f"{P}{sl_pr}" if sl_pr else None,
+        # kept so the live path can still build a headshot when ESPN is the dead source
+        "espnId": pid,
+        # comparison sources: Winks is a ranking, the other two are ADP
         "winks": WK_RANK.get(wkey(name)),
+        "yahoo": y_adp, "yaPr": f"{P}{y_pr}" if y_pr else None,
+        "espn": e_adp, "espnPr": f"{P}{e_pr}" if e_pr else None,
     })
 
 # Winks positional rank, derived from his ordering across our board's positions
@@ -89,28 +84,20 @@ for d in sorted([x for x in data if x["winks"]], key=lambda x: x["winks"]):
     _wc[d["pos"]] = _wc.get(d["pos"], 0) + 1
     d["wkPr"] = ("DEF" if d["pos"] == "DST" else d["pos"]) + str(_wc[d["pos"]])
 
-# ESPN positional rank by ADP (exact: the ADP-sorted board contains everyone ahead of them)
-cnt = {}
-for d in sorted(data, key=lambda x: x["espn"]):
-    cnt[d["pos"]] = cnt.get(d["pos"], 0) + 1
-    d["epaRank"] = ("DEF" if d["pos"] == "DST" else d["pos"]) + str(cnt[d["pos"]])
-
-for seq, d in enumerate(sorted(data, key=lambda x: x["espn"]), start=1):
-    d["adpSeq"] = seq
-    d["adpSlot"] = f"{(seq-1)//12+1}.{(seq-1)%12+1:02d}"
-for seq, d in enumerate(sorted(data, key=lambda x: x["rank"]), start=1):
-    d["rkSeq"] = seq
-    d["rkSlot"] = f"{(seq-1)//12+1}.{(seq-1)%12+1:02d}"
+# board order IS Sleeper's ADP order, so the sequence is just the index
+for seq, d in enumerate(data, start=1):
+    d["seq"] = seq
+    d["slot"] = f"{(seq-1)//12+1}.{(seq-1)%12+1:02d}"
 
 print("rows:", len(data),
       "| no Winks:", sum(1 for d in data if d["winks"] is None),
       "| no Yahoo:", sum(1 for d in data if d["yahoo"] is None),
-      "| no Sleeper:", sum(1 for d in data if d["sleeper"] is None))
+      "| no ESPN:", sum(1 for d in data if d["espn"] is None))
 
 HTML = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>2026 ADP Board &mdash; ESPN vs Winks / Yahoo / Sleeper</title>
+<title>2026 ADP Board &mdash; Sleeper vs Winks / Yahoo / ESPN</title>
 <style>
 :root{--bg:#0e1116;--panel:#161b22;--line:#242c38;--txt:#e6edf3;--dim:#8b949e;}
 *{box-sizing:border-box}
@@ -136,10 +123,12 @@ button:hover{color:var(--txt)}
 .legend{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:11px;color:var(--dim)}
 .ramp{width:190px;height:12px;border-radius:6px;background:linear-gradient(90deg,#d0342c,#e8736a,#2b323d,#54c47f,#0f9d4f)}
 .tabs{display:flex;gap:4px;margin-top:12px;align-items:flex-end}
-.tab{padding:9px 16px 8px;border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;background:#10151c;
-     color:var(--dim);cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.2px}
-.tab .t2{display:block;font-weight:500;font-size:10.5px;opacity:.75;letter-spacing:0}
-.tab.on{background:var(--bg);color:var(--txt);position:relative;top:1px}
+/* The two-tab strip is gone: Sleeper publishes one metric, so there is one view. A static
+   caption naming the baseline sits where the tabs used to. */
+.tabnote{padding:9px 16px 8px;border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;
+     background:var(--bg);color:var(--txt);font-size:12.5px;font-weight:700;letter-spacing:.2px;
+     position:relative;top:1px}
+.tabnote span{display:block;font-weight:500;font-size:10.5px;opacity:.75;letter-spacing:0;color:var(--dim)}
 /* The table takes whatever height the header leaves. This used to be
    calc(100vh - 152px), which silently broke every time the header wrapped to a
    different number of lines - i.e. exactly as the window got squished. dvh also
@@ -198,7 +187,7 @@ tr:hover td{background:#1a2029}
 .ramp2{width:80px;height:12px;border-radius:6px}
 .na{color:#4d5560}
 .alt{color:#6e7681;font-size:11px;margin-left:5px}
-/* column order: Avg of 3 | Player | ESPN | [Winks Yahoo Sleeper]
+/* column order: Avg of 3 | Player | Sleeper | [Winks Yahoo ESPN]
    dividers close the average, the player block and the ESPN block */
 th:nth-child(1), td:nth-child(1), th:nth-child(2), td:nth-child(2),
 th:nth-child(3), td:nth-child(3){border-right:2px solid #34404f}
@@ -257,9 +246,9 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   /* ...except Winks, which takes ESPN's slot rather than being dropped alongside the
      other three. It is the closest full-PPR read on the board, and ESPN has not really
      left: the +/- on the Winks cell IS the gap to ESPN, and the consensus hue that used
-     to sit on the ESPN cell moves to the Avg cell's left edge (see --hl on each row). */
+     to sit on the baseline cell moves to the Avg cell's left edge (see --hl on each row). */
   th.site.wk, td.site.wk{display:table-cell}
-  th.espn, td.espn{display:none}
+  th.base, td.base{display:none}
   th.c, td.c{width:132px}
   td.c{border-left:3px solid var(--hl,transparent)}
   table{min-width:0}
@@ -271,8 +260,8 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   button{padding:5px 9px;font-size:11.5px}
   .legend{font-size:10px;gap:6px}
   .tabs{margin-top:8px}
-  .tab{padding:6px 12px 5px;font-size:12px}
-  .tab .t2{display:none}
+  .tabnote{padding:6px 12px 5px;font-size:12px}
+  .tabnote span{display:none}
   .pickbox{min-width:86px;margin-right:8px;padding:3px 12px 5px}
   .pickbox b{font-size:23px}
   .pickbox span{font-size:9px;letter-spacing:1px}
@@ -310,7 +299,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
   .legend{margin-left:0;gap:5px;font-size:10px}
   .legend > span:not([class]){display:none}   /* keep the chips, drop the caption */
   .tabs{margin-top:7px;gap:3px}
-  .tab{padding:6px 10px 5px;font-size:11.5px}
+  .tabnote{padding:6px 10px 5px;font-size:11.5px}
   .pickbox{min-width:64px;margin-right:6px;padding:3px 9px 5px}
   .pickbox b{font-size:20px}
   .pickbox span{font-size:8px;letter-spacing:.7px}
@@ -355,19 +344,18 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 </div>
 <div class="tabs">
   <div class="pickbox"><b id="pick">1</b><span id="pickrd">Round 1</span><i id="picksl">1.01</i></div>
-  <div class="tab on" data-m="rank">Rank vs Rank<span class="t2">ESPN's PPR rank compared to each site's rank</span></div>
-  <div class="tab" data-m="adp">ADP vs ADP<span class="t2">ESPN ADP compared to each site's ADP</span></div>
+  <div class="tabnote">Sleeper ADP<span>the baseline &mdash; every gap is measured against it</span></div>
 </div>
 </header>
 <div class="wrap">
 <table id="t">
 <thead><tr>
-<th class="c"><span class="hd" data-k="avgV"><span class="lg" id="h1">Avg of 3</span><span class="sm">AVG</span></span><span class="dbtn" data-d="avg">&Delta;</span></th>
+<th class="c"><span class="hd" data-k="avgV"><span class="lg">Avg of 3</span><span class="sm">AVG</span></span><span class="dbtn" data-d="avg">&Delta;</span></th>
 <th class="l"><span class="hd" data-k="seq"># Player</span></th>
-<th class="espn"><span class="hd" data-k="base"><span class="lg" id="h0">ESPN ADP</span><span class="sm">ESPN</span></span></th>
-<th class="site wk"><span class="hd" data-k="v_winks">Winks</span><span class="dbtn" data-d="winks">&Delta;</span></th>
+<th class="base"><span class="hd" data-k="base"><span class="lg">Sleeper ADP</span><span class="sm">SLEEP</span></span></th>
+<th class="site wk"><span class="hd" data-k="v_winks">Winks rk</span><span class="dbtn" data-d="winks">&Delta;</span></th>
 <th class="site"><span class="hd" data-k="v_yahoo">Yahoo</span><span class="dbtn" data-d="yahoo">&Delta;</span></th>
-<th class="site"><span class="hd" data-k="v_sleeper">Sleeper</span><span class="dbtn" data-d="sleeper">&Delta;</span></th>
+<th class="site"><span class="hd" data-k="v_espn">ESPN</span><span class="dbtn" data-d="espn">&Delta;</span></th>
 </tr></thead>
 <tbody id="b"></tbody>
 
@@ -385,24 +373,21 @@ const WINKS_MAP = __WINKS__;
 let DATA = FALLBACK;
 const CAP = 25;
 const DEAD = 3;               // gaps under 3 picks count as 0 (no lean either way)
-const KEYS = ["yahoo","sleeper","winks"];
-let mode="rank", sortK="seq", asc=true, q="", filt="ALL";
+// Sleeper is the baseline; these three are what it gets compared against.
+const KEYS = ["winks","yahoo","espn"];
+let sortK="seq", asc=true, q="", filt="ALL";
 const HIDDEN = new Set();     // players clicked off the board, keyed by name so they stay
                               // hidden across re-renders and live refreshes
 
 function recompute(){
   DATA.forEach(r=>{
-    if(mode==="adp"){
-      r.base = r.espn; r.alt = r.rank; r.basePr = r.epaRank;
-      r.seq = r.adpSeq; r.slot = r.adpSlot;
-      r.v_yahoo = r.yahoo; r.v_sleeper = r.sleeper;
-      r.v_winks = r.winks ?? null;    // a ranking, not an ADP - same scale, different thing
-    } else {
-      r.base = r.rank; r.alt = r.espn; r.basePr = r.eprRank;
-      r.seq = r.rkSeq; r.slot = r.rkSlot;
-      r.v_yahoo = r.yaRk; r.v_sleeper = r.slRk;
-      r.v_winks = r.winks ?? null;
-    }
+    // One view, keyed to Sleeper ADP. Yahoo and ESPN are ADP too, so those three are
+    // apples-to-apples. Winks publishes rankings only - same scale, different thing - which
+    // is why his column is labelled a rank and rendered as an integer.
+    r.base = r.sleeper; r.basePr = r.slPr;
+    r.v_winks = r.winks ?? null;
+    r.v_yahoo = r.yahoo;
+    r.v_espn  = r.espn;
     KEYS.forEach(k=>{ const v=r["v_"+k]; r["g_"+k] = (v===null||v===undefined) ? null : +(v-r.base).toFixed(1); });
     const ds = KEYS.map(k=>r["g_"+k]).filter(x=>x!==null);
     r.avgd = ds.length ? +(ds.reduce((a,b)=>a+b,0)/ds.length).toFixed(1) : null;
@@ -418,9 +403,9 @@ function recompute(){
     }, 0);
     // positional-rank gaps
     const bp = prNum(r.basePr);
-    r.pg_yahoo = prGap(bp, r.yaPr); r.pg_sleeper = prGap(bp, r.slPr);
+    r.pg_yahoo = prGap(bp, r.yaPr); r.pg_espn = prGap(bp, r.espnPr);
     r.pg_winks = prGap(bp, r.wkPr);
-    const ps = [r.yaPr, r.slPr, r.wkPr].map(prNum).filter(x=>x!==null);
+    const ps = [r.wkPr, r.yaPr, r.espnPr].map(prNum).filter(x=>x!==null);
     if(ps.length){
       const m = ps.reduce((a,b)=>a+b,0)/ps.length;
       r.avgPr = (r.pos==="DST"?"DEF":r.pos) + Math.round(m);
@@ -515,24 +500,27 @@ function hlColor(r){
   const edgeA = Math.max(.62, +a).toFixed(3);   // 3px of colour needs a floor to read
   return {bg:`rgba(${rgb},${a})`, edge:`rgba(${rgb},${edgeA})`, rgb, a:+a};
 }
-const fmt = v => mode==="adp" ? v.toFixed(1) : String(v);
+// ADP reads to a decimal. Winks is an integer ranking, and rendering it as "3.0"
+// implies a precision he never published.
+const fmt  = v => v.toFixed(1);
+const fmtR = v => String(Math.round(v));
 // Site columns run the same draft-clock colour as the Avg column, each off its own number, so
 // a green Sleeper cell means Sleeper's market has already passed him at the current pick. The
 // small signed number stays the static gap to ESPN - that is the one thing these cells say
 // that the colour does not. No round.pick line here; only the Avg column carries that.
-function cell(r, v, cls){
+function cell(r, v, cls, f){
   const td = `<td class="site${cls ? " " + cls : ""}">`;
   if(v===null||v===undefined) return td + '<span class="na">&mdash;</span></td>';
   const d = +(v - r.base).toFixed(1);
   const s = (d > 0 ? "+" : "") + d.toFixed(1);
   // Two states, and the handover is TAKEN going above zero. Before the draft starts a clock
   // reading says nothing - every number is ahead of pick 1 - so the cell shows its static gap
-  // to ESPN and the whole market is readable at a glance. Once players start coming off,
+  // to Sleeper and the whole market is readable at a glance. Once players start coming off,
   // draftColor takes over and the column goes live. draftColor returns null while TAKEN is 0,
   // which is exactly the handover, so the order of this || chain IS the behaviour.
   const live = draftColor(r, v) || color(d) || "background:#2b323d;color:#c9d1d9";
-  const tip = TAKEN === 0 ? `${s} vs ESPN` : `vs pick ${PICK} &middot; ${s} vs ESPN`;
-  return `${td}<span class="cell" style="${live}" title="${tip}">${fmt(v)}<span class="d">${s}</span></span></td>`;
+  const tip = TAKEN === 0 ? `${s} vs Sleeper` : `vs pick ${PICK} &middot; ${s} vs Sleeper`;
+  return `${td}<span class="cell" style="${live}" title="${tip}">${(f||fmt)(v)}<span class="d">${s}</span></span></td>`;
 }
 // ---- live draft position -> EVERY number column ----------------------------
 // Once the draft is under way all five number columns carry the same live read, worked off the
@@ -567,10 +555,10 @@ function draftColor(r, v){
     const a = (0.45 + 0.55*Math.min(1, (d-GREY_END)/CAP)).toFixed(3);
     return `background:rgba(208,52,44,${a})`;
   }
-  // always measured against ESPN's RANK, on both tabs: how far down ESPN's board he sits is what
-  // decides whether that room reaches for him, and rank is the cleaner read of that than ADP.
-  // On the Rank tab r.rank IS r.base, so this leaves that tab untouched.
-  if(r.rank - PICK > WAIT) return "background:rgba(230,180,40,.92)";
+  // Measured against SLEEPER's own number, because Sleeper is the room you are drafting in:
+  // how far down its board a player sits is what decides whether anyone there reaches for him.
+  // This read ESPN back when ESPN was the platform.
+  if(r.base - PICK > WAIT) return "background:rgba(230,180,40,.92)";
   if(d < 0){
     const a = (0.45 + 0.55*Math.min(1, -d/CAP)).toFixed(3);
     return `background:rgba(15,157,79,${a})`;
@@ -579,7 +567,7 @@ function draftColor(r, v){
 }
 function avgCell(r){
   if(r.avgV===null) return '<td class="c"><span class="na">&mdash;</span></td>';
-  const shown = mode==="adp" ? r.avgV.toFixed(1) : String(Math.round(r.avgV));
+  const shown = r.avgV.toFixed(1);
   const sl = slotOf(r.avgV);
   // number = live draft position; the static gap to ESPN is in the tooltip
   const live = draftColor(r) || "background:#2b323d;color:#c9d1d9";
@@ -619,8 +607,7 @@ function render(){
     ub.style.display = HIDDEN.size ? "" : "none";
     ub.innerHTML = "<b>" + HIDDEN.size + "</b> off the board &middot; restore all";
   }
-  document.getElementById("h0").textContent = mode==="adp" ? "ESPN ADP" : "ESPN Rank";
-  document.getElementById("h1").textContent = mode==="adp" ? "Avg of 3" : "Avg rank (3)";
+  // header labels are static now that there is only one view
   // bands of 12 always. In true draft order they are real rounds and get labelled as such;
   // once sorted or filtered they are just groups of 12 in the current view, labelled honestly.
   const natural = (sortK==="seq" && asc && filt==="ALL" && q==="");
@@ -655,9 +642,9 @@ function render(){
           <span class="sub"><span class="meta">${r.team}</span><span class="pos ${r.pos}">${r.pos==="DST"?"DEF":r.pos}</span>
           ${r.tierEnd&&r.tierDrop!==null?`<span class="cliff">cliff &middot; next ${r.pos==="DST"?"DEF":r.pos} +${r.tierDrop}</span>`:""}</span></span>
         </div></td>
-      <td class="espn"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
+      <td class="base"><span class="cell${hl?" hl":""}" style="${hl?`background:${hl.bg}`:"background:none;padding-left:0"}"
             >${fmt(r.base)}</span></td>
-      ${cell(r,r.v_winks,"wk")}${cell(r,r.v_yahoo)}${cell(r,r.v_sleeper)}</tr>`;
+      ${cell(r,r.v_winks,"wk",fmtR)}${cell(r,r.v_yahoo)}${cell(r,r.v_espn)}</tr>`;
   }).join("");
   document.querySelectorAll("th .ar").forEach(a=>a.remove());
   document.querySelectorAll("th .hd").forEach(hd=>{
@@ -708,10 +695,6 @@ document.addEventListener("keydown", e=>{
     e.preventDefault(); undoBtn.onclick();
   }
 });
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
-  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
-  t.classList.add("on"); mode=t.dataset.m; recompute(); computeTiers(); render();
-});
 document.getElementById("q").oninput=e=>{q=e.target.value.toLowerCase().trim(); render();};
 
 // ---------------------------------------------------------------------------
@@ -728,7 +711,7 @@ function wkey(n){ const k=norm(n); const last=k.split(" ").pop(); return WTEAMS.
 
 // Source state is still tracked (and logged) even though the status chips were removed from the
 // header, so a fallback is still discoverable from the console rather than silently invisible.
-const SRC = {espn:"pending", sleeper:"pending", yahoo:"pending",
+const SRC = {sleeper:"pending", yahoo:"pending", espn:"pending",
              winks:"static Winks' published FULL-PPR top 300, updated 8/26"};
 function setStatus(){
   const el = document.getElementById("srcs");
@@ -761,40 +744,45 @@ async function loadLive(){
     ["/api/espn","/api/sleeper","/api/yahoo"].map(p=>grab(p).catch(e=>({error:String(e.message||e)})))
   );
 
-  // ESPN defines who is on the board, so without it we keep the snapshot entirely
-  if(espn.error || !espn.players){
-    Object.keys(SRC).forEach(k=>{ if(k!=="winks") SRC[k]="snapshot ("+(espn.error||"espn unavailable")+")"; });
+  // Sleeper defines who is on the board, so without it we keep the snapshot entirely
+  if(sleeper.error || !sleeper.players){
+    Object.keys(SRC).forEach(k=>{ if(k!=="winks") SRC[k]="snapshot ("+(sleeper.error||"sleeper unavailable")+")"; });
     setStatus(); if(btn) btn.disabled=false; return;
   }
-  SRC.espn = "live "+espn.pulled;
+  SRC.sleeper = "live "+sleeper.pulled;
 
   const idx = j => { const m={}; if(j && j.players) j.players.forEach(p=>{const n=norm(p.name); if(!(n in m)) m[n]=p;}); return m; };
-  const S = idx(sleeper), Y = idx(yahoo);
-  SRC.sleeper   = sleeper.error ? "snapshot ("+sleeper.error+")" : "live "+sleeper.pulled;
+  const EI = idx(espn), Y = idx(yahoo);
+  SRC.espn      = espn.error    ? "snapshot ("+espn.error+")"    : "live "+espn.pulled;
   SRC.yahoo     = yahoo.error   ? "snapshot ("+yahoo.error+")"   : "live "+yahoo.pulled;
 
   // fall back per-source, keyed by player name, so one dead source doesn't blank a column
   const FB = {}; FALLBACK.forEach(r=>FB[norm(r.name)]=r);
 
-  const board = espn.players.slice().sort((a,b)=>a.adp-b.adp).slice(0,DEPTH).map(e=>{
-    const n = norm(e.name), f = FB[n] || {};
-    const P = e.pos==="DST" ? "DEF" : e.pos;
-    const s = S[n], y = Y[n];
+  // Sleeper also ranks defensive backs, fullbacks, linebackers and punters. Filter to the
+  // positions this league actually drafts, or they take slots on the board.
+  const POS = {QB:1, RB:1, WR:1, TE:1, K:1, DST:1};
+  const board = sleeper.players.filter(x=>POS[x.pos]).slice(0,DEPTH).map(sp=>{
+    const n = norm(sp.name), f = FB[n] || {};
+    const P = sp.pos==="DST" ? "DEF" : sp.pos;
+    const e = EI[n], y = Y[n];
+    // This Sleeper endpoint publishes no player id, so headshots still come from the ESPN CDN,
+    // keyed by ESPN id and joined on the normalised name. The baked id covers an ESPN outage;
+    // a player ESPN does not carry at all gets no headshot and the img onerror hides it.
+    const pid = e ? e.id : f.espnId;
     return {
-      name:e.name, pos:e.pos, team:e.team,
-      img: e.pos==="DST" ? `https://a.espncdn.com/i/teamlogos/nfl/500/${e.team.toLowerCase()}.png`
-                         : `https://a.espncdn.com/i/headshots/nfl/players/full/${e.id}.png`,
-      espn:e.adp, rank:e.rank,
-      epaRank:P+e.prByAdp, eprRank:P+e.prByRank,
-      yahoo:   y ? y.adp : (yahoo.error   ? (f.yahoo   ?? null) : null),
-      yaRk:    y ? y.rk  : (yahoo.error   ? (f.yaRk    ?? null) : null),
-      yaPr:    y ? P+y.pr: (yahoo.error   ? (f.yaPr    ?? null) : null),
-      sleeper: s ? s.adp : (sleeper.error ? (f.sleeper ?? null) : null),
-      slRk:    s ? s.rk  : (sleeper.error ? (f.slRk    ?? null) : null),
-      slPr:    s ? P+s.pr: (sleeper.error ? (f.slPr    ?? null) : null),
+      name:sp.name, pos:sp.pos, team:sp.team,
+      img: sp.pos==="DST" ? `https://a.espncdn.com/i/teamlogos/nfl/500/${sp.team.toLowerCase()}.png`
+                          : (pid ? `https://a.espncdn.com/i/headshots/nfl/players/full/${pid}.png` : ""),
+      // the spine. Sleeper is live by definition here, or we returned above.
+      sleeper: sp.adp, slPr: P+sp.pr, espnId: pid,
       // Winks is a published article, not a feed: always the baked top 300, keyed by name
-      winks:   WINKS_MAP[wkey(e.name)] ?? null,
+      winks:   WINKS_MAP[wkey(sp.name)] ?? null,
       wkPr:    null,   // filled in below, once the whole board is known
+      yahoo:   y ? y.adp : (yahoo.error ? (f.yahoo  ?? null) : null),
+      yaPr:    y ? P+y.pr: (yahoo.error ? (f.yaPr   ?? null) : null),
+      espn:    e ? e.adp : (espn.error  ? (f.espn   ?? null) : null),
+      espnPr:  e ? P+e.prByAdp : (espn.error ? (f.espnPr ?? null) : null),
     };
   });
 
@@ -805,12 +793,12 @@ async function loadLive(){
     r.wkPr = (r.pos==="DST"?"DEF":r.pos) + wc[r.pos];
   });
 
-  board.slice().sort((a,b)=>a.espn-b.espn).forEach((r,i)=>{ r.adpSeq=i+1; r.adpSlot=slotOf(i+1).label; });
-  board.slice().sort((a,b)=>a.rank-b.rank).forEach((r,i)=>{ r.rkSeq=i+1; r.rkSlot=slotOf(i+1).label; });
+  // the board arrives in Sleeper ADP order, so the sequence is just the index
+  board.forEach((r,i)=>{ r.seq=i+1; r.slot=slotOf(i+1).label; });
 
   DATA = board;
   const pulledEl = document.getElementById("pulled");
-  if(pulledEl) pulledEl.textContent = new Date(espn.pulled).toLocaleString();
+  if(pulledEl) pulledEl.textContent = new Date(sleeper.pulled).toLocaleString();
   setStatus();
   recompute(); computeTiers(); render();
   if(btn) btn.disabled = false;
