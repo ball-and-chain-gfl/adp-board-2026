@@ -33,6 +33,9 @@ button:hover{color:var(--txt)}
      background:var(--bg);color:var(--txt);font-size:12.5px;font-weight:700;letter-spacing:.2px;
      position:relative;top:1px}
 .tabnote span{display:block;font-weight:500;font-size:10.5px;opacity:.75;letter-spacing:0;color:var(--dim)}
+/* second tab: a link out to the hand-written trade analyzer page (trade.html) */
+.tablink{background:#0b0f14;color:var(--dim);text-decoration:none}
+.tablink:hover{color:var(--txt)}
 /* The table takes whatever height the header leaves. This used to be
    calc(100vh - 152px), which silently broke every time the header wrapped to a
    different number of lines - i.e. exactly as the window got squished. dvh also
@@ -249,6 +252,7 @@ tfoot td{color:var(--dim);font-size:11px;text-align:left;padding:12px 10px;white
 <div class="tabs">
   <div class="pickbox"><b id="pick">1</b><span id="pickrd">Round 1</span><i id="picksl">1.01</i></div>
   <div class="tabnote">Sleeper ADP<span>the baseline &mdash; every gap is measured against it</span></div>
+  <a class="tabnote tablink" href="/trade.html">Trade Analyzer</a>
 </div>
 </header>
 <div class="wrap">
