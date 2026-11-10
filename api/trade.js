@@ -39,7 +39,7 @@ const SLEEPER = "https://api.sleeper.app";
 const ESPN_INJ_FEED = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries";
 // every active NFL player's id and name, public: used only to put names on past waiver bids
 const ESPN_PLAYERS = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/players?view=players_wl&scoringPeriodId=0`;
-const SKILL_Q = "position[]=QB&position[]=RB&position[]=WR&position[]=TE";
+const SKILL_Q = "position[]=QB&position[]=RB&position[]=WR&position[]=TE&position[]=K&position[]=DEF";
 const SKILL = ["QB", "RB", "WR", "TE"];
 // how many unrostered players to carry at each position, best first
 const POOL = { QB: 30, RB: 60, WR: 80, TE: 30 };
@@ -132,13 +132,14 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "public, s-maxage=1800, stale-while-revalidate=86400");
 
   try {
-    const [state, sched, roster, teamsInfo, settings, injFeed, ...authorPages] = await Promise.all([
+    const [state, sched, roster, teamsInfo, settings, injFeed, matchups, ...authorPages] = await Promise.all([
       getJSON(`${SLEEPER}/v1/state/nfl`),
       getJSON(ESPN_SCHED),
       getJSON(`${GFL}?view=mRoster&seasonId=${SEASON}`),
       getJSON(`${GFL}?view=mTeam&seasonId=${SEASON}`),
       getJSON(`${GFL}?view=mSettings&seasonId=${SEASON}`),
       getJSON(ESPN_INJ_FEED).catch(() => null),      // big and optional: the page copes without it
+      getJSON(`${GFL}?view=mMatchupScore&seasonId=${SEASON}`).catch(() => null),   // who plays whom each week
       ...AUTHORS.map(([, slug]) => getText(`${YAHOO}/author/${slug}/`).catch(() => null)),
     ]);
 
@@ -206,6 +207,40 @@ export default async function handler(req, res) {
     const item = id => (((settings.settings || {}).scoringSettings || {}).scoringItems || []).find(x => x.statId === id);
     const recPts = (item(53) || {}).points, intPts = (item(20) || {}).points;
     const intAdj = intPts != null ? intPts - -1 : 0;
+
+    /* ---- kickers and defences -------------------------------------------------------------
+       Scored by the league's own ESPN rules (read from its settings), from Sleeper's raw stats.
+       KD[key] = { pos, sid, name, tm, gs:[{w, opp, pts}] }; PF/PA are every team's points for
+       and against by week, read off the defences' points-allowed lines. */
+    const dItem = (id, dflt) => { const it = item(id); if (!it) return dflt; const o = (it.pointsOverrides || {})["16"]; return o != null ? o : it.points != null ? it.points : dflt; };
+    const kItem = (id, dflt) => { const it = item(id); return it && it.points != null ? it.points : dflt; };
+    const paPts = pa => (pa <= 0 ? dItem(89, 5) : pa <= 6 ? dItem(90, 4) : pa <= 13 ? dItem(91, 3) : pa <= 17 ? dItem(92, 1) : pa <= 27 ? 0 : pa <= 34 ? dItem(123, -1) : pa <= 45 ? dItem(124, -3) : dItem(125, -5));
+    const yaPts = ya => (ya < 100 ? dItem(128, 5) : ya < 200 ? dItem(129, 3) : ya < 300 ? dItem(130, 2) : ya < 350 ? 0 : ya < 400 ? dItem(132, -1) : ya < 450 ? dItem(133, -3) : ya < 500 ? dItem(134, -5) : ya < 550 ? dItem(135, -6) : dItem(136, -7));
+    const dstPts = s => (s.sack || 0) * dItem(99, 1) + (s.int || 0) * dItem(95, 2) + ((s.fum_rec || 0) + (s.def_st_fum_rec || 0)) * dItem(96, 2)
+      + (s.blk_kick || 0) * dItem(97, 2) + (s.safe || 0) * dItem(98, 2) + ((s.def_td || 0) + (s.def_st_td || 0)) * dItem(103, 6)
+      + (s.def_2pt || 0) * dItem(206, 2) + paPts(s.pts_allow || 0) + yaPts(s.yds_allow != null ? s.yds_allow : 325);
+    const kPts = s => ((s.fgm_0_19 || 0) + (s.fgm_20_29 || 0) + (s.fgm_30_39 || 0)) * kItem(80, 3) + (s.fgm_40_49 || 0) * kItem(77, 4)
+      + ((s.fgm_50_59 != null ? s.fgm_50_59 : s.fgm_50p || 0)) * kItem(198, 5) + (s.fgm_60p || 0) * kItem(201, 6)
+      + (s.fgmiss || 0) * kItem(85, -1) + (s.xpm || 0) * kItem(86, 1) + (s.xpmiss || 0) * kItem(88, 0);
+    const KD = {}, PA = {}, PF = {};
+    weekly.forEach((rows, i) => {
+      const w = i + 1;
+      for (const x of rows || []) {
+        const s = x.stats, pl = x.player || {}, pos = pl.position, tm = fix(x.team), opp = fix(x.opponent);
+        if (!s || !tm || !opp || (pos !== "K" && pos !== "DEF")) continue;
+        if (pos === "DEF") {
+          if (s.pts_allow == null) continue;
+          (PA[tm] = PA[tm] || {})[w] = s.pts_allow; (PF[opp] = PF[opp] || {})[w] = s.pts_allow;
+          const u = (KD["DST|" + tm] = KD["DST|" + tm] || { pos: "DST", sid: x.player_id, name: (pl.last_name || tm) + " D/ST", tm, gs: [] });
+          u.gs.push({ w, opp, pts: dstPts(s) });
+        } else {
+          if (!s.fga && !s.xpa) continue;
+          const u = (KD["K|" + x.player_id] = KD["K|" + x.player_id] || { pos: "K", sid: x.player_id, name: ((pl.first_name || "") + " " + (pl.last_name || "")).trim(), gs: [] });
+          u.tm = fix(pl.team) || tm;
+          u.gs.push({ w, opp, tm, pts: kPts(s) });
+        }
+      }
+    });
 
     const P = {};        // sleeper player id -> { name, pos, tm, gs: [game rows] }
     const TW = {};       // "TEAM|week" -> team totals that week
@@ -363,6 +398,73 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       });
     }
 
+    /* ---- kicker and defence projections ---------------------------------------------------
+       What the research on streaming agrees on: a defence's week is mostly its OPPONENT (how
+       few points that offence scores and how many sacks and turnovers it gives up), and a
+       kicker's is mostly how many points his team is expected to score. There are no free
+       rest-of-season betting lines, so both are built from this season's results:
+         DST   own = the unit's points a game;  matchup = points a game the opponent has given
+               up to defences
+         K     own = the kicker's points a game;  matchup = his team's expected points that
+               week = its scoring average + what the opponent allows - the league average
+       Projection = league average + b1 x (own - average) + b2 x (matchup - average), with b1
+       and b2 fitted on this season's games, each game predicted from the OTHER games only
+       (so a result never predicts itself). Small samples shrink the weights by themselves. */
+    const mean = a => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
+    const loo = (arr, w) => { const o = arr.filter(g => g.w !== w); return o.length ? mean(o.map(g => g.pts)) : null; };
+    const tmAvg = (M, tm, skip) => { const v = Object.entries(M[tm] || {}).filter(([w]) => +w !== skip).map(([, p]) => p); return v.length ? mean(v) : null; };
+    const lgPts = mean(Object.values(PF).flatMap(m => Object.values(m)));
+    const kdModel = {};
+    for (const pos of ["DST", "K"]) {
+      const units = Object.values(KD).filter(u => u.pos === pos && u.gs.length);
+      const lg = mean(units.flatMap(u => u.gs.map(g => g.pts)));
+      // points a game each team has given up to this position
+      const given = {};
+      for (const u of units) for (const g of u.gs) (given[g.opp] = given[g.opp] || []).push({ w: g.w, pts: g.pts });
+      const match = (tm, opp, skip) => {
+        if (pos === "DST") { const a = (given[opp] || []).filter(g => g.w !== skip); return a.length ? mean(a.map(g => g.pts)) : lg; }
+        const off = tmAvg(PF, tm, skip), def = tmAvg(PA, opp, skip);
+        return (off != null ? off : lgPts) + (def != null ? def : lgPts) - lgPts;
+      };
+      const lgM = pos === "DST" ? lg : lgPts;
+      const X = [], y = [];
+      for (const u of units) for (const g of u.gs) {
+        const own = loo(u.gs, g.w);
+        if (own == null) continue;
+        X.push([own - lg, match(g.tm || u.tm, g.opp, g.w) - lgM]); y.push(g.pts - lg);
+      }
+      /* One season of games is a noisy sample (kickers above all), so the fit is blended with
+         what published multi-season studies found, counted as PRIOR_N games' worth: defences
+         about a quarter own form and half matchup; kickers about 0.3 own form and 0.2 points
+         per point of team total (4for4's implied-total buckets: ~5.9 to ~9.2 kicker points
+         across the range). As the season adds games the data outweighs the prior. */
+      const prior = pos === "DST" ? [0.25, 0.5] : [0.3, 0.2], PRIOR_N = 300;
+      const fit = X.length > 80 ? ols(X, y) : null;
+      const b = prior.map((p0, i) => { const f = fit && fit[i] >= -0.5 && fit[i] <= 1.5 ? fit[i] : null;
+        return f == null ? p0 : Math.max(0, (X.length * f + PRIOR_N * p0) / (X.length + PRIOR_N)); });
+      kdModel[pos] = { lg: r1(lg), own: r3(b[0]), match: r3(b[1]), n: X.length, fit: fit ? fit.map(r3) : null };
+      // how soft each opponent is for this position, 1 = stingiest, 32 = softest
+      const soft = Object.keys(games).map(id => TEAM[id]).filter(Boolean).map(tm => ({ tm, v: pos === "DST" ? match(null, tm) : (tmAvg(PA, tm) != null ? tmAvg(PA, tm) : lgPts) }))
+        .sort((a, b2) => a.v - b2.v);
+      const softRk = Object.fromEntries(soft.map((x, i) => [x.tm, i + 1]));
+      for (const u of units) {
+        u.ppg = mean(u.gs.map(g => g.pts));
+        u.wk = weeks.map(w => {
+          const g = (games[TEAM_ID[u.tm]] || {})[w];
+          if (!g) return { w, o: "BYE", p: 0 };
+          const opp = TEAM[g.opp];
+          return { w, o: (g.home ? "" : "@") + opp, rk: softRk[opp] || null, p: r1(Math.max(0, lg + b[0] * (u.ppg - lg) + b[1] * (match(u.tm, opp) - lgM))) };
+        });
+        const live = u.wk.filter(x => x.o !== "BYE");
+        u.base = live.length ? mean(live.map(x => x.p)) : u.ppg;
+        u.pl = Array(played).fill(null); for (const g of u.gs) u.pl[g.w - 1] = r1(g.pts);
+        u.last = Math.max(...u.gs.map(g => g.w));
+      }
+    }
+    const kdOf = (pos, name, proTeamId) => (pos === "DST" ? KD["DST|" + TEAM[proTeamId]]
+      : Object.values(KD).find(u => u.pos === "K" && norm(u.name) === norm(name)) || null);
+    const kdBlock = u => ({ g: u.gs.length, ppg: r1(u.ppg), pl: u.pl, base: r1(u.base), wk: u.wk });
+
     // the rate everything is projected from: half usage (xFP), half production, on the SEASON.
     // The last three games only get a say when the role itself moved - up to 60% of the weight
     // once it has moved by a quarter or more. A cold stretch in the same role changes nothing.
@@ -434,6 +536,10 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
           espn: r1(sr.appliedAverage), base: r1(base), wk: slate(pl.proTeamId, pos, base),
           ...(sp && sp.S.g ? statBlock(sp) : {}),
         };
+        if (pos === "K" || pos === "DST") {
+          const u = kdOf(pos, pl.fullName, pl.proTeamId);
+          if (u && u.wk) { u.used = true; Object.assign(players[pl.id], kdBlock(u)); }
+        }
         ids.push(String(pl.id));
       }
       teams.push({
@@ -456,6 +562,23 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
             base: r1(base), wk: slate(TEAM_ID[p.tm], pos, base), ...statBlock(p),
           };
         });
+    }
+
+    // ---- every kicker and defence nobody has: defences all of them, kickers who kicked lately
+    for (const u of Object.values(KD)) {
+      if (u.used || !u.wk || !TEAM_ID[u.tm]) continue;
+      if (u.pos === "K" && u.last < played - 2) continue;
+      players["s" + u.sid] = { id: "s" + u.sid, sid: u.sid, n: u.name, pos: u.pos, tm: u.tm, inj: "", t: 0, ret: null, miss: 0, ...kdBlock(u) };
+    }
+
+    // ---- my fantasy schedule: who I play in each remaining regular-season week
+    const regWeeks = (((settings.settings || {}).scheduleSettings || {}).matchupPeriodCount) || 14;
+    const opps = {};
+    for (const m of (matchups && matchups.schedule) || []) {
+      const w = m.matchupPeriodId, hm = (m.home || {}).teamId, aw = (m.away || {}).teamId;
+      if (w < firstWeek || w > regWeeks || (hm !== MY_TEAM && aw !== MY_TEAM)) continue;
+      const o = hm === MY_TEAM ? aw : hm;
+      if (o) opps[w] = o;
     }
 
     const counts = ((settings.settings || {}).rosterSettings || {}).lineupSlotCounts || {};
@@ -549,6 +672,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       scoring: { rec: recPts != null ? recPts : null, int: intPts != null ? intPts : null },
+      opps, kd: kdModel,
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
       model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
       teams, players, faab, experts,

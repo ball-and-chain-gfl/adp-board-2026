@@ -98,10 +98,12 @@ HTML = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>2026 ADP Board &mdash; Sleeper vs Winks / Yahoo / ESPN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0e1116;--panel:#161b22;--line:#242c38;--txt:#e6edf3;--dim:#8b949e;}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 header{padding:11px 20px 0;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:30}
 h1{margin:0 0 4px;font-size:17px;letter-spacing:.2px}

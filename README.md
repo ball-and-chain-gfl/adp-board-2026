@@ -30,11 +30,13 @@ lineup (the two period tags), projected totals for the rest of the season and th
 schedule week by week with the projection for each game and the opponent shaded by matchup, a
 plain-language line on how his number is built, his games so far, the stats for his position,
 my status and lineup calls, and a button to the packages that would get him (or to shop him).
-The rest of a row still does what it did: on Targets it opens his packages. In the builder a
-row selects the player, so only the photo opens the card there.
+The rest of a row still does what it did: on Targets it opens his packages; in the builder it
+ticks the player into the deal (each row has a checkbox), while his name or photo opens the
+card.
 
-Photos are large rounded tiles backed by the position's colour, and lineup gains are coloured
-pills, so a list reads by colour before it reads by number. The
+Photos fill the left side of their row or card at full height and fade into it, on a gradient
+of the position's colour; lineup gains are coloured pills, so a list reads by colour before it
+reads by number. Both pages use Inter (Google Fonts) with tabular figures. The
 page uses a light theme in the style of a fantasy-sports site (white panels on light grey, a dark
 top bar, one blue for actions, green = good for me, red = bad for me, amber = maybe), and shows
 each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
@@ -108,6 +110,16 @@ waiver drop suggestion never names a starter call or a handcuff. Calls are kept 
 (`localStorage`, key `trade.role`); `ROLE_SEED` in `trade.html` is the default on every device
 until changed (Kyle Monangai = handcuff to D'Andre Swift).
 
+### The weeks I play the other team, and byes
+
+`api/trade.js` sends my remaining regular-season opponents (`opps`, from `mMatchupScore`). For
+every deal, the week I play a team in it is scored on its own: what the trade does to THEIR
+lineup that week. That swing is added to my gain when packages are ranked ("Best for me"), and
+called out on the card and in the builder — e.g. trading Trey McBride to a team I meet in his
+bye week helps them every week but the one that matters to me. Incoming players with a bye
+still ahead are flagged too. The *My lineup* filter hides any deal that doesn't leave me better
+off once that swing is counted; "Any, even if it costs me" shows them.
+
 ### Three-team trades
 
 A rotation: I send one or two players to team C, C sends one to team B, B sends one or two to
@@ -117,6 +129,38 @@ dropped when the straight deal with B (same players out, same back) is already a
 search skips a candidate only on exact bounds — value can only shrink once it lands (`USE` ≤ 1),
 so if what B gets is under 88% of what it gives at full value it can't reach *Worth asking* —
 plus the same hole and top-piece tests, so nothing that could pass is skipped.
+
+### Kickers and defenses
+
+Waivers has a *Players / Kickers / Defenses* switch. Every kicker and defense is scored from
+Sleeper's raw stats by **this league's ESPN rules** (points- and yards-allowed tiers, sacks,
+turnovers, return TDs; field goals by distance), which reproduces ESPN's season averages to the
+decimal for nearly every unit. Free-agent kickers and defenses are in the pool, so they get a
+bid, a term and a player card like anyone else.
+
+The projection follows what the streaming research agrees on — a defense's week is mostly its
+opponent, a kicker's is mostly how many points his team should score — but with no free
+rest-of-season betting lines it is built from this season's results:
+
+    week = league average + own × (unit's average − league) + match × (matchup − league)
+
+- *Defense*: matchup = points a game that opponent has given up to defenses.
+- *Kicker*: matchup = his team's expected points = its scoring average + what the opponent
+  allows − the league average.
+
+`own` and `match` are fitted on this season's games, each game predicted from the other games
+only, then blended with published multi-season findings counted as 300 games' worth (defenses
+about a quarter own form and half matchup; kickers about 0.3 own form and 0.2 points per point
+of team total). The payload carries the result as `kd`, including the raw fit. On 11/10 the
+data alone said defense 0.17 / 0.42 and kicker 0.20 / 0.00, so kickers sit close together and
+the tool says so rather than inventing separation. Not modelled: weather, domes, injuries to
+the offence, or real betting lines.
+
+Sources read for this: [NBC Sports on implied totals in D/ST rankings](https://www.nbcsports.com/fantasy/football/news/2026-fantasy-football-week-1-defense-dst-rankings-and-streamers),
+[DraftSharks, "For DST, the Matchup Is the Strategy"](https://www.draftsharks.com/article/streaming-defense),
+[Fantasy Points on sack/turnover stability](https://fantasypoints.com/nfl/articles/2024/how-to-draft-and-stream-dsts),
+[4for4, "Debunking the Randomness of Kickers"](https://www.4for4.com/2023/preseason/debunking-randomness-kickers-fantasy-football),
+[PFF, "The unpredictability of kickers"](https://www.pff.com/news/fantasy-football-metrics-that-matter-kickers).
 
 ### How rivals bid
 
@@ -191,7 +235,7 @@ They are this tool's own, built in `api/trade.js` on every load. No outside proj
    Zero on a bye.
 3. **Availability.** ESPN's injury status and return dates, or my own call, zero out the weeks
    he misses.
-4. **Exceptions.** Kickers and defences use their ESPN season average. A free agent the
+4. **Exceptions.** Kickers and defenses have their own model (see *Kickers and defenses*). A free agent the
    analysts named in a waiver piece is projected on his last three games.
 
 What it does not know: Vegas totals, weather, depth-chart news that hasn't shown up in snaps
