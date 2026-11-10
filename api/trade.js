@@ -278,6 +278,33 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       };
     }
 
+    /* ---- what a ROLE is, by position, and when it has really changed -------------------------
+       A role is a share of the offence, not a box score. Three quiet games on the same snaps and
+       the same share of the ball is a cold stretch; it says nothing about the job.
+         QB      the job is binary: he is the starter or he isn't, and only games he plays are
+                 counted, so a starting quarterback's role never "shrinks". A dip in his snap
+                 share is a game he left hurt, which the injury status already covers. No shift.
+         RB      his share of the team's carries and targets, each priced by what the xFP model
+                 says a carry and a target are worth to a back, on a league-average workload
+         WR, TE  the same, where targets do nearly all the work
+       A role CHANGE needs two witnesses: the share of the ball moved AND the playing time moved
+       the same way. The change is the smaller of the two, last three games against everything
+       before them. A receiver who ran every route but drew fewer targets has not lost his role;
+       a quarterback who took every snap in three bad games has not either. */
+    let la = 0, lt = 0, ln = 0;
+    for (const tw of Object.values(TW)) { la += tw.att; lt += tw.tgt; ln++; }
+    const LG = { att: ln ? la / ln : 26, tgt: ln ? lt / ln : 33 };      // league-average carries and targets a team-game
+    const roleIdx = (pos, A) => coef[pos][0] * LG.att * A.cs + coef[pos][2] * LG.tgt * A.ts;
+    const rel = (a, b) => (b > 0 ? a / b - 1 : 0);
+    const shiftOf = p => {
+      if (p.gs.length < 5) return 0;                                    // need three recent games and at least two before
+      const B = agg(p.pos, p.gs.slice(0, -3)), R = p.R;
+      if (p.pos === "QB") return 0;
+      const snap = rel(R.snap || 0, B.snap || 0);
+      const opp = rel(roleIdx(p.pos, R), roleIdx(p.pos, B));
+      return Math.sign(opp) === Math.sign(snap) ? Math.sign(opp) * Math.min(Math.abs(opp), Math.abs(snap)) : 0;
+    };
+
     // ---- season + last-three lines for everyone, and position ranks across the NFL
     const minG = Math.max(2, Math.floor(played * 0.4));
     const byKey = {}, byName = {};
@@ -285,6 +312,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       p.gs.sort((a, b) => a.w - b.w);
       p.S = agg(p.pos, p.gs);
       p.R = agg(p.pos, p.gs.slice(-3));
+      p.shift = Math.max(-1, Math.min(2, shiftOf(p)));
       const k = norm(p.name);
       // two players can share a name; keep the one who has played more
       if (!byKey[k + "|" + p.pos] || byKey[k + "|" + p.pos].S.g < p.S.g) byKey[k + "|" + p.pos] = p;
@@ -310,11 +338,12 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       });
     }
 
-    // the rate everything is projected from: half usage (xFP), half production, each leaning
-    // 60/40 toward the last three games once there is enough season to lean on
+    // the rate everything is projected from: half usage (xFP), half production, on the SEASON.
+    // The last three games only get a say when the role itself moved - up to 60% of the weight
+    // once it has moved by a quarter or more. A cold stretch in the same role changes nothing.
     const baseOf = (sp, fallback) => {
       if (!sp || !sp.S.g) return fallback || 0;
-      const S = sp.S, R = sp.R, lean = S.g >= 4 ? 0.6 : 0;
+      const S = sp.S, R = sp.R, lean = 0.6 * Math.min(1, Math.abs(sp.shift || 0) / 0.25);
       return 0.5 * (lean * R.xfp + (1 - lean) * S.xfp) + 0.5 * (lean * R.ppg + (1 - lean) * S.ppg);
     };
     // healthy projection for each remaining week; the page applies injuries
@@ -337,7 +366,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         opp: r1(S.opp), rzg: r1(S.rzg), fdg: r1(S.fdg),
         tps: r3(S.tps), cr: r3(S.cr), ypt: r1(S.ypt), yacr: r1(S.yacr),
         ypc: r1(S.ypc), yaco: r1(S.yaco), bt: r3(S.bt),
-        prk: sp.prk || null, xrk: sp.xrk || null, pl,
+        prk: sp.prk || null, xrk: sp.xrk || null, pl, rs: r3(sp.shift || 0),
         l3: { ppg: r1(R.ppg), xfp: r1(R.xfp), snap: r3(R.snap), ts: r3(R.ts), cs: r3(R.cs), td: R.td, xtd: r1(R.xtd) },
       };
     };

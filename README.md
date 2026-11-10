@@ -37,11 +37,20 @@ each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
     make my lineup better (a quarter-point a week or more), with the best answer any package for
     him gets. *Gettable* narrows it to the realistic ones. Also *Free agents* and *Sell-highs*.
   Tapping any target opens Packages filtered to the deals that would get him, every answer shown.
-- **Roster** — every player gets an **Outlook**: *Target* (on another roster, helps my lineup,
-  nothing says he fades), *Avoid* (numbers running ahead of his workload, role shrinking, a
-  brutal playoff schedule, or out for most of what's left — only for players good enough to
-  matter), *Sell* (those signs on one of my starters) or *Core*. Rows are tinted to match, and
-  the All / Targets / Avoid / Sell buttons filter to them.
+  The table's *Replaces* column and each top-target card name the starter of mine he would take
+  the place of.
+- **Roster** — **everyone is read against my lineup**, with two tags a player: one for the rest
+  of the regular season, one for the playoff weeks.
+  - *My players*: how good he will be — his rank at the position over those weeks. *Elite* is
+    the top third of the startable ranks, then *Starter*, *Fringe* (the next half again) and
+    *Bench*; *Out* when he misses more than half of them.
+  - *Everyone else*: what he does to my lineup. **▲ +4.1** is the points a week my lineup gains
+    with him in it, byes and injuries counted, and the line under it names the starter he'd go
+    "over" (or "sharing weeks with", when he doesn't out-project him but the pair scores more
+    by matchup and bye). **▼ −2.3** is how far he sits behind the weakest starter he could
+    replace. Within half a point is *Even*.
+  The All / Upgrades / Playoff upgrades / Downgrades buttons filter on those tags. There is no
+  "avoid" tag: touchdown luck and hot efficiency are notes in the *Read* column, not a verdict.
   Below that, need tiles and the players — **one table per position** (QB, RB, WR, TE, K/DEF),
   each with only that position's stats: my roster, any team, every rostered
   player, free agents, or everyone. Column sets: *Basic* (the default: status, lineup call, PPG,
@@ -141,7 +150,16 @@ Everything is in points a game against what he has been scoring:
   carries the most weight (0.75). League-wide the model is honest: 589 expected vs 574 scored
   when it was built.
 - **efficiency** — the rest of the gap. Part luck, part the player, so it counts less (0.35).
-- **role** — last three games' xFP against the season (0.6).
+- **role** — a role is a share of the offence, not a box score, and it differs by position:
+  - *QB*: binary. He is the starter or he isn't, and only games he plays are counted, so a
+    starting quarterback's role never "shrinks" after bad games. No role signal at all.
+  - *RB*: his share of the team's carries and of its targets, each priced by what the xFP
+    model says a carry and a target are worth to a back, on a league-average team workload.
+  - *WR, TE*: the same, where target share does nearly all the work.
+  A role **change** needs two witnesses: that share moved *and* his playing time (snap share)
+  moved the same way, last three games against all the ones before. The change is the smaller
+  of the two. A receiver who ran every route but drew fewer targets for three weeks has not
+  lost his role. It counts 0.6 × the change × his xFP, and is flagged at ±15%.
 - **schedule** — average rank of the defences ahead against the ones already faced.
 
 "Upside" is the sum. The buy grade is half what he adds to my lineup, a quarter upside, and the
@@ -219,8 +237,10 @@ everything.
   red-zone carries, targets, red-zone targets — separately for RB, WR and TE.
 - Defence-vs-position is built from the same feed. Ranks follow ESPN's convention: 1 = stingiest,
   32 = softest. Opponent adjustment is half the gap to league average, capped at ±20%.
-- Each remaining week through 17 gets a projection: half usage, half production, leaning 60/40
-  to the last three games, times the opponent adjustment, zero on a bye.
+- Each remaining week through 17 gets a projection: half usage (xFP), half production, on the
+  **season**, times the opponent adjustment, zero on a bye. The last three games only get a say
+  when the role itself changed (above): up to 60% of the weight once it has moved by a quarter
+  or more. A cold or hot stretch in the same role changes nothing.
 
 ### Known limits
 

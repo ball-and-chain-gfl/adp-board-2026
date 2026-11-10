@@ -122,11 +122,17 @@ select.rl.on{border-color:#e0a800;background:var(--warn2);color:var(--warn)}
 .ol{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:4px;white-space:nowrap}
 .ol.target{background:var(--good);color:#fff}.ol.avoid{background:var(--bad);color:#fff}
 .ol.sell{background:#d86a00;color:#fff}.ol.core{background:var(--blue);color:#fff}.ol.hold{background:#e3e6e9;color:var(--soft)}
-td:has(> .ol){text-align:left}
+td:has(> .pt){text-align:left}
+.pt{display:inline-block;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pt.up2,.pt.t1{background:var(--good);color:#fff}.pt.up1,.pt.t2{background:var(--good2);color:var(--good)}
+.pt.t3{background:var(--warn2);color:var(--warn)}.pt.even,.pt.out,.pt.t4{background:#eceef0;color:#6b6f74}
+.pt.down{background:var(--bad2);color:var(--bad)}
+.pt.sm{font-size:9.5px;padding:1px 5px}
+.hint2{font-size:12.5px;color:var(--dim);margin:0 0 10px;flex:none}
+.top1 .rp{font-size:12px;color:var(--dim)}
+.top1 .rp b{color:var(--txt)}
 .olw{display:block;font-size:11px;color:var(--dim);margin-top:3px;max-width:190px;white-space:normal;line-height:1.25}
-tr.o-target td{background:#f3faf5}tr.o-avoid td{background:#fdf4f5}
-tr.o-target td.l{box-shadow:inset 4px 0 0 var(--good)}tr.o-avoid td.l{box-shadow:inset 4px 0 0 var(--bad)}
-tr.o-sell td.l{box-shadow:inset 4px 0 0 #d86a00}
+tr.o-up td.l{box-shadow:inset 4px 0 0 var(--good)}
 
 /* my needs: one tile per spot in the lineup */
 .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;flex:none}
@@ -463,7 +469,7 @@ td .chip{font-size:11px;padding:1px 7px}
     <div class="seg" id="posf">
       <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button>
     </div>
-    <div class="seg" id="olf"><button data-o="" class="on">All</button><button data-o="target">Targets</button><button data-o="avoid">Avoid</button><button data-o="sell">Sell</button></div>
+    <div class="seg" id="olf"><button data-o="" class="on">All</button><button data-o="up">Upgrades</button><button data-o="poup">Playoff upgrades</button><button data-o="down">Downgrades</button></div>
     <div class="seg" id="colsf">
       <button data-c="basic" class="on">Basic</button><button data-c="stats">Stats</button><button data-c="schedule">Schedule</button>
     </div>
@@ -471,6 +477,7 @@ td .chip{font-size:11px;padding:1px 7px}
     <button class="b" id="ovclr" hidden></button>
     <span class="count" id="rcount"></span>
   </div>
+  <div class="hint2" id="rhint"></div>
   <div class="ptabs" id="rscroll"></div>
 </section>
 
@@ -536,7 +543,7 @@ td .chip{font-size:11px;padding:1px 7px}
 <script>
 let D, P, ME, TEAMS = {}, REG = [], PO = [], ALLW = [], COLS = {}, PCT = {}, ALLPK = [], FORPK = [], pkTimer, SEARCH = 0, SEARCHING = "";
 // league view, rebuilt whenever availability changes
-let TGT = {}, BESTWILL = {}, GIVEPK = [];
+let TGT = {}, BESTWILL = {}, GIVEPK = [], BAR = {};
 let REPL = {}, START = {}, XSTART = {}, RANK = {}, BASE = {}, DEPTH = {}, ROLE0 = {}, W0 = {}, BUYS = [], SELLS = [], DEPTHS = [], WAIV = [], XPBY = {};
 const SKILL = ["QB","RB","WR","TE"], ORDER = {QB:0,RB:1,WR:2,TE:3,K:4,DST:5}, VIEWS = ["targets","roster","packages","builder","waivers"];
 // who counts as startable, by rank at the position across the whole player pool
@@ -765,6 +772,7 @@ function recompute(){
   for(const t of D.teams){ const m = t.id === ME; DEPTH[t.id] = depthOf(t.players, m); Object.assign(ROLE0, rolesOf(t.players, m)); W0[t.id] = worth(t.players, true, m); }
   BASE = posRanks();
   for(const p of Object.values(P)) p.sg = signals(p);
+  buildLens();
   buildTargets();
   buildWaivers();
 }
@@ -783,7 +791,10 @@ function signals(p){
   s.owed = p.xfp - p.ppg;
   s.tdl = p.xtd != null ? (p.xtd - p.td) / p.g * 6 : 0;
   s.eff = s.owed - s.tdl;
-  s.grow = p.g >= 4 ? p.l3.xfp - p.xfp : 0;
+  // role change, from the API: share of the team's carries and targets AND playing time both
+  // moved the same way, last three games against the ones before. Never set for a QB.
+  s.shift = p.rs || 0;
+  s.grow = s.shift * p.xfp;                  // the same thing in points a game
   s.cold = p.g >= 4 ? p.l3.xfp - p.l3.ppg : 0;
   s.ahead = avgRk(p, ALLW);
   s.sched = s.ahead != null && p.fsos != null ? s.ahead - p.fsos : 0;
@@ -805,12 +816,12 @@ function tagLine(p){
   if(s.E >= 0.8){
     if(s.tdl >= 0.8) return `${(p.xtd - p.td).toFixed(1)} TDs owed`;
     if(s.owed >= 1.5) return `${f1(p.xfp)} workload, ${f1(p.ppg)} scored`;
-    if(s.grow >= 1.5) return `role up ${sgn(s.grow)}`;
+    if(s.shift >= 0.15) return `role up ${Math.round(s.shift * 100)}%`;
     if(s.sched >= 4) return "softer schedule ahead";
   } else if(s.E <= -0.8){
     if(s.tdl <= -0.8) return `${(p.td - p.xtd).toFixed(1)} TDs over expected`;
     if(s.owed <= -2) return `${f1(p.ppg)} scored on ${f1(p.xfp)} workload`;
-    if(s.grow <= -1.5) return `role down ${sgn(s.grow)}`;
+    if(s.shift <= -0.15) return `role down ${Math.round(-s.shift * 100)}%`;
     if(s.sched <= -4) return "tougher schedule ahead";
   }
   return "";
@@ -844,22 +855,12 @@ function buildTargets(){
     const soft = po == null ? 0.5 : Math.max(0, Math.min(1, (po - 8) / 16));
     const g = 0.5 * Math.min(1, fit / 4) + 0.25 * Math.max(0, Math.min(1, E / 4)) + 0.15 * pq(p, "xfp") + 0.1 * soft;
     const slot = mine.filter(id => P[id].pos === p.pos && rk(P[id], true) > p.adj + 2000).length + 1;
-    BUYS.push({p, role, d, fit, slot, grade:Math.round(99 * g)});
+    BUYS.push({p, role, d, fit, slot, over:BAR[p.pos][REG.length ? "reg" : "po"], grade:Math.round(99 * g)});
   }
   TGT = Object.fromEntries(BUYS.map(x => [x.p.id, x]));
 }
 
-function verdictTag(p){
-  if(p.g == null) return "";
-  const mine = p.t === ME, rankAt = (RANK[p.pos] || []).indexOf(p.id) + 1, coreN = {QB:6,RB:12,WR:12,TE:5}[p.pos];
-  const E = p.sg ? p.sg.E : 0;
-  if(mine && E <= -1.5 && p.base >= (REPL[p.pos] || 0)) return `<span class="tag sell">Sell high</span>`;
-  if(!mine && E >= 1.5 && p.base >= (REPL[p.pos] || 0)) return `<span class="tag buy">Buy low</span>`;
-  if(p.tr >= 2) return `<span class="tag up">Rising</span>`;
-  if(p.tr <= -2) return `<span class="tag down">Fading</span>`;
-  if(rankAt && rankAt <= coreN) return `<span class="tag core">Core</span>`;
-  return `<span class="tag">Hold</span>`;
-}
+
 function injBadge(p){
   const o = OV[p.id], w0 = D.weeks[0], last = D.weeks[D.weeks.length - 1];
   if(o) return o.t === "O" ? `<span class="inj man">OUT${o.thru >= last ? " season" : o.thru === w0 ? " wk " + o.thru : " thru " + o.thru}</span>` : "";
@@ -966,7 +967,7 @@ function sigChips(p){
   if(s.tdl >= 0.8) out.push([`${(p.xtd - p.td).toFixed(1)} TDs owed`, "g"]);
   else if(s.tdl <= -0.8) out.push([`${(p.td - p.xtd).toFixed(1)} TDs over`, "r"]);
   if(s.eff >= 1.5) out.push(["yards owed", "g"]); else if(s.eff <= -2) out.push(["hot efficiency", "r"]);
-  if(s.grow >= 1.5) out.push(["role growing", "g"]); else if(s.grow <= -1.5) out.push(["role shrinking", "r"]);
+  if(s.shift >= 0.15) out.push(["role growing", "g"]); else if(s.shift <= -0.15) out.push(["role shrinking", "r"]);
   if(p.g >= 4 && s.cold >= 3 && p.l3.ppg <= p.ppg - 1.5) out.push(["cold last 3", "g"]);
   if(s.sched >= 4) out.push(["easier schedule", "g"]); else if(s.sched <= -4) out.push(["tougher schedule", "r"]);
   if(PO.length && s.po != null){ if(s.po >= 21) out.push(["soft playoffs", "g"]); else if(s.po <= 11) out.push(["tough playoffs", "r"]); }
@@ -1005,7 +1006,7 @@ function onSort(el, get, set, render){
    share say nothing; a back's air yards don't exist. In a mixed list each column is blank for the
    positions it doesn't apply to. Hidden until "Stats" is picked. */
 const REL = {
-  QB: ["xfp","fpoe","trend","up","cs","fdg"],
+  QB: ["xfp","fpoe","up","cs","fdg"],
   RB: ["xfp","fpoe","trend","up","snap","cs","ts","opp","rzg","rz","td","xtd","ypc","yaco","bt","fdg"],
   WR: ["xfp","fpoe","trend","up","snap","ts","ays","wopr","tps","doc","cr","ypt","yacr","rz","td","xtd","fdg"],
 };
@@ -1037,34 +1038,56 @@ function tlogo(id){
 }
 const ownTag = p => (p.t ? `<span class="own">${tlogo(p.t)}${esc(ownAb(p))}</span>` : `<span class="own fa">FA</span>`);
 
-/* ---- outlook: who to go after and who to stay away from, for the rest of the season ----------
-   target  on someone else's roster (or free), healthy, makes my lineup better, and nothing in
-           his read says it is about to fade
-   avoid   his numbers are running ahead of what he is given (touchdowns over expected, a hot
-           efficiency streak), his role is shrinking, or his playoff weeks are brutal - or he is
-           out for most of what is left. Only flagged for players good enough to matter
-   sell    the same warning signs on one of MY startable players
-   core    one of my startable players with nothing wrong */
-function outlook(p){
-  if(!SKILL.includes(p.pos)) return null;
-  const s = p.sg, E = s ? s.E : 0, hurt = p.af < 0.6;
-  const bad = sigChips(p).filter(c => c[1] === "r").map(c => c[0]);
-  const fading = !!s && (E <= -1 || s.grow <= -1.5 || (s.po != null && s.po <= 10 && E < 0));
-  const why = bad.slice(0, 2).join(", ");
-  if(p.t === ME){
-    if(hurt) return {k:"hold", lab:"HURT", w:"out for most of what's left"};
-    if(fading && p.ok) return {k:"sell", lab:"▼ SELL", w:why || "fading from here"};
-    if(p.ok) return {k:"core", lab:"CORE", w:""};
-    return null;
+/* ---- the lens: everyone is read against MY lineup ----------------------------------------------
+   Two tags a player, one for the rest of the regular season and one for the playoff weeks.
+     My players     how good he will be: his rank at the position over those weeks.
+                    Elite = top third of the startable ranks, Starter, Fringe (the next half
+                    again), Bench.
+     Everyone else  what he would do to my lineup. If he would play for me, the points a week
+                    my lineup gains with him in it (byes and injuries counted). Usually that is
+                    "over" my starter; when he doesn't out-project him but the pair still scores
+                    more by matchup and bye, it says "sharing weeks with". If he wouldn't,
+                    how far he sits behind the weakest starter he could replace. Half a point
+                    either way is "even".
+   BAR is that weakest starter, per position and per period: my QB for a QB; the lowest of my
+   two RBs and my flex for a back, and so on. */
+const PT = 0.5;
+function buildLens(){
+  const mine = TEAMS[ME].players, L = lineupOf(mine, true);
+  BAR = {};
+  for(const pos of SKILL){
+    const rows = L.rows.filter(r => r.p && (r.slot === pos || (r.slot === "FLEX" && pos !== "QB")));
+    const low = k => (rows.length ? rows.slice().sort((a,b) => a.p[k] - b.p[k])[0].p : null);
+    BAR[pos] = {reg:low("ros"), po:low("po")};
+    const all = Object.values(P).filter(p => p.pos === pos);
+    all.slice().sort((a,b) => b.ros - a.ros).forEach((p, i) => (p.rr = i + 1));
+    all.slice().sort((a,b) => b.po - a.po).forEach((p, i) => (p.rp = i + 1));
   }
-  const matters = p.base >= (REPL[p.pos] || 0);
-  if(hurt && matters) return {k:"avoid", lab:"▼ AVOID", w:"out for most of what's left"};
-  if(fading && matters) return {k:"avoid", lab:"▼ AVOID", w:why || "fading from here"};
-  const t = TGT[p.id];
-  if(t) return {k:"target", lab:"▲ TARGET", w:`${sgn(t.d.reg)} a week for me${PO.length ? `, ${sgn(t.d.po)} playoffs` : ""}`};
-  return null;
+  for(const p of Object.values(P)){
+    p.lens = null;
+    if(!SKILL.includes(p.pos) || p.t === ME) continue;
+    const d = delta(W0[ME], worth(mine.concat([p.id]), true, true)), bar = BAR[p.pos];
+    const gap = (k, a) => (bar[k] ? Math.min(0, p[a] - bar[k][a]) : 0);
+    p.lens = {d, reg:d.reg > 0.05 ? d.reg : gap("reg", "ros"), po:d.po > 0.05 ? d.po : gap("po", "po"), over:bar};
+  }
 }
-const olPill = (p, withWhy) => { const o = outlook(p); return o ? `<span class="ol ${o.k}">${o.lab}</span>${withWhy && o.w ? `<span class="olw">${esc(o.w)}</span>` : ""}` : ""; };
+function ptag(p, k, mini){
+  if(!SKILL.includes(p.pos)) return "";
+  const idx = k === "reg" ? REG : PO, a = k === "reg" ? "ros" : "po", r = p[k === "reg" ? "rr" : "rp"];
+  if(!idx.length) return "";
+  const outW = idx.filter(i => p.eff[i] === 0 && p.wk[i].p > 0).length;
+  if(outW > idx.length / 2) return mini ? "" : `<span class="pt out">Out</span><span class="olw">${outW} of ${plural(idx.length, "week")}</span>`;
+  if(p.t === ME){
+    const N = STARTN[p.pos], t = r <= Math.ceil(N / 3) ? ["t1", "Elite"] : r <= N ? ["t2", "Starter"] : r <= Math.round(N * 1.5) ? ["t3", "Fringe"] : ["t4", "Bench"];
+    return mini ? "" : `<span class="pt ${t[0]}">${t[1]}</span><span class="olw">${p.pos}${r} · ${f1(p[a])} a week</span>`;
+  }
+  const v = p.lens[k], o = p.lens.over[k];
+  const c = v >= 2 ? "up2" : v >= PT ? "up1" : v <= -PT ? "down" : "even";
+  const lab = c === "even" ? "≈ Even" : (v > 0 ? "▲ " : "▼ ") + sgn(v);
+  if(mini) return c === "even" ? "" : `<span class="pt sm ${c}">${lab}${k === "po" ? " PO" : ""}</span>`;
+  return `<span class="pt ${c}">${lab}</span><span class="olw">${p.pos}${r}${o ? ` · ${v <= -PT ? "behind" : v < PT ? "level with" : p[a] > o[a] ? "over" : "sharing weeks with"} ${esc(short(o))}` : ""}</span>`;
+}
+const lensUp = p => !!p.lens && (p.lens.reg >= PT || p.lens.po >= PT);
 
 /* ---- my needs: lineup rank overall and at each spot -----------------------------------------
    On Targets the position tiles are buttons: tap one to see only the players who fix it. */
@@ -1120,7 +1143,8 @@ function renderTops(){
     return `<button class="top1" data-id="${p.id}">
       <div class="hd">${img(p)}<div class="who"><div class="nm">${esc(p.n)}</div>
         <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
-      <div class="nums">${REG.length ? `<div><b class="${cls(x.d.reg)}">${sgn(x.d.reg)}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(x.d.po)}">${sgn(x.d.po)}</b><span>playoffs</span></div>` : ""}<div><b>${f1(p.ros)}</b><span>proj</span></div></div>
+      <div class="nums">${REG.length ? `<div><b class="${cls(x.d.reg)}">${sgn(x.d.reg)}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(x.d.po)}">${sgn(x.d.po)}</b><span>playoffs</span></div>` : ""}</div>
+      ${x.over ? (p.ros > x.over.ros ? `<div class="rp">replaces <b>${esc(short(x.over))}</b> ${f1(x.over.ros)} → <b>${f1(p.ros)}</b></div>` : `<div class="rp">shares weeks with <b>${esc(short(x.over))}</b></div>`) : ""}
       <div class="ft">${w ? `<span class="will ${w}">${WORD[w]}</span>` : `<span class="dimn">checking deals…</span>`}<span>See packages →</span></div>
     </button>`;
   }).join("");
@@ -1136,7 +1160,7 @@ function renderTargets(){
   if(mode === "depth") list = list.filter(x => x.fit > 0.05 || S.tgPos !== "ALL");
   $("tgsrc").hidden = mode !== "buy"; $("tgget").hidden = mode !== "buy";
   $("tgcount").textContent = plural(list.length, "player");
-  $("tgsub").textContent = mode === "buy" ? "everyone on another roster who makes my lineup better — tap a row for packages"
+  $("tgsub").textContent = mode === "buy" ? "every player who'd start for me over one of mine, and by how much — tap a row for packages"
     : mode === "sell" ? "my starters running ahead of their workload — tap to shop them" : "free agents who would add something";
   if(!list.length){
     $("tgscroll").innerHTML = `<div class="chip" style="margin:12px">${mode === "buy" ? "Nobody healthy on another roster would make my lineup better" : mode === "sell" ? "None of my starters is running ahead of his workload" : "No free agent would make my lineup better"}</div>`;
@@ -1146,7 +1170,8 @@ function renderTargets(){
   const cols = [{k:"name", h:"Player", l:true, v:x => x.p.n, html:x => plyX(x.p, x.p.t && x.p.t !== ME ? ownTag(x.p) : "")}];
   if(mode === "buy") cols.push(
     {k:"grade", h:"Grade", t:"Half what he adds to my lineup (playoffs count 1.5x), a quarter his upside, the rest workload and playoff schedule", c:true, v:x => x.grade, html:x => gradeCell(x.grade)},
-    {k:"fits", h:"Fits", t:"Where he would play for me", v:x => x.fit, html:x => `<span class="fitc">${fits(x)}</span>`, c:true});
+    {k:"fits", h:"Replaces", t:"The starter in my lineup he would take the place of, and that player's projection", v:x => x.fit,
+      html:x => (x.over ? `<span class="fitc">${x.p.ros > x.over.ros ? "" : "shares w/ "}${esc(short(x.over))}</span> <span class="dimn">${f1(x.over.ros)}</span>` : `<span class="fitc">${fits(x)}</span>`)});
   if(mode === "depth") cols.push({k:"fits", h:"Fits", v:x => x.fit, html:x => `<span class="fitc">${x.role !== "B" ? "Starts for me" : "Bench depth"}</span>`, c:true});
   if(mode === "sell") cols.push(
     {k:"grade", h:"Sell", t:"How far he is running ahead of his workload", c:true, v:x => x.grade, html:x => gradeCell(x.grade, "s")},
@@ -1295,7 +1320,8 @@ function renderWaivers(){
   $("wvcount").textContent = plural(list.length, "free agent");
   $("wvall").textContent = S.wvAll ? "Only ones worth a bid" : "Show every free agent";
   const top = WAIV.length ? Math.max(1, ...WAIV.map(x => x.bid)) : 1;
-  const lvl = x => (!x.bid ? "d" : x.bid >= top * 0.6 ? "a" : x.bid >= top * 0.3 ? "b" : "c");
+  // colour by how much of my budget it is, not by how it compares with a thin week's best
+  const lvl = x => (!x.bid ? "d" : x.bid >= 0.1 * (left[ME] || 1) ? "a" : x.bid >= 0.03 * (left[ME] || 1) ? "b" : "c");
   const denom = (REG.length + 1.5 * PO.length) || 1;
   const P_ = x => x.p;
   const cols = [
@@ -1354,16 +1380,18 @@ function buildCols(){
     yaco: stat("yaco", "YACo", "Yards after contact per carry", f1),
     bt:   stat("bt", "BT%", "Broken tackles per carry", pct),
     fdg:  stat("fdg", "1D/g", "First downs per game, rushing and receiving", f1),
-    trend:{k:"trend", h:"Trend", t:"Last three games' xFP against the season", v:p => (p.g >= 4 ? p.tr : null),
-           f:x => (x >= 1 ? "▲ " : x <= -1 ? "▼ " : "") + sgn(x), cl:x => cls(Math.abs(x) >= 1 ? x : 0)},
+    trend:{k:"trend", h:"Role", t:"Change in his role, last three games against the ones before: his share of the team's carries and targets, and only when his playing time moved the same way. A cold stretch on the same snaps is not a role change", v:p => (p.g >= 5 ? p.tr : null),
+           f:x => (Math.abs(x) < 0.05 ? "steady" : (x > 0 ? "▲ +" : "▼ −") + Math.round(Math.abs(x) * 100) + "%"), cl:x => cls(Math.abs(x) >= 0.15 ? x : 0)},
     up:   {k:"up", h:"Upside", t:"What his workload, touchdown luck, role trend and schedule say he should gain or lose per game", v:p => (p.sg ? p.sg.E : null), f:x => sgn(x), cl:x => cls(Math.abs(x) >= 0.8 ? x : 0)},
     ros:  {k:"ros", h:"ROS", t:"Projected points per week, weeks " + wkSpan(REG), v:p => p.ros, f:f1, bold:true, sep:true},
     po:   {k:"po", h:"PO", t:"Projected points per week, weeks " + wkSpan(PO), v:p => p.po, f:f1, bold:true, hd:"po"},
     fsos: {k:"fsos", h:"Faced", t:"Average rank of the defences he has already played, against his position (32 = softest)", v:p => (p.fsos != null ? p.fsos : null), f:x => x.toFixed(0), sep:true},
     sos:  {k:"sos", h:"Ahead", t:"Average rank of the defences left in weeks " + wkSpan(REG) + " (32 = softest)", v:p => avgRk(p, REG), f:x => x.toFixed(0)},
     psos: {k:"psos", h:"PO ahead", t:"Average rank of the defences in weeks " + wkSpan(PO) + " (32 = softest)", v:p => avgRk(p, PO), f:x => x.toFixed(0), hd:"po"},
-    tag:  {k:"tag", h:"Outlook", t:"Target: helps my lineup and nothing says he fades. Avoid: running ahead of his workload, role shrinking, brutal playoffs, or out. Sell: the same signs on one of mine",
-           v:p => { const o = outlook(p); return o ? {target:5, core:4, hold:3, sell:2, avoid:1}[o.k] : null; }, html:p => olPill(p, true)},
+    oreg: {k:"oreg", h:"Wk " + wkSpan(REG), t:"Rest of the regular season. My players: how good he'll be at his position. Everyone else: what he adds to my lineup a week, or how far he is behind the starter he'd replace",
+           v:p => (p.lens ? p.lens.reg : p.t === ME && isSingle() && p.rr ? -p.rr : null), html:p => ptag(p, "reg")},
+    opo:  {k:"opo", h:"Playoffs", t:"Weeks " + wkSpan(PO) + ". My players: how good he'll be at his position. Everyone else: what he adds to my lineup a week, or how far he is behind the starter he'd replace", hd:"po",
+           v:p => (p.lens ? p.lens.po : p.t === ME && isSingle() && p.rp ? -p.rp : null), html:p => ptag(p, "po")},
   };
   D.weeks.forEach((w, i) => (COLS["w" + i] = {k:"w" + i, h:"Wk " + w, t:"Projected points and opponent, week " + w, v:p => p.eff[i],
     html:p => wkChip(p, i), hd:(w >= 15 ? "po" : ""), wk:true, sep:(i === 0 || w === 15)}));
@@ -1374,9 +1402,10 @@ const usageKeys = pos => pos === "RB" ? ["snap","cs","ts","opp","rzg","rz","td",
   : ["snap","ts","cs","wopr","opp","rz","rzg","td","xtd","fdg"];
 function colKeys(pos = S.pos){
   const lead = ["st", ...(S.scope === "me" ? ["role"] : [])], tail = [...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : [])];
-  if(S.cols === "basic") return ["tag", ...lead, "ppg", ...(D.weeks.length ? ["w0"] : []), ...tail];
-  if(S.cols === "stats") return ["tag", ...lead, "ppg", "log", ...(SKILL.includes(pos) || pos === "ALL" ? statKeys(pos) : [])];
-  return ["tag", ...lead, ...D.weeks.map((w, i) => "w" + i), ...tail, "fsos", ...(REG.length ? ["sos"] : []), ...(PO.length ? ["psos"] : [])];
+  const tags = SKILL.includes(pos) || pos === "ALL" ? [...(REG.length ? ["oreg"] : []), ...(PO.length ? ["opo"] : [])] : [];
+  if(S.cols === "basic") return [...tags, ...lead, "ppg", ...(D.weeks.length ? ["w0"] : []), ...tail];
+  if(S.cols === "stats") return [...tags, ...lead, "ppg", "log", ...(SKILL.includes(pos) || pos === "ALL" ? statKeys(pos) : [])];
+  return [...tags, ...lead, ...D.weeks.map((w, i) => "w" + i), ...tail, "fsos", ...(REG.length ? ["sos"] : []), ...(PO.length ? ["psos"] : [])];
 }
 function tableRows(){
   let ids;
@@ -1387,7 +1416,9 @@ function tableRows(){
   else ids = TEAMS[S.scope].players;
   let list = ids.map(id => P[id]);
   if(!isSingle()) list = list.filter(p => SKILL.includes(p.pos));
-  if(S.ol) list = list.filter(p => (outlook(p) || {}).k === S.ol);
+  if(S.ol === "up") list = list.filter(p => p.lens && p.lens.reg >= PT);
+  if(S.ol === "poup") list = list.filter(p => p.lens && p.lens.po >= PT);
+  if(S.ol === "down") list = list.filter(p => p.lens && p.lens.reg <= -PT && p.lens.po <= -PT);
   if(S.pos !== "ALL") list = list.filter(p => p.pos === S.pos);
   if(S.q){ const q = S.q.toLowerCase(); list = list.filter(p => (p.n + " " + p.tm + " " + ownAb(p) + " " + (p.t ? TEAMS[p.t].name : "free agent")).toLowerCase().includes(q)); }
   const c = COLS[S.sort];
@@ -1421,8 +1452,7 @@ function renderTable(list){
       if(txt == null) return `<td class="num dimn${sep}">–</td>`;
       return `<td class="num ${c.cl ? c.cl(c.v(p)) : ""}${sep}"${c.tint ? ` style="${tint(p, k)}"` : ""}>${c.bold ? "<b>" : ""}${txt}${c.bold ? "</b>" : ""}</td>`;
     }).join("");
-    const o = outlook(p);
-    return `<tr class="${!isSingle() && p.t === ME ? "me" : ""}${o ? " o-" + o.k : ""}"><td class="l">${plyX(p, isSingle() ? "" : ownTag(p))}</td>${tds}</tr>`;
+    return `<tr class="${!isSingle() && p.t === ME ? "me" : ""}${lensUp(p) ? " o-up" : ""}"><td class="l">${plyX(p, isSingle() ? "" : ownTag(p))}</td>${tds}</tr>`;
   };
   const html = GROUPS.map(([lab, poss]) => {
     const ps = list.filter(p => poss.includes(p.pos));
@@ -1436,6 +1466,9 @@ function renderTable(list){
 
 function renderRoster(){
   const list = tableRows();
+  $("rhint").innerHTML = S.scope === "me"
+    ? "The two tags say how good each of my players will be: for the rest of the regular season, and for the playoff weeks."
+    : "Every player is measured against my lineup: <b class='pos-n'>▲</b> the points a week he'd add over the starter he'd replace, <b class='neg-n'>▼</b> how far he is behind him. One tag for the rest of the regular season, one for the playoffs.";
   renderTable(list);
   $("rcount").textContent = plural(list.length, "player");
   const n = Object.keys(OV).length;
@@ -1670,7 +1703,7 @@ function listHtml(team, sel){
   for(const p of ps){
     if(p.pos !== last){ out += `<div class="grp">${p.pos}</div>`; last = p.pos; }
     out += `<button class="row${sel.has(p.id) ? " sel" : ""}" data-id="${p.id}">${img(p)}
-      <span class="who"><span class="nm">${esc(p.n)}</span><span class="meta"><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${olPill(p)}</span></span>
+      <span class="who"><span class="nm">${esc(p.n)}</span><span class="meta"><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${p.lens ? ptag(p, "reg", true) + ptag(p, "po", true) : ""}</span></span>
       <span class="n2"><span>${f1(p.ros)}</span><span>${f1(p.po)}</span></span></button>`;
   }
   return out;
@@ -1916,7 +1949,7 @@ function boot(d){
   D = d; P = d.players; ME = d.me;
   d.teams.forEach(t => (TEAMS[t.id] = t));
   d.weeks.forEach((w, i) => { (w >= 15 ? PO : REG).push(i); ALLW.push(i); });
-  for(const p of Object.values(P)) p.tr = p.l3 && p.g >= 4 ? p.l3.xfp - p.xfp : 0;
+  for(const p of Object.values(P)) p.tr = p.rs || 0;
   // drop status calls that have run their course
   for(const id of Object.keys(OV)) if(!P[id] || (OV[id].t === "O" && OV[id].thru < d.weeks[0])) delete OV[id];
   saveOV();
@@ -1993,10 +2026,9 @@ function boot(d){
   pickSeg("posf", "p", v => { S.pos = v; S.limit = 40; if(!colKeys().includes(S.sort) && S.sort !== "name") S.sort = null; renderRoster(); });
   pickSeg("olf", "o", v => {
     S.ol = v;
-    // targets and players to avoid live on other rosters; sells live on mine
-    if(v && v !== "sell" && (S.scope === "me")){ S.scope = "all"; $("scope").value = "all"; }
-    if(v === "sell"){ S.scope = "me"; $("scope").value = "me"; }
-    S.sort = v ? "tag" : null; S.dir = -1; renderRoster(); $("rscroll").scrollTop = 0;
+    // upgrades and downgrades are other people's players, measured against mine
+    if(v && S.scope === "me"){ S.scope = "all"; $("scope").value = "all"; }
+    S.sort = !v ? null : v === "poup" || !REG.length ? "opo" : "oreg"; S.dir = v === "down" ? 1 : -1; renderRoster(); $("rscroll").scrollTop = 0;
   });
   pickSeg("colsf", "c", v => { S.cols = v; if(!colKeys().includes(S.sort) && S.sort !== "name") S.sort = null; renderRoster(); });
   $("q").oninput = e => { S.q = e.target.value.trim(); S.limit = 40; renderRoster(); };
