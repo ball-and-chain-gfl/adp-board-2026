@@ -53,8 +53,13 @@ each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
   Tapping any target opens Packages filtered to the deals that would get him, every answer shown.
   The table's *Replaces* column and each top-target card name the starter of mine he would take
   the place of.
-- **Roster** — **everyone is read against my lineup**, with two tags a player: one for the rest
-  of the regular season, one for the playoff weeks.
+- **Roster** — the rank tiles at the top each have a *see all* link: the whole league at that
+  spot (every team's starters there and their total) or by lineup, with my row marked. On the
+  Targets tab the same link sits on the need tiles.
+  **Everyone is read against my lineup**, with two tags a player: one for the rest of the
+  regular season, one for the playoff weeks. The playoff tag shows each playoff game on its
+  own first — his rank at the position that week, coloured by tier, or BYE/OUT — with the
+  three-week average underneath.
   - *My players*: how good he will be — his rank at the position over those weeks. *Elite* is
     the top third of the startable ranks, then *Starter*, *Fringe* (the next half again) and
     *Bench*; *Out* when he misses more than half of them.
@@ -122,95 +127,32 @@ off once that swing is counted; "Any, even if it costs me" shows them.
 
 ### Three-team trades
 
-A rotation: I send one or two players to team C, C sends one to team B, B sends one or two to
-me. Every team is judged on its own roster with the same rules as a 2-team deal, and the deal's
-answer is the worst of theirs. Only three-ways where everyone can say yes are listed, and one is
-dropped when the straight deal with B (same players out, same back) is already as good. The
-search skips a candidate only on exact bounds — value can only shrink once it lands (`USE` ≤ 1),
-so if what B gets is under 88% of what it gives at full value it can't reach *Worth asking* —
-plus the same hole and top-piece tests, so nothing that could pass is skipped.
+Two shapes, both judged with the same rules as a 2-team deal, each team on its own roster,
+the deal's answer being the worst of theirs. Only three-ways where every team can say yes are
+listed, and one is dropped when the straight deal with B (same players out, same back) is
+already as good.
 
-### Kickers and defenses
+- **Rotation.** Everything of mine goes to team C, C sends one player to team B, B sends one
+  or two to me.
+- **Hub.** I send one player to B and one to C; C still sends one to B. This is the shape for
+  "my back for a better back": B only gives up its better back if a back comes back (mine)
+  *and* something makes up the difference (C's player), and C is paid with my other player. A
+  rotation can't do that, because B would be left short at the position. On 11/10 the hub
+  took three-team deals from 3 to 25.
 
-Waivers has a *Players / Kickers / Defenses* switch. Every kicker and defense is scored from
-Sleeper's raw stats by **this league's ESPN rules** (points- and yards-allowed tiers, sacks,
-turnovers, return TDs; field goals by distance), which reproduces ESPN's season averages to the
-decimal for nearly every unit. Free-agent kickers and defenses are in the pool, so they get a
-bid, a term and a player card like anyone else.
+The search skips a candidate only on exact bounds — value can only shrink once it lands
+(`USE` ≤ 1), so if what a team gets is under 88% of what it gives at full value it can't reach
+*Worth asking* — plus the same hole and top-piece tests, so nothing that could pass is skipped
+(`threeWays` in `trade.html`).
 
-**Projections are ESPN's** (above). The model described next is only the fallback for a unit
-ESPN doesn't cover, and the source of the reliability discount on bids: a bid is sized on the
-part of a kicker's or defense's edge that can be counted on (`own` for kickers, `own + match`
-for defenses, about a quarter and two-thirds), so the tool never pays starter money for a
-kicker.
+In the builder's 3-team mode, tapping one of my players sends him to C, a second tap sends him
+to B, a third takes him out; each picked row shows where he's going.
 
-**What Hayden Winks uses, and how it is shown.** His weekly Yahoo column charts two inputs for
-each position (data from nflfastR), and the tables carry the same two, averaged over the
-remaining schedule and tinted by where they sit at the position:
-
-- *Defenses*: the opponent's **Vegas implied points** against a **projected sack rate**, which
-  he defines as 67% the opponent offense's sack rate + 33% the defense's own, over the last 8
-  games. Here sack rate = sacks ÷ dropbacks (pass attempts + sacks) from Sleeper's feed.
-  *Setup* is his quadrant: **Strong** = sack rate above the middle defense and opponent points
-  below it, **Weak** = the reverse.
-- *Kickers*: the team's **Vegas implied points** against its **field-goal attempts a game**.
-  **Smash** = both above the middle kicker, **Fade** = both below. His 2026 kicker study (three
-  seasons, kickers with 10+ games for one team) found field goals made track kicker points far
-  more than extra points do (0.80 vs 0.32), with team touchdowns 0.43, first downs 0.41, the
-  kicker's own accuracy 0.44, and fourth-down aggressiveness −0.13; a replacement kicker in a
-  12-team league averaged 8.2 against 11.0 for the best. FG% and game total are shown beside
-  his two inputs.
-
-Implied points use the betting line where ESPN's scoreboard has one (the current week and the
-next; `vegasWeeks` in the payload) and otherwise the team's scoring average + what the
-opponent allows − the league average. The Defenses table shows the whole remaining schedule.
-
-Sources: [Winks' kicker deep dive for 2026](https://sports.yahoo.com/fantasy/article/fantasy-football-yes-its-time-for-hayden-winks-kicker-deep-dive-for-2026-143423456.html),
-[his QB/TE/DEF/K Blueprint, week 9](https://sports.yahoo.com/fantasy/article/fantasy-football-rankings-hayden-winks-qbtedefk-blueprint-for-week-9-160055438.html).
-
-The fallback model follows what the streaming research agrees on — a defense's week is mostly its
-opponent, a kicker's is mostly how many points his team should score — but with no free
-rest-of-season betting lines it is built from this season's results:
-
-    week = league average + own × (unit's average − league) + match × (matchup − league)
-
-- *Defense*: matchup = points a game that opponent has given up to defenses.
-- *Kicker*: matchup = his team's expected points = its scoring average + what the opponent
-  allows − the league average.
-
-`own` and `match` are fitted on this season's games, each game predicted from the other games
-only, then blended with published multi-season findings counted as 300 games' worth (defenses
-about a quarter own form and half matchup; kickers about 0.3 own form and 0.2 points per point
-of team total). The payload carries the result as `kd`, including the raw fit. On 11/10 the
-data alone said defense 0.17 / 0.42 and kicker 0.20 / 0.00, so kickers sit close together and
-the tool says so rather than inventing separation. Not modelled: weather, domes, injuries to
-the offence, or real betting lines.
-
-Sources read for this: [NBC Sports on implied totals in D/ST rankings](https://www.nbcsports.com/fantasy/football/news/2026-fantasy-football-week-1-defense-dst-rankings-and-streamers),
-[DraftSharks, "For DST, the Matchup Is the Strategy"](https://www.draftsharks.com/article/streaming-defense),
-[Fantasy Points on sack/turnover stability](https://fantasypoints.com/nfl/articles/2024/how-to-draft-and-stream-dsts),
-[4for4, "Debunking the Randomness of Kickers"](https://www.4for4.com/2023/preseason/debunking-randomness-kickers-fantasy-football),
-[PFF, "The unpredictability of kickers"](https://www.pff.com/news/fantasy-football-metrics-that-matter-kickers).
-
-### How rivals bid
-
-`api/trade.js` reads the league's transactions a week at a time (`mTransactions2` through the
-GFL proxy) and keeps every waiver bid: the ones that won and the ones that lost to a higher bid
-(`FAILED_INVALIDPLAYERSOURCE`), since a losing bid still shows what a team would pay. Player
-names come from ESPN's public players feed.
-
-Each bid is read as a **share of the budget the team had at that moment**, so $200 out of a
-full $1,000 and $60 out of the last $300 are the same appetite. A team's *rate* is the average
-of its three biggest shares; its factor is that rate against the league median, held between
-0.6 and 1.6 (*Big spender* at 1.25 and up, *Thrifty* at 0.8 and under). A rival's expected bid
-is then
-
-    min(FAAB left,  FAAB left × share(gain) × factor)
-
-so habit scales the bid and the wallet caps it: a team that spent big early bids like a big
-spender on whatever it has left. Budget-at-the-time ignores FAAB moved in trades (ESPN doesn't
-date it), so shares cap at 1. There is no panel for this; it shows up as the rival's expected
-bid in the *Top rival* column, tagged *big spender* or *thrifty* where it applies.
+**When nothing works.** Picking a target shows *what his team would need*: about 88% of what
+he is worth to them, led by one piece worth at least 60% of him, plus a starter back at his
+position if losing him leaves them short — and which of my players are big enough to lead.
+That is usually the answer to "surely a third team can make this work": a third team can add
+the missing piece, but it has to be paid with something of mine that starts for it.
 
 ### Waivers and FAAB
 
