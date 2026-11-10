@@ -24,17 +24,22 @@ It analyses one ESPN team — The Bryan Football Team, team 10 in league 1327340
 Five sections. On a wide screen they are pills under the tabs; on a phone they are a bar along
 the bottom.
 
-- **Targets** — the point of the tool, in three lists:
-  - *Starters*: players on other rosters who are startable in this league, healthy, would be in
-    MY lineup, and whose workload says there is more coming. Graded 0–99.
-  - *Depth*: free agents for the bench, with any who would start listed first.
+- **Targets** — the point of the tool, in three lists, each a sortable table:
+  - *Starters*: everyone healthy on another roster who would make my lineup better from here on
+    (a quarter-point a week or more, byes and injuries counted), sorted by what he adds. Graded
+    0–99: half what he adds, a quarter his upside, the rest workload and playoff schedule.
+  - *Depth*: free agents who would add something.
   - *Sell-highs*: my own startable players running ahead of their workload.
-  Cards are built to be read by colour, not by number: a Workload bar over a Scoring bar, a row
-  of heat tiles (green = high for the position, red = low), a few coloured words for the read,
-  and the remaining schedule as coloured blocks with the playoff weeks outlined.
-- **Roster** — need tiles, then one sortable player list: my roster, any team, every rostered
-  player, free agents, or everyone. Wide screens get a table (click a header to sort; Overview,
-  Usage and Schedule column sets). Phones get a card per player with a sort menu.
+- **Roster** — need tiles, then one sortable player table: my roster, any team, every rostered
+  player, free agents, or everyone. Column sets: *Basic* (the default: status, lineup call, PPG,
+  next week, rest of season, playoffs), *Stats*, *Schedule*.
+
+Every list is a table, phones included (the table scrolls sideways inside its box, the player
+column stays put). Advanced stats are hidden until *Stats* is picked, and only the ones that
+mean something for the position are shown: QB = xFP, +/−, trend, upside, rush share, first
+downs; RB adds snaps, targets, opportunities, red-zone work, TDs and rushing efficiency; WR/TE
+add target share, air yards, WOPR, targets per snap, depth, catch rate and YAC. In a mixed list a
+column is blank for positions it doesn't apply to (`REL` in `trade.html`).
 - **Packages** — every deal that makes my lineup better, with every team, no caps: 1-for-1 up
   to 2-for-2 with one team, plus three-team rotations (below). Each is tagged *Likely yes*,
   *Worth asking* or *Long shot*, with the reason it would be turned down. Filter by team,
@@ -45,8 +50,8 @@ the bottom.
 - **Builder** — my players, the deal, their players, in 2-team or 3-team mode. The deal panel
   explains how every roster fits after the trade. On a phone the deal is a bar pinned under the
   list; tap it for details.
-- **Waivers** — every free agent with a FAAB bid, what he adds to my lineup, who to drop for
-  him, and any recent mention by Josh Norris or Hayden Winks (below).
+- **Waivers** — every free agent worth a bid, with the bid, what he adds to my lineup and who to
+  drop for him; *Show every free agent* lists the rest.
 
 ### My lineup calls (starter / bench / handcuff)
 
@@ -76,9 +81,11 @@ Every free agent in the pool is priced by what he adds to each team's lineup fro
 17, byes and injuries counted, playoff weeks at 1.5×. What a team should pay is a share of the
 FAAB it has left:
 
-    share = min(70%, (gain / 10) ^ 1.4)        gain = lineup points a week he adds
+    share = min(70%, ((gain − 0.5) / 10) ^ 1.5)        gain = lineup points a week he adds
 
-so +1 a week ≈ 4% of a budget, +3 ≈ 19%, +5 ≈ 38%, +7 or more 60–70%. The **bid** is what beats
+The first half-point is free (a body to cover one bye can be had that week for $0–5), so +1 a
+week ≈ 1% of a budget, +2 ≈ 6%, +3 ≈ 12%, +5 ≈ 30%, +8 or more 65–70%. Nobody adding under half
+a point a week gets a bid. The **bid** is what beats
 the rival who wants him most (their share of *their* remaining budget, plus $1), capped at what
 he is worth to me; when that rival can outbid my ceiling the card says so. Budgets come from
 ESPN (`acquisitionBudgetSpent` per team). The drop suggestion is the player whose loss costs my
@@ -92,9 +99,11 @@ old). There is no feed: each listing's `data-ylk` attribute carries the title (`
 at the first apostrophe and slugs never are. The weekly waiver show is a podcast page; its
 `othertags` list names every player covered. Clips cut from that show only say "waiver wire
 option" in their description, so up to 12 clips that name a free agent are fetched to check.
-Neither analyst publishes FAAB prices, so the notes are shown as links and badges (*Expert
-pick* = named in a waiver piece) and do not change the bid. If Yahoo is unreachable or changes
-its markup, the panel says so and everything else works.
+The articles are not shown on the page; they are used. A free agent named in a waiver piece is
+one the analysts think has a new role the season numbers haven't caught up with, so he is
+projected on his **last three games alone** instead of the season blend (only ever upward), and
+that flows into his lineup value and FAAB bid like anyone else's. He carries an *EXPERT* tag. If
+Yahoo is unreachable or changes its markup, nobody gets the adjustment and everything else works.
 
 ### How a player is read (Targets)
 
@@ -109,7 +118,7 @@ Everything is in points a game against what he has been scoring:
 - **role** — last three games' xFP against the season (0.6).
 - **schedule** — average rank of the defences ahead against the ones already faced.
 
-"Upside" is the sum. The buy grade is half upside, a quarter what he adds to my lineup, and the
+"Upside" is the sum. The buy grade is half what he adds to my lineup, a quarter upside, and the
 rest his workload percentile and how soft his playoff weeks are.
 
 **Hurt players are never targets.** Anyone out, doubtful, on IR or suspended is left off the

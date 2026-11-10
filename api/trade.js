@@ -456,11 +456,22 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         if (d) x.d = d[1];
       } catch (e) {}
     }));
-    const experts = {
-      ok: Object.fromEntries(AUTHORS.map(([who], i) => [who, !!authorPages[i]])),
-      items: items.filter(x => x.ids.length || x.wv)
-        .map(x => ({ a: x.a, t: x.t, u: x.u, k: x.k, d: x.d || null, wv: x.wv, ids: x.ids })),
-    };
+    // How the notes are used: a free agent named in a waiver piece is one the analysts think has
+    // a new role the season numbers haven't caught up with (a starter hurt, a depth chart flip).
+    // So he is projected on his last three games alone instead of the season blend - only ever
+    // upward - and that feeds his lineup value and FAAB bid like anyone else's. `xp` names who.
+    let picks = 0;
+    for (const x of items) if (x.wv) for (const id of x.ids) {
+      const pl = players[id];
+      if (!pl || pl.t) continue;
+      const sp = P[pl.sid];
+      if (!pl.xp) { pl.xp = []; picks++; }
+      for (const a of x.a) if (!pl.xp.includes(a)) pl.xp.push(a);
+      if (!sp || !sp.R.g || pl.xpRole) continue;
+      const recent = 0.5 * sp.R.xfp + 0.5 * sp.R.ppg;
+      if (recent > (pl.base || 0)) { pl.base = r1(recent); pl.wk = slate(TEAM_ID[pl.tm], pl.pos, recent); pl.xpRole = true; }
+    }
+    const experts = { ok: Object.fromEntries(AUTHORS.map(([who], i) => [who, !!authorPages[i]])), picks };
 
     res.status(200).json({
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
