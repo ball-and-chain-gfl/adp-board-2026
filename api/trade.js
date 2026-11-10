@@ -17,7 +17,10 @@
 //     and TE, since a wideout's target is worth more than a back's. Opportunity only: completed
 //     air yards are an outcome and are deliberately kept out. Scored minus expected (FPOE) is
 //     the efficiency read: who is running hot or cold on their workload
-//   - defence-vs-position for every NFL defence, built from the same feed
+//   - expected touchdowns (xTD) from the same four inputs, so a gap between expected and
+//     scored can be split into touchdown luck (which evens out) and yardage efficiency
+//   - defence-vs-position for every NFL defence, built from the same feed, plus how tough
+//     each player's schedule has been so far, to compare with what is ahead
 //   - a HEALTHY projection for each remaining week through 17: blended usage/production rate,
 //     scaled by that week's opponent, zero on a bye. Injury status is sent alongside and the
 //     page applies it, because the page also lets you overrule ESPN's status by hand.
@@ -142,6 +145,7 @@ export default async function handler(req, res) {
           att: s.rush_att || 0, rza: s.rush_rz_att || 0,
           uyd: s.rush_yd || 0, yac: s.rush_yac || 0, btk: s.rush_btkl || 0, ufd: s.rush_fd || 0,
           patt: s.pass_att || 0, prz: s.pass_rz_att || 0,
+          td: (s.rec_td || 0) + (s.rush_td || 0),
         };
         if (!g.snp && !g.tgt && !g.att && !g.patt) continue;   // didn't play
         const p = (P[x.player_id] = P[x.player_id] ||
@@ -174,6 +178,19 @@ export default async function handler(req, res) {
       // a thin column (wideout carries) can fit to nonsense; fall back to the default for it
       coef[pos] = c.map((v, i) => (v > 0 && v < 6 ? v : DEF[pos][i]));
     }
+    // touchdowns from the same inputs (not QBs: passing scores are a different animal)
+    const DEFTD = { RB: [0.012, 0.19, 0.012, 0.2], WR: [0.01, 0.15, 0.035, 0.24], TE: [0.01, 0.15, 0.03, 0.24] };
+    const tdc = {};
+    for (const pos of ["RB", "WR", "TE"]) {
+      const rows = [];
+      for (const p of Object.values(P)) if (p.pos === pos) for (const g of p.gs) rows.push(g.td);
+      const c = (fit[pos][0].length > 80 && ols(fit[pos][0], rows)) || DEFTD[pos];
+      tdc[pos] = c.map((v, i) => (v > 0 && v < 1 ? v : DEFTD[pos][i]));
+    }
+    const xtdOf = (pos, g) => {
+      const c = tdc[pos];
+      return c ? c[0] * (g.att - g.rza) + c[1] * g.rza + c[2] * (g.tgt - g.rzt) + c[3] * g.rzt : 0;
+    };
     const xfpOf = (pos, g) => {
       const c = coef[pos];
       return pos === "QB"
@@ -183,20 +200,20 @@ export default async function handler(req, res) {
 
     function agg(pos, gs) {
       const a = { pts: 0, x: 0, snp: 0, tsnp: 0, tgt: 0, ttgt: 0, air: 0, tair: 0, att: 0, tatt: 0, rz: 0, trz: 0,
-        rec: 0, ryd: 0, yar: 0, fd: 0, uyd: 0, yac: 0, btk: 0 };
+        rec: 0, ryd: 0, yar: 0, fd: 0, uyd: 0, yac: 0, btk: 0, td: 0, xtd: 0 };
       for (const g of gs) {
         const tw = TW[g.tm + "|" + g.w] || {};
         a.pts += g.pts; a.x += xfpOf(pos, g); a.snp += g.snp; a.tsnp += g.tsnp;
         a.tgt += g.tgt; a.ttgt += tw.tgt || 0; a.air += Math.max(0, g.air); a.tair += tw.air || 0;
         a.att += g.att; a.tatt += tw.att || 0; a.rz += g.rzt + g.rza; a.trz += tw.rz || 0;
         a.rec += g.rec; a.ryd += g.ryd; a.yar += g.yar; a.fd += g.rfd + g.ufd;
-        a.uyd += g.uyd; a.yac += g.yac; a.btk += g.btk;
+        a.uyd += g.uyd; a.yac += g.yac; a.btk += g.btk; a.td += g.td; a.xtd += xtdOf(pos, g);
       }
       const n = gs.length || 1, ts = a.ttgt ? a.tgt / a.ttgt : 0, ays = a.tair ? a.air / a.tair : 0;
       // rate stats need a real sample behind them, or two carries read as 12 a pop
       const T = a.tgt >= 10, C = a.att >= 10;
       return {
-        g: gs.length, ppg: a.pts / n, xfp: a.x / n,
+        g: gs.length, ppg: a.pts / n, xfp: a.x / n, td: a.td, xtd: pos === "QB" ? null : a.xtd,
         snap: a.tsnp ? a.snp / a.tsnp : null, ts, ays, wopr: 1.5 * ts + 0.7 * ays,
 doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         rz: a.trz ? a.rz / a.trz : 0, tpg: a.tgt / n, apg: a.att / n,
@@ -256,7 +273,10 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     const statBlock = sp => {
       const S = sp.S, R = sp.R, pl = Array(played).fill(null);
       for (const g of sp.gs) pl[g.w - 1] = r1(g.pts);
+      // how stingy the defences he has already played were against his position (1 = toughest)
+      const faced = sp.gs.map(g => ((dvp[g.opp] || {})[sp.pos] || {}).rk).filter(x => x != null);
       return {
+        td: S.td, xtd: r1(S.xtd), fsos: faced.length ? r1(faced.reduce((a, b) => a + b, 0) / faced.length) : null,
         g: S.g, ppg: r1(S.ppg), xfp: r1(S.xfp), fpoe: r1(S.ppg - S.xfp),
         snap: r3(S.snap), ts: r3(S.ts), ays: r3(S.ays), wopr: r3(S.wopr), doc: r1(S.doc),
         cs: r3(S.cs), rz: r3(S.rz), tpg: r1(S.tpg), apg: r1(S.apg),
@@ -264,7 +284,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         tps: r3(S.tps), cr: r3(S.cr), ypt: r1(S.ypt), yacr: r1(S.yacr),
         ypc: r1(S.ypc), yaco: r1(S.yaco), bt: r3(S.bt),
         prk: sp.prk || null, xrk: sp.xrk || null, pl,
-        l3: { ppg: r1(R.ppg), xfp: r1(R.xfp), snap: r3(R.snap), ts: r3(R.ts), cs: r3(R.cs) },
+        l3: { ppg: r1(R.ppg), xfp: r1(R.xfp), snap: r3(R.snap), ts: r3(R.ts), cs: r3(R.cs), td: R.td, xtd: r1(R.xtd) },
       };
     };
 
@@ -322,7 +342,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
-      model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])),
+      model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
       teams, players,
     });
   } catch (e) {
