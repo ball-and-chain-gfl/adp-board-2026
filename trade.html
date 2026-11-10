@@ -131,7 +131,7 @@ tr.o-sell td.l{box-shadow:inset 4px 0 0 #d86a00}
 /* my needs: one tile per spot in the lineup */
 .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;flex:none}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px 11px;border-top:4px solid #c3c8ce;min-width:0;text-align:left;color:var(--txt)}
-button.tile{cursor:pointer;font:inherit}
+button.tile{cursor:pointer;font:inherit;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch}
 button.tile:hover{border-color:var(--blue)}
 button.tile.on{outline:2px solid var(--blue);outline-offset:-1px}
 .tile.g{border-top-color:var(--good)}.tile.r{border-top-color:var(--bad)}
@@ -144,9 +144,20 @@ button.tile.on{outline:2px solid var(--blue);outline-offset:-1px}
 .strip i{flex:1;height:5px;border-radius:2px;background:#e3e6e9}
 .strip i.me{background:var(--txt)}
 .tile.g .strip i.me{background:var(--good)}.tile.r .strip i.me{background:var(--bad)}
-.tile .s{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tile .s b{font-weight:700;color:var(--soft)}
-.tile .s2{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .v .rkn{font-weight:800}.rkn.g{color:var(--good)}.rkn.r{color:var(--bad)}
+.tps{display:flex;flex-direction:column;gap:4px;margin-bottom:5px}
+.tp{display:flex;align-items:center;gap:7px;font-size:12.5px;min-width:0}
+.tp .av{width:24px;height:24px;flex-basis:24px}
+.tp .tpn{flex:1;min-width:0;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+.tp b{font-variant-numeric:tabular-nums;color:var(--soft)}
+.tbig{font-size:20px;font-weight:800;margin-bottom:4px}
+.tbig small{font-size:11px;font-weight:700;color:var(--dim);margin-left:4px}
+.tile .s2{font-size:11.5px;color:var(--dim);line-height:1.3}
+/* the roster, one table per position */
+.ptab{margin-bottom:14px}
+.ptab-h{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12.5px;color:var(--dim);font-weight:700}
+.ptab-h .pos{font-size:12px;padding:2px 8px}
+.ptab .scroll{max-height:none}
 .tile .s3{font-size:11.5px;font-weight:700;color:var(--blue);margin-top:4px}
 
 /* top targets */
@@ -325,7 +336,7 @@ td .chip{font-size:11px;padding:1px 7px}
 .bench{font-size:12px;color:var(--dim);margin-bottom:14px}
 
 @media (max-width:1100px){
-  .tiles{gap:8px}
+  .tiles{gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
   .tile{padding:9px 10px 10px}
   .bgrid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr)}
   .pkwrap{grid-template-columns:210px minmax(0,1fr)}
@@ -358,7 +369,7 @@ td .chip{font-size:11px;padding:1px 7px}
   .market::-webkit-scrollbar{display:none}
   .tiles{display:flex;overflow-x:auto;gap:8px;padding-bottom:2px;scrollbar-width:none}
   .tiles::-webkit-scrollbar{display:none}
-  .tile{flex:0 0 150px}
+  .tile{flex:0 0 178px}
   .tops{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
   .tops::-webkit-scrollbar{display:none}
   .top1{flex:0 0 240px}
@@ -460,7 +471,7 @@ td .chip{font-size:11px;padding:1px 7px}
     <button class="b" id="ovclr" hidden></button>
     <span class="count" id="rcount"></span>
   </div>
-  <div class="scroll" id="rscroll"><table id="rt"><thead></thead><tbody></tbody></table></div>
+  <div class="ptabs" id="rscroll"></div>
 </section>
 
 <section class="view" id="v-packages" hidden>
@@ -1062,27 +1073,29 @@ function renderTiles(el, clickable){
   const tile = (k, rank, word, s, s2, pos) => {
     const tag = clickable && pos ? "button" : "div";
     const cnt = clickable && pos ? BUYS.filter(x => x.p.pos === pos).length : 0;
-    return `<${tag} class="tile ${rank <= 4 ? "g" : rank >= 9 ? "r" : ""}${clickable && pos && S.tgPos === pos ? " on" : ""}"${tag === "button" ? ` data-pos="${pos}"` : ""}>
+    const tone = rank <= 4 ? "g" : rank >= 9 ? "r" : "";
+    return `<${tag} class="tile ${tone}${clickable && pos && S.tgPos === pos ? " on" : ""}"${tag === "button" ? ` data-pos="${pos}"` : ""}>
     <div class="k"><span>${k}</span>${word ? `<em>${rank <= 4 ? "Strength" : rank >= 9 ? "Need" : "Solid"}</em>` : ""}</div>
-    <div class="v">${ord(rank)}<small>of ${n}</small></div>
+    <div class="v"><b class="rkn ${tone}">${ord(rank)}</b><small>of ${n}</small></div>
     <div class="strip">${Array.from({length:n}, (_, i) => `<i${i + 1 === rank ? ' class="me"' : ""}></i>`).join("")}</div>
-    <div class="s">${s}</div><div class="s2">${s2}</div>${clickable && pos ? `<div class="s3">${cnt ? plural(cnt, "upgrade") + " →" : "no upgrade out there"}</div>` : ""}</${tag}>`;
+    <div class="tps">${s}</div><div class="s2">${s2}</div>${clickable && pos ? `<div class="s3">${cnt ? plural(cnt, "upgrade") + " →" : "no upgrade out there"}</div>` : ""}</${tag}>`;
   };
+  const tp = p => `<div class="tp">${img(p)}<span class="tpn">${esc(short(p))}</span><b>${f1(p.adj)}</b></div>`;
   // the lineup as it stands today, no waiver help
   const all = D.teams.map(t => ({id:t.id, w:worth(t.players, false, t.id === ME)}));
   const place = key => all.slice().sort((a,b) => b.w[key] - a.w[key]).findIndex(x => x.id === ME) + 1;
   const mine = all.find(x => x.id === ME).w;
   const lineupTiles = [];
-  if(REG.length) lineupTiles.push(tile("Lineup · wk " + wkSpan(REG), place("reg"), false, `<b>${f1(mine.reg / REG.length)}</b> pts a week`, "regular season"));
-  if(PO.length) lineupTiles.push(tile("Lineup · wk " + wkSpan(PO), place("po"), false, `<b>${f1(mine.po / PO.length)}</b> pts a week`, "playoffs"));
+  if(REG.length) lineupTiles.push(tile("Lineup · wk " + wkSpan(REG), place("reg"), false, `<div class="tbig">${f1(mine.reg / REG.length)}<small>pts / wk</small></div>`, "regular season"));
+  if(PO.length) lineupTiles.push(tile("Lineup · wk " + wkSpan(PO), place("po"), false, `<div class="tbig">${f1(mine.po / PO.length)}<small>pts / wk</small></div>`, "playoffs"));
   if(!clickable) out.push(...lineupTiles);
   // on Targets the weakest spot comes first, and the overall lineup last
   const order = clickable ? SKILL.slice().sort((a, b) => BASE[ME][b] - BASE[ME][a]) : SKILL;
   for(const pos of order){
     const k = spots(pos) || 1, c = DEPTH[ME][pos];
     const top = TEAMS[ME].players.map(id => P[id]).filter(p => p.pos === pos).sort((a,b) => rk(b, true) - rk(a, true));
-    out.push(tile(pos, BASE[ME][pos], true, top.slice(0, k).map(p => `${esc(short(p))} <b>${f1(p.adj)}</b>`).join(" · ") || "nobody",
-      `${c} startable for ${plural(k, "spot")}` + (top[k] ? ` · next ${esc(short(top[k]))} ${f1(top[k].adj)}` : ""), pos));
+    out.push(tile(pos, BASE[ME][pos], true, top.slice(0, k).map(tp).join("") || "nobody",
+      `${c} startable for ${plural(k, "spot")}` + (top[k] ? ` · next up ${esc(short(top[k]))} ${f1(top[k].adj)}` : ""), pos));
   }
   if(clickable) out.push(...lineupTiles);
   $(el).innerHTML = out.join("");
@@ -1359,10 +1372,10 @@ const isSingle = () => S.scope === "me" || !!TEAMS[S.scope];
 const usageKeys = pos => pos === "RB" ? ["snap","cs","ts","opp","rzg","rz","td","xtd","ypc","yaco","bt","fdg"]
   : (pos === "WR" || pos === "TE") ? ["snap","ts","ays","wopr","tps","doc","cr","ypt","yacr","rz","td","xtd","fdg"]
   : ["snap","ts","cs","wopr","opp","rz","rzg","td","xtd","fdg"];
-function colKeys(){
+function colKeys(pos = S.pos){
   const lead = ["st", ...(S.scope === "me" ? ["role"] : [])], tail = [...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : [])];
   if(S.cols === "basic") return ["tag", ...lead, "ppg", ...(D.weeks.length ? ["w0"] : []), ...tail];
-  if(S.cols === "stats") return ["tag", ...lead, "ppg", "log", ...statKeys(S.pos)];
+  if(S.cols === "stats") return ["tag", ...lead, "ppg", "log", ...(SKILL.includes(pos) || pos === "ALL" ? statKeys(pos) : [])];
   return ["tag", ...lead, ...D.weeks.map((w, i) => "w" + i), ...tail, "fsos", ...(REG.length ? ["sos"] : []), ...(PO.length ? ["psos"] : [])];
 }
 function tableRows(){
@@ -1394,11 +1407,12 @@ function cellText(c, p){
   const v = c.v(p);
   return v == null || (c.only && !c.only(p)) ? null : c.f(v);
 }
+/* One table per position, each with only the columns that mean something there: a QB table
+   never carries red-zone carries, snap share or target share. */
+const GROUPS = [["QB", ["QB"]], ["RB", ["RB"]], ["WR", ["WR"]], ["TE", ["TE"]], ["K / DEF", ["K", "DST"]]];
 function renderTable(list){
-  const keys = colKeys();
   const th = (c, extra) => `<th class="${extra || ""}${c.nosort ? "" : " sort"}${S.sort === c.k ? " on" : ""}${c.hd ? " " + c.hd : ""}${c.sep ? " sep" : ""}${c.c || c.wk ? " c" : ""}" data-k="${c.k}"${c.t ? ` title="${esc(c.t)}"` : ""}>${c.h}${S.sort === c.k ? `<span class="ar">${S.dir < 0 ? "▾" : "▴"}</span>` : ""}</th>`;
-  $("rt").tHead.innerHTML = `<tr>${th(COLS.name, "l")}${keys.map(k => th(COLS[k])).join("")}</tr>`;
-  $("rt").tBodies[0].innerHTML = list.map(p => {
+  const row = (p, keys) => {
     const tds = keys.map(k => {
       const c = COLS[k], sep = c.sep ? " sep" : "";
       if(c.html) return `<td class="${c.wk ? "wk" : c.c ? "c" : ""}${sep}">${c.html(p)}</td>`;
@@ -1409,7 +1423,15 @@ function renderTable(list){
     }).join("");
     const o = outlook(p);
     return `<tr class="${!isSingle() && p.t === ME ? "me" : ""}${o ? " o-" + o.k : ""}"><td class="l">${plyX(p, isSingle() ? "" : ownTag(p))}</td>${tds}</tr>`;
+  };
+  const html = GROUPS.map(([lab, poss]) => {
+    const ps = list.filter(p => poss.includes(p.pos));
+    if(!ps.length) return "";
+    const keys = colKeys(poss.length === 1 ? poss[0] : "K");
+    return `<div class="ptab"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
+      <div class="scroll"><table><thead><tr>${th(COLS.name, "l")}${keys.map(k => th(COLS[k])).join("")}</tr></thead><tbody>${ps.map(p => row(p, keys)).join("")}</tbody></table></div></div>`;
   }).join("");
+  $("rscroll").innerHTML = html || `<div class="chip">Nobody matches</div>`;
 }
 
 function renderRoster(){
@@ -1434,7 +1456,11 @@ function renderRoster(){
       starter: if they give up someone in their lineup, someone coming back has to go into it.
    3. Their lineup has to come out ahead too, against the waiver-wire alternative.
    `quick` is the package search: bail at the first failed test. */
-const USE = {S:1, F:0.7, B:0.25}, KEEP = {S:1.15, F:0.9, B:0.5};
+/* What an incoming player is worth to the team getting him, by where he'd play for them: full as
+   a starter, 70% as their flex, and next to nothing on their bench - 15% at RB/WR (injury cover),
+   5% at a one-starter spot like QB or TE, where a backup only plays on a bye. */
+const USE = {S:1, F:0.7, B:0.15}, KEEP = {S:1.15, F:0.9, B:0.5};
+const useOf = (role, pos) => (role === "B" ? (spots(pos) <= 1 ? 0.05 : USE.B) : USE[role] || 0.45);
 const WORD = {likely:"Likely yes", maybe:"Worth asking", long:"Long shot"}, WORST = {likely:0, maybe:1, long:2};
 const WILLF = {likely:1, maybe:0.85, long:0.5};
 const tName = id => (id === ME ? "Me" : TEAMS[id].abbrev || TEAMS[id].name);
@@ -1447,18 +1473,28 @@ function sideJudge(tid, out, inn){
   const after = swap(t.players, new Set(out), new Set(inn));
   const them = delta(W0[tid], worth(after));
   const ra = rolesOf(after);
-  const inV = inn.reduce((s,id) => s + val(P[id]) * (USE[ra[id]] || 0.45), 0);
+  const inV = inn.reduce((s,id) => s + val(P[id]) * useOf(ra[id], P[id].pos), 0);
   const outV = out.reduce((s,id) => s + val(P[id]) * (KEEP[ROLE0[id]] || 0.75), 0);
   const ratio = outV ? inV / outV : 9;
   const starterBack = !out.some(id => ROLE0[id] === "S") || inn.some(id => ra[id] === "S" || ra[id] === "F");
   const top = a => (a.length ? Math.max(...a.map(id => val(P[id]))) : 0);
   const fairTop = top(inn) >= 0.6 * top(out);          // no pile of lesser players for the best one in the deal
+  /* Something they get has to play for them: nobody trades to fill their bench.
+     A lateral move - everything in and out at one position - only happens for a clear upgrade:
+     +1.5 a week to be worth asking, +2.5 to be likely. Purdy for Love is a shrug, not a trade.
+     Any other deal needs a real gain too: +0.35 a week to ask, +0.75 to be likely. */
+  const starts = inn.some(id => ra[id] === "S" || ra[id] === "F");
+  // a backup QB or TE is a roster spot wasted: nobody takes one they'd never play
+  const dead = inn.filter(id => ra[id] === "B" && spots(P[id].pos) <= 1);
+  const lateral = new Set(out.concat(inn).map(id => P[id].pos)).size === 1;
+  const wk = them.score / ((REG.length + 1.5 * PO.length) || 1);
+  const need = lateral ? [2.5, 1.5] : [0.75, 0.35];
   let will = "long";
-  if(!holes.length && starterBack && fairTop){
-    if(ratio >= 1.08 && them.score >= 1 && them.reg >= -0.5 && them.po >= -0.5) will = "likely";
-    else if(ratio >= 0.88 && them.score >= 0 && them.reg >= -0.75 && them.po >= -0.75) will = "maybe";
+  if(!holes.length && starterBack && fairTop && starts && !dead.length){
+    if(ratio >= 1.08 && wk >= need[0] && them.reg >= -0.5 && them.po >= -0.5) will = "likely";
+    else if(ratio >= 0.88 && wk >= need[1] && them.reg >= -0.75 && them.po >= -0.75) will = "maybe";
   }
-  return {id:tid, out, inn, after, d, holes, them, ra, inV, outV, ratio, starterBack, fairTop, will};
+  return {id:tid, out, inn, after, d, holes, them, ra, inV, outV, ratio, starterBack, fairTop, starts, dead, lateral, wk, need, will};
 }
 /* A deal is a list of legs, {from, to, ids}. Two teams: me -> them, them -> me. Three teams is
    a rotation: me -> C, C -> B, B -> me. Every other team is judged on its own roster; the deal's
@@ -1609,7 +1645,10 @@ function pkChips(pk){
     for(const pos of s.holes) add(`Leaves ${ab} short at ${pos}`, "r");
     if(!s.starterBack) add(`${ab} loses a starter, gets none`, "r");
     if(!s.fairTop) add(`${ab} gives the best player for less`, "r");
-    if(s.holes.length === 0 && s.starterBack && s.fairTop && s.will === "long") add(`Light for ${ab}`, "r");
+    if(!s.starts) add(`${ab} only gets bench players`, "r");
+    else if(s.dead.length) add(`${ab} has no use for ${short(P[s.dead[0]])}`, "r");
+    else if(s.lateral && s.wk < s.need[1]) add(`Lateral move for ${ab}`, "r");
+    else if(s.holes.length === 0 && s.starterBack && s.fairTop && s.will === "long") add(`Light for ${ab}`, "r");
   }
   for(const s of pk.sides){
     const ab = tName(s.id);
@@ -1668,7 +1707,10 @@ function renderDeal(){
       for(const pos of s.holes) line("r", `Leaves ${ab} short at ${pos}: ${s.d[pos]} startable for ${plural(spots(pos), "spot")}`);
       if(!s.fairTop) line("r", `${ab} gives up the best player in its end of the deal for lesser pieces`);
       if(!s.starterBack) line("r", `${ab} gives up a starter and gets none back`);
-      if(s.holes.length === 0 && s.starterBack && s.fairTop && s.will === "long") line("r", `${ab} would want more: it gets ${f1(s.inV)} of value for ${f1(s.outV)}`);
+      if(!s.starts) line("r", `${ab} only gets players who'd sit on its bench`);
+      else if(s.dead.length) line("r", `${s.dead.map(id => esc(short(P[id]))).join(", ")} would be a backup ${P[s.dead[0]].pos} on ${ab}'s bench, a wasted roster spot`);
+      else if(s.lateral && s.wk < s.need[1]) line("r", `A sideways move for ${ab}: ${sgn(s.wk)} a week at one position isn't worth the trouble`);
+      else if(s.holes.length === 0 && s.starterBack && s.fairTop && s.will === "long") line("r", `${ab} would want more: it gets ${f1(s.inV)} of value for ${f1(s.outV)}`);
       for(const id of s.inn){ const p = P[id], r = s.ra[id];
         if(p.ok && DEPTH[s.id][p.pos] < spots(p.pos)) line("", `${esc(short(p))} fills a hole for ${ab} at ${p.pos}`);
         else if(r === "S") line("", `${esc(short(p))} starts for ${ab}`);
@@ -1959,7 +2001,7 @@ function boot(d){
   pickSeg("colsf", "c", v => { S.cols = v; if(!colKeys().includes(S.sort) && S.sort !== "name") S.sort = null; renderRoster(); });
   $("q").oninput = e => { S.q = e.target.value.trim(); S.limit = 40; renderRoster(); };
   $("msort").onchange = e => { S.sort = e.target.value || null; S.dir = -1; S.limit = 40; renderRoster(); };
-  $("rt").tHead.onclick = e => {
+  $("rscroll").onclick = e => {
     const th = e.target.closest("th.sort"); if(!th) return;
     const k = th.dataset.k;
     if(S.sort === k) S.dir = -S.dir; else { S.sort = k; S.dir = COLS[k].str ? 1 : -1; }

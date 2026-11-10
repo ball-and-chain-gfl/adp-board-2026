@@ -42,7 +42,8 @@ each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
   brutal playoff schedule, or out for most of what's left — only for players good enough to
   matter), *Sell* (those signs on one of my starters) or *Core*. Rows are tinted to match, and
   the All / Targets / Avoid / Sell buttons filter to them.
-  Below that, need tiles and one sortable player table: my roster, any team, every rostered
+  Below that, need tiles and the players — **one table per position** (QB, RB, WR, TE, K/DEF),
+  each with only that position's stats: my roster, any team, every rostered
   player, free agents, or everyone. Column sets: *Basic* (the default: status, lineup call, PPG,
   next week, rest of season, playoffs), *Stats*, *Schedule*.
 
@@ -166,7 +167,13 @@ Not two price tags — two rosters.
   has spots, and it had them before, that side says no. A team with two backs does not give one
   up unless one comes back.
 - **Worth to them.** A player counts in full for the team getting him only if he would start;
-  70% as their flex, 25% on their bench. Their own starters cost a premium to pry loose and
+  70% as their flex, 15% on their bench at RB/WR, 5% at a one-starter spot (QB, TE).
+- **Something has to play for them.** If nothing they get would start or flex, it's a no. A
+  backup QB or TE they'd never play is a wasted roster spot: any deal that hands them one is a
+  no.
+- **No sideways moves.** When everything in and out is at one position, it needs a clear
+  upgrade for them: +1.5 a week to be *Worth asking*, +2.5 to be *Likely* (Purdy for Love is a
+  shrug). Any other deal needs +0.35 a week to ask, +0.75 to be likely. Their own starters cost a premium to pry loose and
   their bench is cheap. Value also climbs faster than points: one player 12 over the waiver
   wire is worth more than two who are 6 over.
 - **A starter moves for a starter.** If they give up someone in their lineup, someone coming
