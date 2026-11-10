@@ -4,15 +4,23 @@
 // existing ESPN proxy (the league is private and that proxy already holds the login), so this
 // project needs no ESPN credentials of its own.
 //
-// What it assembles for every rostered player in the league:
+// What it assembles for every rostered player in the league, plus the best unrostered ones:
 //   - usage from Sleeper's weekly stat feed: snap share, target share, air-yard share, WOPR,
-//     aDOT, carry share, red-zone share - season and last three games
+//     carry share, red-zone share - season and last three games.
+//     NOTE Sleeper's rec_air_yd is air yards on CATCHES only (rec_yd = rec_air_yd + rec_yar),
+//     not air yards on every target. So there is no true aDOT here: "catch depth" is air yards
+//     per catch, and the air-yard share / WOPR are built on completed air yards
+//   - efficiency from the same feed: catch rate, yards per target, YAC per catch, targets per
+//     snap, yards per carry, yards after contact and broken tackles per carry, first downs
 //   - expected fantasy points (xFP): a usage model fitted on this season's own player-games,
-//     pricing carries, red-zone carries, targets, red-zone targets and air yards. Scored minus
-//     expected (FPOE) is the efficiency read: who is running hot or cold on their workload
+//     pricing carries, red-zone carries, targets and red-zone targets - separately for RB, WR
+//     and TE, since a wideout's target is worth more than a back's. Opportunity only: completed
+//     air yards are an outcome and are deliberately kept out. Scored minus expected (FPOE) is
+//     the efficiency read: who is running hot or cold on their workload
 //   - defence-vs-position for every NFL defence, built from the same feed
-//   - a projection for each remaining week through 17: blended usage/production rate, scaled
-//     by that week's opponent, zero on a bye, discounted for injury status
+//   - a HEALTHY projection for each remaining week through 17: blended usage/production rate,
+//     scaled by that week's opponent, zero on a bye. Injury status is sent alongside and the
+//     page applies it, because the page also lets you overrule ESPN's status by hand.
 // The page does the roster-need and trade-package maths on top of this.
 
 const MY_TEAM = 10;          // The Bryan Football Team
@@ -21,18 +29,24 @@ const LAST_WEEK = 17;        // league playoffs are weeks 15-17
 const GFL = "https://gfl-dashboard.vercel.app/api/espn";
 const ESPN_SCHED = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}?view=proTeamSchedules_wl`;
 const SLEEPER = "https://api.sleeper.app";
-const SKILL = "position[]=QB&position[]=RB&position[]=WR&position[]=TE";
+const SKILL_Q = "position[]=QB&position[]=RB&position[]=WR&position[]=TE";
+const SKILL = ["QB", "RB", "WR", "TE"];
+// how many unrostered players to carry at each position, best first
+const POOL = { QB: 30, RB: 60, WR: 80, TE: 30 };
 
 const POS = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "DST" };
 const TEAM = { 0:"FA",1:"ATL",2:"BUF",3:"CHI",4:"CIN",5:"CLE",6:"DAL",7:"DEN",8:"DET",9:"GB",
   10:"TEN",11:"IND",12:"KC",13:"LV",14:"LAR",15:"MIA",16:"MIN",17:"NE",18:"NO",19:"NYG",
   20:"NYJ",21:"PHI",22:"ARI",23:"PIT",24:"LAC",25:"SF",26:"SEA",27:"TB",28:"WSH",29:"CAR",
   30:"JAX",33:"BAL",34:"HOU" };
+const TEAM_ID = Object.fromEntries(Object.entries(TEAM).map(([id, ab]) => [ab, +id]));
 // Sleeper abbreviations that differ from ESPN's
 const FIX = { WAS: "WSH", JAC: "JAX", LA: "LAR", OAK: "LV", SD: "LAC", HST: "HOU", BLT: "BAL", CLV: "CLE", ARZ: "ARI" };
 const fix = t => (t ? (FIX[t] || t) : "");
 // ESPN lineup slot ids -> the names the page uses
 const SLOT = { 0: "QB", 2: "RB", 4: "WR", 6: "TE", 23: "FLEX", 17: "K", 16: "DST" };
+const ESPN_INJ = { OUT: "O", DOUBTFUL: "D", QUESTIONABLE: "Q", INJURY_RESERVE: "IR", SUSPENSION: "SUS" };
+const SL_INJ = { Questionable: "Q", Doubtful: "D", Out: "O", IR: "IR", PUP: "O", Sus: "SUS" };
 
 const norm = s => String(s || "").toLowerCase().replace(/[.'’]/g, "").replace(/-/g, " ")
   .replace(/\s+(jr|sr|ii|iii|iv|v)$/, "").replace(/\s+/g, " ").trim();
@@ -108,7 +122,7 @@ export default async function handler(req, res) {
     const played = Math.max(1, Math.min(18, Math.min(+state.week || 1, firstWeek)));
     const weekly = await Promise.all(
       Array.from({ length: played }, (_, i) =>
-        getJSON(`${SLEEPER}/stats/nfl/${SEASON}/${i + 1}?season_type=regular&${SKILL}`).catch(() => []))
+        getJSON(`${SLEEPER}/stats/nfl/${SEASON}/${i + 1}?season_type=regular&${SKILL_Q}`).catch(() => []))
     );
 
     const P = {};        // sleeper player id -> { name, pos, tm, gs: [game rows] }
@@ -119,18 +133,22 @@ export default async function handler(req, res) {
       for (const x of rows || []) {
         const s = x.stats, pl = x.player || {};
         const pos = pl.position;
-        if (!s || !["QB", "RB", "WR", "TE"].includes(pos)) continue;
+        if (!s || !SKILL.includes(pos)) continue;
         const g = {
           w, tm: fix(x.team), opp: fix(x.opponent), pts: s.pts_ppr || 0,
           snp: s.off_snp || 0, tsnp: s.tm_off_snp || 0,
           tgt: s.rec_tgt || 0, air: s.rec_air_yd || 0, rzt: s.rec_rz_tgt || 0,
+          rec: s.rec || 0, ryd: s.rec_yd || 0, yar: s.rec_yar || 0, rfd: s.rec_fd || 0,
           att: s.rush_att || 0, rza: s.rush_rz_att || 0,
+          uyd: s.rush_yd || 0, yac: s.rush_yac || 0, btk: s.rush_btkl || 0, ufd: s.rush_fd || 0,
           patt: s.pass_att || 0, prz: s.pass_rz_att || 0,
         };
         if (!g.snp && !g.tgt && !g.att && !g.patt) continue;   // didn't play
         const p = (P[x.player_id] = P[x.player_id] ||
-          { name: ((pl.first_name || "") + " " + (pl.last_name || "")).trim(), pos, gs: [] });
-        p.tm = g.tm; p.gs.push(g);
+          { sid: x.player_id, name: ((pl.first_name || "") + " " + (pl.last_name || "")).trim(), pos, gs: [] });
+        p.tm = fix(pl.team) || g.tm;
+        p.inj = SL_INJ[pl.injury_status] || "";
+        p.gs.push(g);
         const tw = (TW[g.tm + "|" + w] = TW[g.tm + "|" + w] || { tgt: 0, air: 0, att: 0, rz: 0 });
         tw.tgt += g.tgt; tw.air += Math.max(0, g.air); tw.att += g.att; tw.rz += g.rzt + g.rza;
         if (g.opp) {
@@ -142,38 +160,57 @@ export default async function handler(req, res) {
     if (Object.keys(P).length < 150) throw new Error("only " + Object.keys(P).length + " players with stats");
 
     // ---- expected points model, fitted on this season's player-games
-    const sx = [], sy = [], qx = [], qy = [];
+    // columns: [carry, red-zone carry, target, red-zone target]; QB: [pass, rz pass, carry, rz carry]
+    const DEF = { QB: [0.38, 0.9, 0.6, 1.5], RB: [0.6, 1.5, 1.5, 2.5], WR: [0.6, 1.5, 1.75, 2.9], TE: [0.6, 1.5, 1.6, 2.8] };
+    const fit = { QB: [[], []], RB: [[], []], WR: [[], []], TE: [[], []] };
     for (const p of Object.values(P)) for (const g of p.gs) {
-      if (p.pos === "QB") { if (g.patt >= 10) { qx.push([g.patt - g.prz, g.prz, g.att - g.rza, g.rza]); qy.push(g.pts); } }
-      else { sx.push([g.att - g.rza, g.rza, g.tgt - g.rzt, g.rzt, Math.max(0, g.air)]); sy.push(g.pts); }
+      if (p.pos === "QB") { if (g.patt < 10) continue; fit.QB[0].push([g.patt - g.prz, g.prz, g.att - g.rza, g.rza]); }
+      else fit[p.pos][0].push([g.att - g.rza, g.rza, g.tgt - g.rzt, g.rzt]);
+      fit[p.pos][1].push(g.pts);
     }
-    const cS = (sx.length > 400 && ols(sx, sy)) || [0.55, 1.3, 1.35, 2.2, 0.03];
-    const cQ = (qx.length > 80 && ols(qx, qy)) || [0.38, 0.9, 0.6, 1.5];
-    const xfpOf = (pos, g) => pos === "QB"
-      ? cQ[0] * (g.patt - g.prz) + cQ[1] * g.prz + cQ[2] * (g.att - g.rza) + cQ[3] * g.rza
-      : cS[0] * (g.att - g.rza) + cS[1] * g.rza + cS[2] * (g.tgt - g.rzt) + cS[3] * g.rzt + cS[4] * Math.max(0, g.air);
+    const coef = {};
+    for (const pos of SKILL) {
+      const c = (fit[pos][0].length > 80 && ols(fit[pos][0], fit[pos][1])) || DEF[pos];
+      // a thin column (wideout carries) can fit to nonsense; fall back to the default for it
+      coef[pos] = c.map((v, i) => (v > 0 && v < 6 ? v : DEF[pos][i]));
+    }
+    const xfpOf = (pos, g) => {
+      const c = coef[pos];
+      return pos === "QB"
+        ? c[0] * (g.patt - g.prz) + c[1] * g.prz + c[2] * (g.att - g.rza) + c[3] * g.rza
+        : c[0] * (g.att - g.rza) + c[1] * g.rza + c[2] * (g.tgt - g.rzt) + c[3] * g.rzt;
+    };
 
     function agg(pos, gs) {
-      const a = { g: gs.length, pts: 0, x: 0, snp: 0, tsnp: 0, tgt: 0, ttgt: 0, air: 0, tair: 0, att: 0, tatt: 0, rz: 0, trz: 0 };
+      const a = { pts: 0, x: 0, snp: 0, tsnp: 0, tgt: 0, ttgt: 0, air: 0, tair: 0, att: 0, tatt: 0, rz: 0, trz: 0,
+        rec: 0, ryd: 0, yar: 0, fd: 0, uyd: 0, yac: 0, btk: 0 };
       for (const g of gs) {
         const tw = TW[g.tm + "|" + g.w] || {};
         a.pts += g.pts; a.x += xfpOf(pos, g); a.snp += g.snp; a.tsnp += g.tsnp;
         a.tgt += g.tgt; a.ttgt += tw.tgt || 0; a.air += Math.max(0, g.air); a.tair += tw.air || 0;
         a.att += g.att; a.tatt += tw.att || 0; a.rz += g.rzt + g.rza; a.trz += tw.rz || 0;
+        a.rec += g.rec; a.ryd += g.ryd; a.yar += g.yar; a.fd += g.rfd + g.ufd;
+        a.uyd += g.uyd; a.yac += g.yac; a.btk += g.btk;
       }
-      const n = a.g || 1, ts = a.ttgt ? a.tgt / a.ttgt : 0, ays = a.tair ? a.air / a.tair : 0;
+      const n = gs.length || 1, ts = a.ttgt ? a.tgt / a.ttgt : 0, ays = a.tair ? a.air / a.tair : 0;
+      // rate stats need a real sample behind them, or two carries read as 12 a pop
+      const T = a.tgt >= 10, C = a.att >= 10;
       return {
-        g: a.g, ppg: a.pts / n, xfp: a.x / n,
+        g: gs.length, ppg: a.pts / n, xfp: a.x / n,
         snap: a.tsnp ? a.snp / a.tsnp : null, ts, ays, wopr: 1.5 * ts + 0.7 * ays,
-        adot: a.tgt ? a.air / a.tgt : null, cs: a.tatt ? a.att / a.tatt : 0,
+doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         rz: a.trz ? a.rz / a.trz : 0, tpg: a.tgt / n, apg: a.att / n,
+        opp: (a.att + a.tgt) / n, rzg: a.rz / n, fdg: a.fd / n,
+        tps: T && a.snp ? a.tgt / a.snp : null, cr: T ? a.rec / a.tgt : null,
+        ypt: T ? a.ryd / a.tgt : null, yacr: T && a.rec ? a.yar / a.rec : null,
+        ypc: C ? a.uyd / a.att : null, yaco: C ? a.yac / a.att : null, bt: C ? a.btk / a.att : null,
       };
     }
 
     // ---- season + last-three lines for everyone, and position ranks across the NFL
     const minG = Math.max(2, Math.floor(played * 0.4));
     const byKey = {}, byName = {};
-    for (const [id, p] of Object.entries(P)) {
+    for (const p of Object.values(P)) {
       p.gs.sort((a, b) => a.w - b.w);
       p.S = agg(p.pos, p.gs);
       p.R = agg(p.pos, p.gs.slice(-3));
@@ -182,7 +219,7 @@ export default async function handler(req, res) {
       if (!byKey[k + "|" + p.pos] || byKey[k + "|" + p.pos].S.g < p.S.g) byKey[k + "|" + p.pos] = p;
       if (!byName[k] || byName[k].S.g < p.S.g) byName[k] = p;
     }
-    for (const pos of ["QB", "RB", "WR", "TE"]) {
+    for (const pos of SKILL) {
       const pool = Object.values(P).filter(p => p.pos === pos && p.S.g >= minG);
       pool.slice().sort((a, b) => b.S.ppg - a.S.ppg).forEach((p, i) => (p.prk = i + 1));
       pool.slice().sort((a, b) => b.S.xfp - a.S.xfp).forEach((p, i) => (p.xrk = i + 1));
@@ -191,7 +228,7 @@ export default async function handler(req, res) {
     // ---- defence vs position: points allowed per game, as a multiplier and a 1-32 rank
     // rank follows ESPN's convention: 1 = stingiest, 32 = gives up the most
     const dvp = {};
-    for (const pos of ["QB", "RB", "WR", "TE"]) {
+    for (const pos of SKILL) {
       const list = Object.entries(DVP).filter(([, d]) => d.wk.size)
         .map(([tm, d]) => ({ tm, v: d[pos] / d.wk.size }));
       const avg = list.reduce((s, x) => s + x.v, 0) / (list.length || 1);
@@ -202,13 +239,42 @@ export default async function handler(req, res) {
       });
     }
 
+    // the rate everything is projected from: half usage (xFP), half production, each leaning
+    // 60/40 toward the last three games once there is enough season to lean on
+    const baseOf = (sp, fallback) => {
+      if (!sp || !sp.S.g) return fallback || 0;
+      const S = sp.S, R = sp.R, lean = S.g >= 4 ? 0.6 : 0;
+      return 0.5 * (lean * R.xfp + (1 - lean) * S.xfp) + 0.5 * (lean * R.ppg + (1 - lean) * S.ppg);
+    };
+    // healthy projection for each remaining week; the page applies injuries
+    const slate = (proTeamId, pos, base) => weeks.map(w => {
+      const g = (games[proTeamId] || {})[w];
+      if (!g) return { w, o: "BYE", p: 0 };
+      const d = (dvp[TEAM[g.opp]] || {})[pos];
+      return { w, o: (g.home ? "" : "@") + TEAM[g.opp], rk: d ? d.rk : null, p: r1(base * (d ? d.m : 1)) };
+    });
+    const statBlock = sp => {
+      const S = sp.S, R = sp.R, pl = Array(played).fill(null);
+      for (const g of sp.gs) pl[g.w - 1] = r1(g.pts);
+      return {
+        g: S.g, ppg: r1(S.ppg), xfp: r1(S.xfp), fpoe: r1(S.ppg - S.xfp),
+        snap: r3(S.snap), ts: r3(S.ts), ays: r3(S.ays), wopr: r3(S.wopr), doc: r1(S.doc),
+        cs: r3(S.cs), rz: r3(S.rz), tpg: r1(S.tpg), apg: r1(S.apg),
+        opp: r1(S.opp), rzg: r1(S.rzg), fdg: r1(S.fdg),
+        tps: r3(S.tps), cr: r3(S.cr), ypt: r1(S.ypt), yacr: r1(S.yacr),
+        ypc: r1(S.ypc), yaco: r1(S.yaco), bt: r3(S.bt),
+        prk: sp.prk || null, xrk: sp.xrk || null, pl,
+        l3: { ppg: r1(R.ppg), xfp: r1(R.xfp), snap: r3(R.snap), ts: r3(R.ts), cs: r3(R.cs) },
+      };
+    };
+
     // ---- league rosters
     const seasonRow = stats => (stats || []).find(s =>
       s.seasonId === SEASON && s.statSourceId === 0 && s.statSplitTypeId === 0 && s.scoringPeriodId === 0);
     const info = {};
     for (const t of teamsInfo.teams || []) info[t.id] = t;
 
-    const players = {}, teams = [];
+    const players = {}, teams = [], used = new Set();
     for (const t of roster.teams || []) {
       const ti = info[t.id] || {}, ov = (ti.record || {}).overall || {};
       const ids = [];
@@ -216,44 +282,17 @@ export default async function handler(req, res) {
         const pl = (e.playerPoolEntry || {}).player || {};
         const pos = POS[pl.defaultPositionId];
         if (!pos || !pl.id) continue;
-        const tm = TEAM[pl.proTeamId] || "FA";
         const sr = seasonRow(pl.stats) || {};
-        const ir = e.lineupSlotId === 21;
-        const inj = ir ? "IR" : ({ OUT: "O", DOUBTFUL: "D", QUESTIONABLE: "Q", INJURY_RESERVE: "IR", SUSPENSION: "SUS" }[pl.injuryStatus] || "");
+        const inj = e.lineupSlotId === 21 ? "IR" : (ESPN_INJ[pl.injuryStatus] || "");
         const sp = pos === "K" || pos === "DST" ? null : (byKey[norm(pl.fullName) + "|" + pos] || byName[norm(pl.fullName)]);
-        const S = sp && sp.S, R = sp && sp.R;
-
-        // the rate everything is projected from: half usage (xFP), half production, each
-        // leaning 60/40 toward the last three games once there is enough season to lean on
-        let base;
-        if (S && S.g) {
-          const lean = S.g >= 4 ? 0.6 : 0;
-          base = 0.5 * (lean * R.xfp + (1 - lean) * S.xfp) + 0.5 * (lean * R.ppg + (1 - lean) * S.ppg);
-        } else base = sr.appliedAverage || 0;
-
-        const wk = weeks.map((w, i) => {
-          const g = (games[pl.proTeamId] || {})[w];
-          if (!g) return { w, o: "BYE", p: 0 };
-          const d = (dvp[TEAM[g.opp]] || {})[pos];
-          let avail = 1;
-          if (inj === "O" || inj === "IR" || inj === "SUS") avail = i < 2 ? 0 : 0.85;
-          else if (inj === "D") avail = i === 0 ? 0.25 : 1;
-          else if (inj === "Q") avail = i === 0 ? 0.8 : 1;
-          return { w, o: (g.home ? "" : "@") + TEAM[g.opp], rk: d ? d.rk : null, p: r1(base * (d ? d.m : 1) * avail) };
-        });
-
+        if (sp) used.add(sp);
+        const base = baseOf(sp, sr.appliedAverage);
         players[pl.id] = {
-          id: pl.id, n: pl.fullName, pos, tm, inj, t: t.id,
-          espn: r1(sr.appliedAverage), base: r1(base), wk,
-          ...(S ? {
-            g: S.g, ppg: r1(S.ppg), xfp: r1(S.xfp), fpoe: r1(S.ppg - S.xfp),
-            snap: r3(S.snap), ts: r3(S.ts), ays: r3(S.ays), wopr: r3(S.wopr), adot: r1(S.adot),
-            cs: r3(S.cs), rz: r3(S.rz), tpg: r1(S.tpg), apg: r1(S.apg),
-            prk: sp.prk || null, xrk: sp.xrk || null,
-            l3: { ppg: r1(R.ppg), xfp: r1(R.xfp), snap: r3(R.snap), ts: r3(R.ts), cs: r3(R.cs) },
-          } : {}),
+          id: String(pl.id), n: pl.fullName, pos, tm: TEAM[pl.proTeamId] || "FA", inj, t: t.id,
+          espn: r1(sr.appliedAverage), base: r1(base), wk: slate(pl.proTeamId, pos, base),
+          ...(sp && sp.S.g ? statBlock(sp) : {}),
         };
-        ids.push(pl.id);
+        ids.push(String(pl.id));
       }
       teams.push({
         id: t.id, name: ti.name || ((ti.location || "") + " " + (ti.nickname || "")).trim() || "Team " + t.id,
@@ -262,15 +301,28 @@ export default async function handler(req, res) {
     }
     if (!teams.some(t => t.id === MY_TEAM)) throw new Error("team " + MY_TEAM + " not in league payload");
 
+    // ---- the best of who is NOT on a roster, so the player table covers the whole pool
+    for (const pos of SKILL) {
+      Object.values(P).filter(p => p.pos === pos && !used.has(p) && p.S.g >= 2)
+        .sort((a, b) => Math.max(b.S.xfp, b.S.ppg) - Math.max(a.S.xfp, a.S.ppg))
+        .slice(0, POOL[pos]).forEach(p => {
+          const base = baseOf(p);
+          players["s" + p.sid] = {
+            id: "s" + p.sid, sid: p.sid, n: p.name, pos, tm: p.tm || "FA", inj: p.inj || "", t: 0,
+            base: r1(base), wk: slate(TEAM_ID[p.tm], pos, base), ...statBlock(p),
+          };
+        });
+    }
+
     const counts = ((settings.settings || {}).rosterSettings || {}).lineupSlotCounts || {};
     const slots = {};
     for (const [id, name] of Object.entries(SLOT)) slots[name] = counts[id] || 0;
 
     res.status(200).json({
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
-      through: played, weeks, playoffs: [15, 16, 17], slots,
+      through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
-      model: { skill: cS.map(r3), qb: cQ.map(r3) },
+      model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])),
       teams, players,
     });
   } catch (e) {
