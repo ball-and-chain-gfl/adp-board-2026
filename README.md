@@ -49,7 +49,10 @@ each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
     or *Worth asking* answer.
   - *Everyone who helps*: a sortable table of every healthy player on another roster who would
     make my lineup better (a quarter-point a week or more), with the best answer any package for
-    him gets. *Gettable* narrows it to the realistic ones. Also *Free agents* and *Sell-highs*.
+    him gets. *Gettable* narrows it to the realistic ones. Also *Free agents* and *Sell-highs*
+    (my players the league prices above what they project).
+  - Every target carries a **Price** (*Buy low* / *Fair* / *Priced high*, with the gap in points
+    a game) and a **When** (*Buy now* / *After wk N* / *Any time*); see *Price and timing* below.
   Tapping any target opens Packages filtered to the deals that would get him, every answer shown.
   The table's *Replaces* column and each top-target card name the starter of mine he would take
   the place of.
@@ -131,6 +134,10 @@ Two shapes, both judged with the same rules as a 2-team deal, each team on its o
 the deal's answer being the worst of theirs. Only three-ways where every team can say yes are
 listed, and one is dropped when the straight deal with B (same players out, same back) is
 already as good.
+
+A swap keeps only its best three-way (the same players out and back through a different third
+team is the same idea twice), a three-way goes when a smaller deal with the same team does as
+well, and no third team is looked for when the straight deal is already a *Likely yes*.
 
 - **Rotation.** Everything of mine goes to team C, C sends one player to team B, B sends one
   or two to me.
@@ -236,11 +243,53 @@ Everything is in points a game against what he has been scoring:
   lost his role. It counts 0.6 × the change × his xFP, and is flagged at ±15%.
 - **schedule** — average rank of the defences ahead against the ones already faced.
 
-"Upside" is the sum. The buy grade is half what he adds to my lineup, a quarter upside, and the
-rest his workload percentile and how soft his playoff weeks are.
+"Upside" is the sum. The buy grade is half what he adds to my lineup; the rest is how cheap he
+is next to what he will do (15%), upside (15%), his workload percentile and how soft his playoff
+weeks are (10% each).
 
 **Hurt players are never targets.** Anyone out, doubtful, on IR or suspended is left off the
 Starters list and out of every suggested package until I overrule ESPN's status myself.
+
+### Price and timing: what the league pays for, and when to move
+
+Two different numbers run the two sides of every deal.
+
+- **My side is the future.** My lineup, every upgrade and every "+ a week" run on ESPN's
+  projections alone.
+- **The other side is the past.** The other managers price a player on what he has done. The
+  *league's view* of a player (`p.seen`) is 60% his production (season average, with his last
+  three games counted a second time) and 40% the projection, held between 0.6× and 1.6× the
+  projection. Old production fades: the 60% is cut when he has missed games lately (played
+  three of the last four weeks = full weight, none of them = a quarter), so four big games in
+  September from a player who hasn't been on the field since buy nothing.
+  Everything the other team decides uses that view: what a player is worth to it, whether he
+  would start for it, whether it is left short at a position, and what the deal does to its
+  lineup. The week I *play* that team still uses the real projections, because that is what
+  will actually happen.
+- **Price** is the gap between the two, in points a game. 0.75 or more either way counts:
+  *Buy low* (he projects for more than he has scored, so he costs less than he is worth to me),
+  *Priced high* (his team will want paying for what he has done), and for my own players
+  *Sell high*. **Sell-highs** lists my players the league would start and prices above their
+  projection, with what the league sees beside what he projects.
+- **When** reads his next games. A week is *tough* or *soft* when ESPN projects him 7% under or
+  over his usual game, measured against the league's middle player that week (ESPN projects the
+  coming week a little higher than later ones for everybody). The price follows the box score,
+  so:
+  - buying: a tough game next means *After wk N* (let the price dip, through a run of tough
+    games if there is one); on a bye, or with a soft game or a soft three-game stretch next,
+    *Buy now*;
+  - selling: a soft game next means *After wk N* (let him post it), as does a bye this week
+    (teams pay less for a player they can't start); a tough game or tough stretch next means
+    *Sell now*.
+  Waiting is only offered when that week finishes before the trade deadline (`weekTimes` and
+  `deadline` in the payload).
+- Where it shows: the Price and When columns on Targets, the labels on top-target cards, a
+  *Trade timing* block in the player card (league sees / projects / the call, and the reason in
+  a sentence), and one note a player on package cards ("Buying Jefferson low", "Swift sells for
+  more after wk 11").
+
+On 11/10 this took realistic two-team deals from 18 to 170, because several of my players have
+outscored their projections and the league pays for that.
 
 ### How a trade is judged
 

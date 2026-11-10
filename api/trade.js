@@ -784,6 +784,8 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       scoring: { rec: recPts != null ? recPts : null, int: intPts != null ? intPts : null },
       opps, kd: kdModel, vegasWeeks: [...new Set(Object.values(vegas).flatMap(m => Object.keys(m).map(Number)))].sort((a, b) => a - b), proj: { src: espnN ? "espn" : "model", players: espnN, weeks: espnProj.filter(Boolean).length },
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
+      // first and last kickoff of each week ahead: which weeks are over before the trade deadline
+      weekTimes: Object.fromEntries(weeks.filter(w => weekDates[w]).map(w => [w, [Math.min(...weekDates[w]), Math.max(...weekDates[w])]])),
       model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
       teams, players, faab, experts,
     });
