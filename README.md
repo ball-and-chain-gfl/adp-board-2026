@@ -24,10 +24,14 @@ It analyses one ESPN team — The Bryan Football Team, team 10 in league 1327340
 Four sections. On a wide screen they are pills under the tabs; on a phone they are a bar along
 the bottom.
 
-- **Targets** — the point of the tool. *Buy targets* are players carrying a starter's workload
-  whose box score is behind it, plus free agents who would start today. *My sell-highs* are my
-  own players running ahead of their workload. Each card says why, in plain lines, and where the
-  owner stands at that position. "Find a deal" searches packages for that one player.
+- **Targets** — the point of the tool, in three lists:
+  - *Starters*: players on other rosters who are startable in this league, healthy, would be in
+    MY lineup, and whose workload says there is more coming. Graded 0–99.
+  - *Depth*: free agents for the bench, with any who would start listed first.
+  - *Sell-highs*: my own startable players running ahead of their workload.
+  Cards are built to be read by colour, not by number: a Workload bar over a Scoring bar, a row
+  of heat tiles (green = high for the position, red = low), a few coloured words for the read,
+  and the remaining schedule as coloured blocks with the playoff weeks outlined.
 - **Roster** — need tiles, then one sortable player list: my roster, any team, every rostered
   player, free agents, or everyone. Wide screens get a table (click a header to sort; Overview,
   Usage and Schedule column sets). Phones get a card per player with a sort menu.
@@ -49,10 +53,11 @@ Everything is in points a game against what he has been scoring:
 - **role** — last three games' xFP against the season (0.6).
 - **schedule** — average rank of the defences ahead against the ones already faced.
 
-"Upside" is the sum. A buy target needs upside of 0.8+ and a starter's workload, averaged over
-the season and the last three games so one hot fortnight does not qualify. Talent markers
-(targets per snap, yards after contact, broken tackles in the top fifth) are shown as supporting
-lines, not scored.
+"Upside" is the sum. The buy grade is half upside, a quarter what he adds to my lineup, and the
+rest his workload percentile and how soft his playoff weeks are.
+
+**Hurt players are never targets.** Anyone out, doubtful, on IR or suspended is left off the
+Starters list and out of every suggested package until I overrule ESPN's status myself.
 
 ### How a trade is judged
 
@@ -64,25 +69,38 @@ Not two price tags — two rosters.
   league's last-starter line and the free-agent line for each position.
 - **Waiver floor.** Lineups are scored with every starting spot worth at least the free-agent
   line, so a deal is measured against the free alternative rather than an empty slot.
-- **Holes.** A player is *startable* at 93% of the league's last starter at his position. If a
-  deal leaves either team with fewer startable players at a position than it has spots, and it
-  had them before, that side says no. A team with two backs does not give one up unless one
-  comes back.
+- **Startable** is a rank at the position across every player, rostered or not: QB12, RB24,
+  WR24, TE12, K12, DEF12. Depth is how many of *those* a team holds — short, set or deep — not
+  how many bodies it has at the position.
+- **Holes.** If a deal leaves either team with fewer startable players at a position than it
+  has spots, and it had them before, that side says no. A team with two backs does not give one
+  up unless one comes back.
 - **Worth to them.** A player counts in full for the team getting him only if he would start;
-  80% as their flex, 45% on their bench. A third good back is not worth to them what he is worth
-  on the market. Their own bench is cheaper for them to give up than their starters.
+  70% as their flex, 25% on their bench. Their own starters cost a premium to pry loose and
+  their bench is cheap. Value also climbs faster than points: one player 12 over the waiver
+  wire is worth more than two who are 6 over.
+- **A starter moves for a starter.** If they give up someone in their lineup, someone coming
+  back has to go into it. And the best player in a deal does not move for a pile of lesser ones.
 - **Their lineup** has to come out ahead as well.
 
 Packages are tagged *Likely yes* or *Worth asking*; anything else is not shown. The builder
-shows all of it for any deal, including the ones that fail.
+shows all of it for any deal, including the ones that fail, and previews the lineup after the
+trade slot by slot — who comes in for whom, the points change at each position and the league
+rank before and after — for either team.
 
-### Ruling players out by hand
+### Injuries, and ruling players out by hand
 
-The **Status** menu beside every player shows ESPN's injury status until you pick something
-else: Healthy, out for the next week, out through any later week, or out for the season. Your
-calls are saved in the browser (`localStorage`, key `trade.ov`), drop off by themselves once
-the week has passed, and feed everything. That is why `api/trade.js` sends a *healthy*
-projection plus the status, and the page applies availability.
+ESPN's fantasy status says *Out* whether a player misses a week or the season, so
+`api/trade.js` also reads ESPN's injury feed, which publishes an expected return date, and
+turns it into the week he is due back (or "not this season"). That feed lists only 25 players a
+team. For anyone it misses: on IR or suspended and not playing, or out two games running, is
+treated as gone until told otherwise.
+
+The **Status** menu beside every player shows that reading — "Out for season", "On IR, back wk
+12", "On IR, no return date" — until you pick something else: Healthy, out for the next week,
+out through any later week, or out for the season. Your calls are saved in the browser
+(`localStorage`, key `trade.ov`), drop off by themselves once the week has passed, and feed
+everything.
 
 ### Data
 

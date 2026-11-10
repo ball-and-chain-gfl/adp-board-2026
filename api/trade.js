@@ -24,6 +24,10 @@
 //   - a HEALTHY projection for each remaining week through 17: blended usage/production rate,
 //     scaled by that week's opponent, zero on a bye. Injury status is sent alongside and the
 //     page applies it, because the page also lets you overrule ESPN's status by hand.
+//   - when he is due back: ESPN's injury feed publishes an expected return date for the players
+//     it lists (25 a team, so not everyone), turned here into the first week he should play
+//     again, or 99 for "not this fantasy season". Plus how many straight games he has missed,
+//     which is what the page falls back on when no date is published.
 // The page does the roster-need and trade-package maths on top of this.
 
 const MY_TEAM = 10;          // The Bryan Football Team
@@ -32,6 +36,7 @@ const LAST_WEEK = 17;        // league playoffs are weeks 15-17
 const GFL = "https://gfl-dashboard.vercel.app/api/espn";
 const ESPN_SCHED = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}?view=proTeamSchedules_wl`;
 const SLEEPER = "https://api.sleeper.app";
+const ESPN_INJ_FEED = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries";
 const SKILL_Q = "position[]=QB&position[]=RB&position[]=WR&position[]=TE";
 const SKILL = ["QB", "RB", "WR", "TE"];
 // how many unrostered players to carry at each position, best first
@@ -91,12 +96,13 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "public, s-maxage=1800, stale-while-revalidate=86400");
 
   try {
-    const [state, sched, roster, teamsInfo, settings] = await Promise.all([
+    const [state, sched, roster, teamsInfo, settings, injFeed] = await Promise.all([
       getJSON(`${SLEEPER}/v1/state/nfl`),
       getJSON(ESPN_SCHED),
       getJSON(`${GFL}?view=mRoster&seasonId=${SEASON}`),
       getJSON(`${GFL}?view=mTeam&seasonId=${SEASON}`),
       getJSON(`${GFL}?view=mSettings&seasonId=${SEASON}`),
+      getJSON(ESPN_INJ_FEED).catch(() => null),      // big and optional: the page copes without it
     ]);
 
     // ---- NFL schedule: who each team plays each week, and which weeks are still fully ahead
@@ -120,6 +126,25 @@ export default async function handler(req, res) {
       if (weekDates[w] && weekDates[w].every(d => d > now)) { firstWeek = w; break; }
     const weeks = [];
     for (let w = firstWeek; w <= LAST_WEEK; w++) weeks.push(w);
+
+    // ---- expected return dates, by ESPN id where the feed links one and by name otherwise
+    const retById = {}, retByName = {};
+    for (const t of (injFeed && injFeed.injuries) || []) for (const i of t.injuries || []) {
+      const ms = Date.parse((i.details || {}).returnDate || "");
+      if (!isFinite(ms)) continue;
+      const a = i.athlete || {}, m = /\/id\/(\d+)\//.exec(((a.links || [])[0] || {}).href || "");
+      if (m) retById[m[1]] = ms;
+      if (a.displayName) retByName[norm(a.displayName)] = ms;
+    }
+    // the first remaining week his team plays on or after that date; 99 = not this fantasy season
+    const backWeek = (ms, proTeamId) => {
+      if (ms == null) return null;
+      for (let w = firstWeek; w <= LAST_WEEK; w++) {
+        const g = (games[proTeamId] || {})[w];
+        if (g && g.date + 432e5 >= ms) return w;
+      }
+      return 99;
+    };
 
     // ---- Sleeper weekly stats, every week played so far
     const played = Math.max(1, Math.min(18, Math.min(+state.week || 1, firstWeek)));
@@ -288,6 +313,18 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       };
     };
 
+    const missed = (sp, proTeamId) => {
+      if (!sp) return null;
+      const has = new Set(sp.gs.map(g => g.w)); let n = 0;
+      for (let w = played; w >= 1; w--) {
+        const g = (games[proTeamId] || {})[w];
+        if (!g || g.date > now) continue;
+        if (has.has(w)) break;
+        n++;
+      }
+      return n;
+    };
+
     // ---- league rosters
     const seasonRow = stats => (stats || []).find(s =>
       s.seasonId === SEASON && s.statSourceId === 0 && s.statSplitTypeId === 0 && s.scoringPeriodId === 0);
@@ -309,6 +346,8 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         const base = baseOf(sp, sr.appliedAverage);
         players[pl.id] = {
           id: String(pl.id), n: pl.fullName, pos, tm: TEAM[pl.proTeamId] || "FA", inj, t: t.id,
+          ret: backWeek(retById[pl.id] != null ? retById[pl.id] : retByName[norm(pl.fullName)], pl.proTeamId),
+          miss: missed(sp, pl.proTeamId),
           espn: r1(sr.appliedAverage), base: r1(base), wk: slate(pl.proTeamId, pos, base),
           ...(sp && sp.S.g ? statBlock(sp) : {}),
         };
@@ -329,6 +368,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
           const base = baseOf(p);
           players["s" + p.sid] = {
             id: "s" + p.sid, sid: p.sid, n: p.name, pos, tm: p.tm || "FA", inj: p.inj || "", t: 0,
+            ret: backWeek(retByName[norm(p.name)], TEAM_ID[p.tm]), miss: missed(p, TEAM_ID[p.tm]),
             base: r1(base), wk: slate(TEAM_ID[p.tm], pos, base), ...statBlock(p),
           };
         });
