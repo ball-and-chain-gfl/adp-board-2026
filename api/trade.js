@@ -67,6 +67,34 @@ async function getJSON(url) {
   return r.json();
 }
 
+// ---- Yahoo expert notes. The two analysts' author pages list their latest pieces (mostly
+// podcast clips, one waiver-wire show a week). There is no feed, so this reads each listing's
+// tracking attribute for the title and link, and matches player names against the link's slug
+// (titles are cut short at the first apostrophe; slugs never are). The waiver show's own page
+// carries a tag list of every player it covers, which is read too. Optional: if Yahoo is down
+// or changes its markup, the page simply shows no expert notes.
+const YAHOO = "https://sports.yahoo.com";
+const AUTHORS = [["Norris", "josh-norris"], ["Winks", "hayden-winks"]];
+async function getText(url) {
+  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; adp-board/1.0)", Accept: "text/html" },
+    signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(url + " returned " + r.status);
+  return r.text();
+}
+const unent = s => String(s || "").replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#x2F;/g, "/");
+function authorItems(html) {
+  const out = [], seen = new Set();
+  for (const m of html.matchAll(/data-ylk="([^"]*)"/g)) {
+    const y = m[1], uri = (/tar_uri:([^;]+)/.exec(y) || [])[1], t = (/slk:(.*?);tar:/.exec(y) || [])[1];
+    if (!uri || !/^\/(?:[a-z]+\/)?(article|video)\/[a-z0-9-]+\.html$/.test(uri) || seen.has(uri)) continue;
+    seen.add(uri);
+    out.push({ uri, t: unent(t), k: uri.includes("/video/") ? "video" : "article" });
+  }
+  return out;
+}
+const slugText = uri => uri.split("/").pop().replace(/-\d+\.html$/, "").replace(/-+/g, " ");
+const isWaiver = s => /waiver|pickup|pick up|flier|add\b|streamer|stash/i.test(s);
+
 // Least squares with no intercept. Tiny ridge keeps it solvable if two columns line up.
 function ols(X, y) {
   const n = X[0].length, A = Array.from({ length: n }, () => Array(n + 1).fill(0));
@@ -96,13 +124,14 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "public, s-maxage=1800, stale-while-revalidate=86400");
 
   try {
-    const [state, sched, roster, teamsInfo, settings, injFeed] = await Promise.all([
+    const [state, sched, roster, teamsInfo, settings, injFeed, ...authorPages] = await Promise.all([
       getJSON(`${SLEEPER}/v1/state/nfl`),
       getJSON(ESPN_SCHED),
       getJSON(`${GFL}?view=mRoster&seasonId=${SEASON}`),
       getJSON(`${GFL}?view=mTeam&seasonId=${SEASON}`),
       getJSON(`${GFL}?view=mSettings&seasonId=${SEASON}`),
       getJSON(ESPN_INJ_FEED).catch(() => null),      // big and optional: the page copes without it
+      ...AUTHORS.map(([, slug]) => getText(`${YAHOO}/author/${slug}/`).catch(() => null)),
     ]);
 
     // ---- NFL schedule: who each team plays each week, and which weeks are still fully ahead
@@ -378,12 +407,67 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     const slots = {};
     for (const [id, name] of Object.entries(SLOT)) slots[name] = counts[id] || 0;
 
+    // ---- FAAB: the league budget and what every team has left to spend
+    const acq = (settings.settings || {}).acquisitionSettings || {};
+    const faab = acq.isUsingAcquisitionBudget ? {
+      budget: acq.acquisitionBudget || 0, min: acq.minimumBid != null ? acq.minimumBid : 1,
+      left: Object.fromEntries(teams.map(t => [t.id,
+        Math.max(0, (acq.acquisitionBudget || 0) - (((info[t.id] || {}).transactionCounter || {}).acquisitionBudgetSpent || 0))])),
+    } : null;
+
+    // ---- expert notes: every recent piece by either analyst, and which of our players it names
+    const items = [], byUri = {};
+    AUTHORS.forEach(([who], i) => {
+      if (!authorPages[i]) return;
+      for (const it of authorItems(authorPages[i])) {
+        if (byUri[it.uri]) { if (!byUri[it.uri].a.includes(who)) byUri[it.uri].a.push(who); continue; }
+        const x = { a: [who], t: it.t, u: YAHOO + it.uri, k: it.k, tags: [] };
+        byUri[it.uri] = x; items.push(x);
+      }
+    });
+    // the waiver shows publish a tag for each player they cover; read the latest two
+    const shows = items.filter(x => x.k === "article" && isWaiver(x.t + " " + slugText(x.u))).slice(0, 2);
+    await Promise.all(shows.map(async x => {
+      try {
+        const h = await getText(x.u), m = /"othertags":\[([^\]]*)\]/.exec(h);
+        if (m) x.tags = JSON.parse("[" + m[1] + "]").filter(s => typeof s === "string");
+        const d = /"datePublished":"([^"]+)"/.exec(h);
+        if (d) x.d = d[1];
+      } catch (e) {}
+    }));
+    const names = Object.values(players).filter(p => SKILL.includes(p.pos)).map(p => {
+      const k = norm(p.n).replace(/[^a-z0-9 ]/g, "");
+      return { id: p.id, re: new RegExp("(^| )" + k + "s?( |$)") };
+    });
+    for (const x of items) {
+      const txt = norm(slugText(x.u) + " " + x.tags.join(" ")).replace(/[^a-z0-9 ]/g, " ");
+      x.ids = names.filter(n => n.re.test(txt)).map(n => n.id);
+      x.wv = isWaiver(x.t + " " + slugText(x.u));
+    }
+    // a clip cut from the waiver show doesn't say so in its title, only in its description
+    // ("...is a waiver wire option entering Week 10"), so read the clips that name a free agent
+    const clips = items.filter(x => x.k === "video" && !x.wv && x.ids.some(id => !players[id].t)).slice(0, 12);
+    await Promise.all(clips.map(async x => {
+      try {
+        const h = await getText(x.u);
+        const desc = (/"description":"([^"]*)"/.exec(h) || [])[1] || "";
+        if (/waiver/i.test(desc)) x.wv = true;
+        const d = /"uploadDate":"([^"]+)"/.exec(h);
+        if (d) x.d = d[1];
+      } catch (e) {}
+    }));
+    const experts = {
+      ok: Object.fromEntries(AUTHORS.map(([who], i) => [who, !!authorPages[i]])),
+      items: items.filter(x => x.ids.length || x.wv)
+        .map(x => ({ a: x.a, t: x.t, u: x.u, k: x.k, d: x.d || null, wv: x.wv, ids: x.ids })),
+    };
+
     res.status(200).json({
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
       model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
-      teams, players,
+      teams, players, faab, experts,
     });
   } catch (e) {
     res.setHeader("Cache-Control", "no-store");

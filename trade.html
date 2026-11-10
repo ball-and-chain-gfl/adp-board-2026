@@ -93,6 +93,13 @@ select.st.Q{border-color:#96741f;color:var(--warn)}
 select.st.D,select.st.O,select.st.IR,select.st.SUS{border-color:#8f2f29;color:#ffa59c}
 select.st.man{border-color:var(--blue);background:#12233d;color:#a3c9fb}
 .lab{font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
+/* my own lineup calls: starter / bench / handcuff */
+.rtag{font-size:10px;font-weight:800;letter-spacing:.3px;border-radius:4px;padding:0 5px;white-space:nowrap}
+.rtag.S{background:#15365f;color:#a3c9fb}.rtag.B{background:#2d3440;color:#c5cfda}.rtag.C{background:#3b2f14;color:var(--warn)}
+select.rl{padding:5px 6px;font-size:12.5px;font-weight:700;border-radius:7px;color:var(--soft);max-width:176px}
+select.rl.on{border-color:#6b5420;background:#2a2312;color:var(--warn)}
+.pc-role{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11.5px;font-weight:800;letter-spacing:.5px;color:var(--dim);text-transform:uppercase}
+.pc-role select{flex:1;max-width:none}
 
 /* targets */
 .market{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;flex:none}
@@ -198,7 +205,16 @@ td.wk{padding:5px 4px;text-align:center}
 .pk .tm > div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pk .tm > div span{color:var(--dim);font-weight:600;font-size:12.5px;margin-left:6px}
 .will{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:1px 8px;border-radius:999px;margin-top:3px}
-.will.likely{background:#12382a;color:#7fe0aa}.will.maybe{background:#3b2f14;color:var(--warn)}
+.will.likely{background:#12382a;color:#7fe0aa}.will.maybe{background:#3b2f14;color:var(--warn)}.will.long{background:#3a1d1b;color:#ffa59c}
+.will.three{background:#2a2350;color:#c9bdff;margin-left:4px}
+.legs{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:11px}
+.legs .side{display:grid;grid-template-columns:112px minmax(0,1fr);column-gap:8px;align-items:center}
+.legs .side .h{grid-row:1/span 2}
+.legs .side .pill{grid-column:2}
+.legs .side .pill:first-of-type{margin-top:0}
+.legs .side .h{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.more{width:100%;padding:12px;margin-top:12px}
+.pkgrid-more{grid-column:1/-1}
 .pk .sides{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:8px;margin-top:11px;align-items:center}
 .pk .arrow{color:var(--dim);font-size:18px;text-align:center}
 .pk .side{min-width:0;background:var(--panel2);border-radius:8px;padding:7px 9px 8px}
@@ -214,6 +230,12 @@ td.wk{padding:5px 4px;text-align:center}
 /* builder: my players | the deal | their players, each scrolling on its own */
 .bseg{display:none;margin-bottom:10px;flex:none}
 .bgrid{flex:1 0 auto;height:0;min-height:min(520px,78vh);display:grid;grid-template-columns:minmax(270px,360px) minmax(300px,540px) minmax(270px,360px);gap:12px;justify-content:center}
+.rcol{display:flex;flex-direction:column;gap:12px;min-height:0}
+.rcol .pane{flex:1}
+.bmode{margin-bottom:10px;flex:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bmode .hint{font-size:12.5px;color:var(--dim)}
+.dsides.three{grid-template-columns:1fr 1fr 1fr}
+@container (max-width:420px){ .dsides.three{grid-template-columns:1fr} }
 .pane{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .ph{padding:9px 10px;background:#10151c;border-bottom:1px solid var(--line);flex:none}
 .ph .t{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -284,6 +306,29 @@ td.wk{padding:5px 4px;text-align:center}
 .bench{font-size:12px;color:var(--dim);margin-bottom:14px}
 .rk.up{background:rgba(34,170,95,.2)}.rk.dn{background:rgba(220,64,54,.2)}
 
+/* waivers */
+.bid{flex:none;min-width:64px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;padding:0 8px}
+.bid b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.bid span{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;margin-top:3px;opacity:.9}
+.bid.a{background:#1f8a4c;color:#fff}.bid.b{background:#6f8f1f;color:#fff}.bid.c{background:#9a6b12;color:#fff}.bid.d{background:#2d3440;color:var(--soft)}
+.faab{font-size:12.5px;color:var(--dim);line-height:1.45}
+.faab b{color:var(--txt)}
+.faab .warn{color:var(--warn)}
+.xpb{font-size:10px;font-weight:800;letter-spacing:.3px;border-radius:4px;padding:0 5px;background:#2a2350;color:#c9bdff;white-space:nowrap}
+details.xp{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;flex:none}
+details.xp summary{cursor:pointer;padding:10px 13px;font-weight:800;font-size:13.5px;list-style:none;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+details.xp summary::-webkit-details-marker{display:none}
+details.xp summary span{font-weight:600;font-size:12.5px;color:var(--dim)}
+details.xp summary::after{content:"Show";margin-left:auto;font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:7px;padding:3px 8px}
+details.xp[open] summary::after{content:"Hide"}
+.xpl{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.xpi{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:8px 13px;border-bottom:1px solid var(--line);font-size:13px}
+.xpi:last-child{border-bottom:0}
+.xpi a{color:var(--txt);text-decoration:none;font-weight:700;flex:1 1 260px;min-width:0}
+.xpi a:hover{text-decoration:underline}
+.xpi .who2{display:flex;flex-wrap:wrap;gap:4px}
+a.chip{text-decoration:none}
+
 @media (max-width:1100px){
   .tiles{gap:8px}
   .tile{padding:9px 10px 10px}
@@ -302,7 +347,15 @@ td.wk{padding:5px 4px;text-align:center}
   .tabs{margin-top:7px}
   .tab{padding:6px 12px 5px;font-size:12px}
   .sub{order:3;padding:6px 8px calc(6px + env(safe-area-inset-bottom));gap:5px;border-top:1px solid var(--line);background:var(--panel)}
-  .sub button{flex:1;padding:10px 2px;font-size:13px;border-radius:10px;min-width:0}
+  .sub button{flex:1;padding:10px 2px;font-size:12.5px;border-radius:10px;min-width:0}
+  .legs{grid-template-columns:minmax(0,1fr);gap:6px}
+  .rcol{flex:1;gap:8px}
+  .bgrid[data-side=mine] .rcol,.bgrid[data-side=theirs] #p-via,.bgrid[data-side=via] #p-theirs{display:none}
+  .bgrid[data-side=mine] #p-mine{display:flex}
+  .bgrid[data-side=theirs] #p-mine,.bgrid[data-side=via] #p-mine{display:none}
+  .bmode{margin-bottom:8px}
+  .bmode .hint{display:none}
+  .bid{height:48px;min-width:58px}
   .sub button span{display:none}
   .view{padding:10px 10px 14px}
   .tools{gap:6px;margin:10px 0 8px}
@@ -340,7 +393,6 @@ td.wk{padding:5px 4px;text-align:center}
   .bseg button{flex:1;padding:10px 6px}
   .bgrid{display:flex;flex-direction:column;gap:8px;height:auto;min-height:0;flex:1}
   .pane{flex:1}
-  .bgrid[data-side=mine] #p-theirs,.bgrid[data-side=theirs] #p-mine{display:none}
   .row{padding:8px 10px}
   .deal{order:9;flex:none;padding:0;overflow:visible}
   .dsum{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:none;border:0;text-align:left;cursor:pointer;color:var(--txt)}
@@ -371,6 +423,7 @@ td.wk{padding:5px 4px;text-align:center}
   <button data-v="roster">Roster</button>
   <button data-v="packages">Packages<span id="pkn"></span></button>
   <button data-v="builder">Builder</button>
+  <button data-v="waivers">Waivers</button>
 </nav>
 <div class="wrap">
 <div id="msg">Loading league&hellip;</div>
@@ -415,8 +468,14 @@ td.wk{padding:5px 4px;text-align:center}
       <option value="">Getting any position</option><option value="QB">Getting a QB</option><option value="RB">Getting an RB</option>
       <option value="WR">Getting a WR</option><option value="TE">Getting a TE</option>
     </select>
+    <select id="pkWill">
+      <option value="">Any answer</option><option value="maybe">Likely or worth asking</option><option value="likely">Likely yes only</option>
+    </select>
+    <select id="pkKind">
+      <option value="">2- and 3-team</option><option value="2">2-team only</option><option value="3">3-team only</option>
+    </select>
     <select id="pkSort">
-      <option value="gain">Sort: biggest gain</option><option value="po">Sort: playoff gain</option>
+      <option value="gain">Sort: best for me</option><option value="raw">Sort: biggest gain, any answer</option><option value="po">Sort: playoff gain</option>
       <option value="reg">Sort: regular-season gain</option><option value="team">Sort: by team</option>
     </select>
     <input type="search" id="pkQ" placeholder="Search player or team">
@@ -426,36 +485,81 @@ td.wk{padding:5px 4px;text-align:center}
 </section>
 
 <section class="view" id="v-builder" hidden>
-  <div class="seg bseg" id="bseg"><button data-s="mine" class="on">My players</button><button data-s="theirs">Their players</button></div>
+  <div class="bmode"><div class="seg" id="bmode"><button data-n="2" class="on">2 teams</button><button data-n="3">3 teams</button></div>
+    <span class="hint" id="bhint"></span></div>
+  <div class="seg bseg" id="bseg"><button data-s="mine" class="on">My players</button><button data-s="theirs">Their players</button><button data-s="via" hidden>Team C</button></div>
   <div class="bgrid" id="bgrid" data-side="mine">
     <div class="pane" id="p-mine">
-      <div class="ph"><div class="t"><b class="h">I give</b><span class="cap">ROS &nbsp;&nbsp; PO</span></div><div class="needs" id="myneed"></div></div>
+      <div class="ph"><div class="t"><b class="h" id="mineh">I give</b><span class="cap">ROS &nbsp;&nbsp; PO</span></div><div class="needs" id="myneed"></div></div>
       <div class="plist" id="mine"></div>
     </div>
     <div class="deal" id="deal"></div>
-    <div class="pane" id="p-theirs">
-      <div class="ph"><div class="t"><select id="partner"></select><span class="cap">ROS &nbsp;&nbsp; PO</span></div><div class="needs" id="pneed"></div></div>
-      <div class="plist" id="theirs"></div>
+    <div class="rcol">
+      <div class="pane" id="p-theirs">
+        <div class="ph"><div class="t"><select id="partner"></select><span class="cap">ROS &nbsp;&nbsp; PO</span></div><div class="needs" id="pneed"></div></div>
+        <div class="plist" id="theirs"></div>
+      </div>
+      <div class="pane" id="p-via" hidden>
+        <div class="ph"><div class="t"><select id="partnerA"></select><span class="cap">ROS &nbsp;&nbsp; PO</span></div><div class="needs" id="aneed"></div></div>
+        <div class="plist" id="via"></div>
+      </div>
     </div>
   </div>
 </section>
+
+<section class="view" id="v-waivers" hidden>
+  <div class="market" id="faab"></div>
+  <div class="tools">
+    <div class="seg" id="wvpos">
+      <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button>
+    </div>
+    <select id="wvsort">
+      <option value="bid">Sort: FAAB bid</option><option value="gain">Sort: what he adds to my lineup</option>
+      <option value="exp">Sort: expert waiver picks first</option><option value="pts">Sort: projected points</option>
+    </select>
+    <input type="search" id="wvq" placeholder="Search player or team">
+    <span class="count" id="wvcount"></span>
+  </div>
+  <details class="xp" id="xp"></details>
+  <div class="tgs" id="wvs"></div>
+</section>
 </div>
 <script>
-let D, P, ME, TEAMS = {}, REG = [], PO = [], ALLW = [], COLS = {}, PCT = {}, ALLPK = [], FORPK = [], pkTimer;
+let D, P, ME, TEAMS = {}, REG = [], PO = [], ALLW = [], COLS = {}, PCT = {}, ALLPK = [], FORPK = [], pkTimer, SEARCH = 0, SEARCHING = "";
 // league view, rebuilt whenever availability changes
-let REPL = {}, START = {}, XSTART = {}, RANK = {}, BASE = {}, DEPTH = {}, ROLE0 = {}, W0 = {}, BUYS = [], SELLS = [], DEPTHS = [];
-const SKILL = ["QB","RB","WR","TE"], ORDER = {QB:0,RB:1,WR:2,TE:3,K:4,DST:5}, VIEWS = ["targets","roster","packages","builder"];
+let REPL = {}, START = {}, XSTART = {}, RANK = {}, BASE = {}, DEPTH = {}, ROLE0 = {}, W0 = {}, BUYS = [], SELLS = [], DEPTHS = [], WAIV = [], XPBY = {};
+const SKILL = ["QB","RB","WR","TE"], ORDER = {QB:0,RB:1,WR:2,TE:3,K:4,DST:5}, VIEWS = ["targets","roster","packages","builder","waivers"];
 // who counts as startable, by rank at the position across the whole player pool
 const STARTN = {QB:12, RB:24, WR:24, TE:12, K:12, DST:12};
 const S = {view:"targets", tgMode:"buy", tgPos:"ALL", tgSrc:"", tgSort:"best",
            scope:"me", pos:"ALL", cols:"overview", q:"", sort:null, dir:-1, limit:40,
-           pkTeam:"", pkPos:"", pkSort:"gain", pkQ:"", pkFor:null, dealOpen:false, pvSide:"me"};
-const give = new Set(), get = new Set(), OPEN = new Set();
+           pkTeam:"", pkPos:"", pkSort:"gain", pkQ:"", pkFor:null, pkWill:"", pkKind:"", pkLimit:40, dealOpen:false, pvSide:"me",
+           three:false, wvPos:"ALL", wvSort:"bid", wvQ:"", wvLimit:30};
+// 2-team: give = mine to them, get = theirs to me. 3-team rotation: give = mine to team C,
+// via = team C's to the partner, get = the partner's to me
+const give = new Set(), get = new Set(), via = new Set(), OPEN = new Set();
 const MQ = window.matchMedia("(max-width:820px)");
 // my own injury calls, kept in this browser: { playerId: {t:"H"} | {t:"O", thru: week} }
 let OV = {};
 try { OV = JSON.parse(localStorage.getItem("trade.ov") || "{}") || {}; } catch(e){}
 const saveOV = () => { try { localStorage.setItem("trade.ov", JSON.stringify(OV)); } catch(e){} };
+/* My own lineup calls, for my players only: {r:"S"} always starts when he plays, {r:"B"} never
+   starts for me, {r:"B", c:id} is a handcuff - benched unless that player is out that week,
+   then he takes the spot. {r:"A"} = back to automatic. Kept in this browser (key trade.role).
+   ROLE_SEED is the default on every device until changed: Monangai is Swift's handcuff, not a
+   flex play on a championship roster. */
+let ROLE = {};
+try { ROLE = JSON.parse(localStorage.getItem("trade.role") || "{}") || {}; } catch(e){}
+const saveRole = () => { try { localStorage.setItem("trade.role", JSON.stringify(ROLE)); } catch(e){} };
+const ROLE_SEED = {"4608686": {r:"B", c:"4259545"}};
+function roleOf(id){
+  const p = P[id];
+  if(!p || p.t !== ME) return null;
+  const r = ROLE[id] || ROLE_SEED[id];
+  return !r || r.r === "A" ? null : r;
+}
+// sort weight for a player in my lineup: starter calls first, bench calls last
+const TIER = r => (!r ? 2000 : r.r === "S" ? 3000 : 1000);
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -494,28 +598,47 @@ const avgRk = (p, idx) => { const r = idx.map(i => p.wk[i].rk).filter(x => x != 
    With `floor` on, every starting spot is worth at least what the waiver wire offers at
    that position - nobody actually starts an empty slot - so a trade is measured against
    the free alternative, not against zero. */
-function lineup(ids, wi, floor){
-  const by = {QB:[],RB:[],WR:[],TE:[],K:[],DST:[]};
-  for(const id of ids){ const p = P[id]; by[p.pos].push(p.eff[wi]); }
-  if(floor) for(const pos of SKILL) for(let i = 0; i < spots(pos); i++) by[pos].push(REPL[pos]);
-  let tot = 0; const flex = [];
-  for(const pos in by){
-    const a = by[pos].sort((x,y) => y - x), n = spots(pos);
+/* Each entry is tier + points, so one numeric sort orders by tier first: my starter calls
+   (3000), everyone else (2000), the waiver floor (2000, so it still beats a regular who would
+   score less), my bench calls (1000), and anyone not playing that week (0). A handcuff moves up
+   to 2000 in a week his starter is out. `mine` applies my calls - only to my own roster. */
+const PI = {QB:0,RB:1,WR:2,TE:3,K:4,DST:5};
+let NS = [0,0,0,0,0,0], NF = 0, FLOOR = [0,0,0,0];
+const BUF = [[],[],[],[],[],[]], FLX = [], desc = (x,y) => y - x;
+// p.ko / p.km hold each week as tier + points (built in recompute); a handcuff is -1 in p.km
+function cuffKey(p, wi, ids){
+  const v = p.eff[wi], c = (roleOf(p.id) || {}).c, q = P[c];
+  return q && q.eff[wi] === 0 && q.wk[wi].o !== "BYE" && ids.includes(c) ? 2000 + v : 1000 + v;
+}
+function lineup(ids, wi, floor, mine){
+  for(let k = 0; k < 6; k++) BUF[k].length = 0;
+  for(let i = 0; i < ids.length; i++){
+    const p = P[ids[i]];
+    let v = mine ? p.km[wi] : p.ko[wi];
+    if(v < 0) v = cuffKey(p, wi, ids);
+    BUF[p.pi].push(v);
+  }
+  if(floor) for(let k = 0; k < 4; k++) for(let j = 0; j < NS[k]; j++) BUF[k].push(FLOOR[k]);
+  let tot = 0; FLX.length = 0;
+  for(let k = 0; k < 6; k++){
+    const a = BUF[k], n = NS[k];
+    if(a.length > 1) a.sort(desc);
     for(let i = 0; i < a.length; i++){
-      if(i < n) tot += a[i];
-      else if(pos === "RB" || pos === "WR" || pos === "TE") flex.push(a[i]);
+      if(i < n) tot += a[i] % 1000;
+      else if(k >= 1 && k <= 3) FLX.push(a[i]);
     }
   }
-  flex.sort((x,y) => y - x);
-  for(let i = 0; i < spots("FLEX") && i < flex.length; i++) tot += flex[i];
+  if(NF){ if(FLX.length > 1) FLX.sort(desc); for(let i = 0; i < NF && i < FLX.length; i++) tot += FLX[i] % 1000; }
   return tot;
 }
-function worth(ids, floor = true){
+function worth(ids, floor = true, mine = false){
   let reg = 0, po = 0;
-  for(const wi of REG) reg += lineup(ids, wi, floor);
-  for(const wi of PO) po += lineup(ids, wi, floor);
+  for(const wi of REG) reg += lineup(ids, wi, floor, mine);
+  for(const wi of PO) po += lineup(ids, wi, floor, mine);
   return {reg, po};
 }
+// season-level ordering with my calls applied: starters first, bench calls last
+const rk = (p, mine) => (mine ? TIER(roleOf(p.id)) : 2000) + p.adj;
 const swap = (ids, out, inn) => ids.filter(id => !out.has(id)).concat([...inn]);
 function delta(before, after){
   return { reg: REG.length ? (after.reg - before.reg) / REG.length : 0,
@@ -536,21 +659,23 @@ function posRanks(over){
   return out;
 }
 // how many startable players a roster holds at each position
-function depthOf(ids){
+// a player I have called bench doesn't count as startable depth for me
+const counts = (p, mine) => p.ok && !(mine && (roleOf(p.id) || {}).r === "B");
+function depthOf(ids, mine){
   const d = {QB:0,RB:0,WR:0,TE:0,K:0,DST:0};
-  for(const id of ids){ const p = P[id]; if(p.ok) d[p.pos]++; }
+  for(const id of ids){ const p = P[id]; if(counts(p, mine)) d[p.pos]++; }
   return d;
 }
 // what each player is to his team: S starter, F flex, B bench
-function rolesOf(ids){
+function rolesOf(ids, mine){
   const out = {}, spill = [];
   for(const pos of SKILL){
-    ids.map(id => P[id]).filter(p => p.pos === pos).sort((a,b) => b.adj - a.adj).forEach((p, i) => {
-      if(i < spots(pos)) out[p.id] = "S";
-      else { out[p.id] = "B"; if(pos !== "QB") spill.push(p); }
+    ids.map(id => P[id]).filter(p => p.pos === pos).sort((a,b) => rk(b, mine) - rk(a, mine)).forEach((p, i) => {
+      if(i < spots(pos) && !(mine && (roleOf(p.id) || {}).r === "B")) out[p.id] = "S";
+      else { out[p.id] = "B"; if(pos !== "QB" && !(mine && (roleOf(p.id) || {}).r === "B")) spill.push(p); }
     });
   }
-  spill.sort((a,b) => b.adj - a.adj).slice(0, spots("FLEX")).forEach(p => (out[p.id] = "F"));
+  spill.sort((a,b) => rk(b, mine) - rk(a, mine)).slice(0, spots("FLEX")).forEach(p => (out[p.id] = "F"));
   return out;
 }
 /* Trade value is points over what the waiver wire gives you at the SAME position, so scarcity
@@ -561,17 +686,18 @@ function rolesOf(ids){
    Scaled by how much of the rest of the season he will actually play. */
 const val = p => { const v = Math.max(0, p.base - (REPL[p.pos] || 0)); return (v * (1 + v / 15) + 0.5) * p.af; };
 // the starting lineup a roster would field on season rates, slot by slot, and who is left over
-function lineupOf(ids){
+function lineupOf(ids, mine){
   const by = {QB:[],RB:[],WR:[],TE:[]}, rows = [], spill = [], bench = [];
-  for(const id of ids){ const p = P[id]; if(by[p.pos]) by[p.pos].push(p); }
+  const benched = p => mine && (roleOf(p.id) || {}).r === "B";
+  for(const id of ids){ const p = P[id]; if(by[p.pos]){ if(benched(p)) bench.push(p); else by[p.pos].push(p); } }
   for(const pos of SKILL){
-    const a = by[pos].sort((x,y) => y.adj - x.adj);
+    const a = by[pos].sort((x,y) => rk(y, mine) - rk(x, mine));
     for(let i = 0; i < Math.max(a.length, spots(pos)); i++){
       if(i < spots(pos)) rows.push({slot:pos, p:a[i] || null});
       else (pos === "QB" ? bench : spill).push(a[i]);
     }
   }
-  spill.sort((x,y) => y.adj - x.adj);
+  spill.sort((x,y) => rk(y, mine) - rk(x, mine));
   for(let i = 0; i < spots("FLEX"); i++) rows.push({slot:"FLEX", p:spill[i] || null});
   return {rows, bench:spill.slice(spots("FLEX")).concat(bench)};
 }
@@ -606,6 +732,9 @@ function recompute(){
     p.af = raw ? tot / raw : 1;          // share of his remaining value he is actually there for
     p.adj = p.base * p.af;
     p.ros = avg(p.eff, REG); p.po = avg(p.eff, PO);
+    p.ko = p.eff.map(v => (v > 0 ? 2000 + v : 0));
+    const role = roleOf(p.id);
+    p.km = !role ? p.ko : p.eff.map(v => (v <= 0 ? 0 : role.r === "B" && role.c ? -1 : TIER(role) + v));
   }
   // the startable line is a rank at the position across every player: QB12, RB24, WR24, TE12,
   // K12, DEF12. Depth is how many of THOSE a team holds, not how many bodies it has.
@@ -620,11 +749,14 @@ function recompute(){
     XSTART[pos] = (byX[Math.min(byX.length, N) - 1] || {xfp:0}).xfp;      // a starter's workload
     RANK[pos] = a.filter(p => p.t).map(p => p.id);
   }
+  FLOOR = SKILL.map(pos => 2000 + (REPL[pos] || 0));
+  for(const p of Object.values(P)) p.v = val(p);
   ROLE0 = {};
-  for(const t of D.teams){ DEPTH[t.id] = depthOf(t.players); Object.assign(ROLE0, rolesOf(t.players)); W0[t.id] = worth(t.players); }
+  for(const t of D.teams){ const m = t.id === ME; DEPTH[t.id] = depthOf(t.players, m); Object.assign(ROLE0, rolesOf(t.players, m)); W0[t.id] = worth(t.players, true, m); }
   BASE = posRanks();
   for(const p of Object.values(P)) p.sg = signals(p);
   buildTargets();
+  buildWaivers();
 }
 
 /* ---- the read on a player: is the box score ahead of, or behind, what he is being given? ----
@@ -679,7 +811,7 @@ function tagLine(p){
    DEPTHS  free agents, for the bench - or a straight upgrade when one would start
    SELLS   my own startable players running ahead of their workload */
 function buildTargets(){
-  const mine = TEAMS[ME].players, denom = (REG.length + 1.5 * PO.length) || 1, bare = worth(mine, false);
+  const mine = TEAMS[ME].players, denom = (REG.length + 1.5 * PO.length) || 1, bare = worth(mine, false, true);
   BUYS = []; SELLS = []; DEPTHS = [];
   for(const p of Object.values(P)){
     if(!SKILL.includes(p.pos) || p.g == null) continue;
@@ -690,15 +822,15 @@ function buildTargets(){
     // hurt players are nobody's target: anyone out, doubtful, on IR or suspended is left off
     // until I overrule ESPN's status myself, however soon he is due back
     if(p.af < 0.9 || (!OV[p.id] && ["O","IR","SUS","D"].includes(p.inj))) continue;
-    const after = mine.concat([p.id]), role = rolesOf(after)[p.id];
+    const after = mine.concat([p.id]), role = rolesOf(after, true)[p.id];
     if(!p.t){
-      const d = delta(bare, worth(after, false));
+      const d = delta(bare, worth(after, false, true));
       DEPTHS.push({p, role, d, fit:d.score / denom});
       continue;
     }
     if(!p.sg || role === "B") continue;
     if(!p.ok && !(p.xrk && p.xrk <= STARTN[p.pos])) continue;
-    const d = delta(W0[ME], worth(after)), fit = d.score / denom;
+    const d = delta(W0[ME], worth(after, true, true)), fit = d.score / denom;
     if(fit < 0.3 || p.sg.E < 0.3) continue;
     const soft = p.sg.po == null ? 0.5 : Math.max(0, Math.min(1, (p.sg.po - 8) / 16));
     const g = 0.5 * Math.min(1, p.sg.E / 4) + 0.25 * Math.min(1, fit / 4) + 0.15 * pq(p, "xfp") + 0.1 * soft;
@@ -724,9 +856,29 @@ function injBadge(p){
   const b = p.au.back;
   return `<span class="inj ${p.inj}">${p.inj}${b > last ? " · season" : b > w0 ? " · back wk " + b : ""}</span>`;
 }
+function roleBadge(p){
+  const r = roleOf(p.id);
+  if(!r) return "";
+  if(r.r === "S") return `<span class="rtag S">STARTER</span>`;
+  return r.c && P[r.c] ? `<span class="rtag C">CUFF · ${esc(short(P[r.c]).toUpperCase())}</span>` : `<span class="rtag B">BENCH</span>`;
+}
 function who(p, extra){
   return `<div class="who"><div class="nm">${esc(p.n)}</div>
-    <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${extra || ""}</div></div>`;
+    <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${extra || ""}</div></div>`;
+}
+// my lineup call for one of my players: automatic, always start, bench, or handcuff to a teammate
+function roleSel(p){
+  if(p.t !== ME || !SKILL.includes(p.pos)) return "";
+  const r = roleOf(p.id), cur = !r ? "" : r.r === "S" ? "S" : r.c ? "C:" + r.c : "B";
+  let opts = `<option value=""${cur === "" ? " selected" : ""}>Lineup: auto</option>
+    <option value="S"${cur === "S" ? " selected" : ""}>Always start</option>
+    <option value="B"${cur === "B" ? " selected" : ""}>Bench: never start</option>`;
+  for(const id of TEAMS[ME].players){
+    const q = P[id];
+    if(id === p.id || q.pos !== p.pos) continue;
+    opts += `<option value="C:${id}"${cur === "C:" + id ? " selected" : ""}>Handcuff: starts if ${esc(short(q))} out</option>`;
+  }
+  return `<select class="rl${r ? " on" : ""}" data-id="${p.id}" aria-label="Lineup call for ${esc(p.n)}">${opts}</select>`;
 }
 const plyCell = p => `<div class="ply">${img(p)}${who(p)}</div>`;
 function spark(p){
@@ -880,6 +1032,7 @@ function buildCols(){
     name: {k:"name", h:"Player", v:p => p.n, str:true},
     own:  {k:"own", h:"Team", t:"Fantasy team", v:ownAb, str:true, html:p => `<span class="own${p.t ? "" : " fa"}">${esc(ownAb(p))}</span>`, c:true},
     st:   {k:"st", h:"Status", t:"ESPN's injury status. Change it to make your own call", v:p => p.af, html:stSel, c:true},
+    role: {k:"role", h:"Lineup", t:"Your call: automatic, always start, bench, or a handcuff who only starts when his starter is out", html:roleSel, nosort:true, c:true},
     ppg:  {k:"ppg", h:"PPG", t:"Points per game, full PPR", v:p => (p.g != null ? p.ppg : p.espn), f:f1, tint:true, sep:true},
     log:  {k:"log", h:"Games", t:"Points in each game this season; the last three played are brighter", html:spark, nosort:true},
     xfp:  stat("xfp", "xFP", "Expected points per game from workload alone: carries, red-zone carries, targets, red-zone targets", f1),
@@ -921,7 +1074,7 @@ const usageKeys = pos => pos === "RB" ? ["snap","cs","ts","opp","rzg","rz","td",
   : (pos === "WR" || pos === "TE") ? ["snap","ts","ays","wopr","tps","doc","cr","ypt","yacr","rz","td","xtd","fdg"]
   : ["snap","ts","cs","wopr","opp","rz","rzg","td","xtd","fdg"];
 function colKeys(){
-  const lead = [...(isSingle() ? [] : ["own"]), "st"], tail = [...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : [])];
+  const lead = [...(isSingle() ? [] : ["own"]), "st", ...(S.scope === "me" ? ["role"] : [])], tail = [...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : [])];
   if(S.cols === "overview"){
     const wk = D.weeks.length ? ["w0"] : [];
     D.weeks.forEach((w, i) => { if(w >= 15 && i !== 0) wk.push("w" + i); });
@@ -982,6 +1135,7 @@ function renderCards(list){
     const third = cx(p, p.pos === "RB" ? "cs" : p.pos === "QB" ? "rz" : "ts");
     return `<div class="pc${!isSingle() && p.t === ME ? " me" : ""}${OPEN.has(p.id) ? " open" : ""}">
       <div class="pc-top">${img(p)}${who(p, (isSingle() ? "" : `<span class="own${p.t ? "" : " fa"}">${esc(ownAb(p))}</span>`) + verdictTag(p))}${stSel(p)}</div>
+      ${p.t === ME && SKILL.includes(p.pos) ? `<div class="pc-role">Lineup ${roleSel(p)}</div>` : ""}
       <div class="pc-g">${cx(p, "ppg")}${cx(p, "xfp")}${cx(p, "fpoe")}${cx(p, "up")}${cx(p, "snap")}${third}${REG.length ? cx(p, "ros") : cx(p, "trend")}${PO.length ? cx(p, "po", "Playoffs") : cx(p, "trend")}</div>
       <div class="pc-wk">${D.weeks.map((w, i) => wkChip(p, i, true)).join("")}</div>
       ${p.g != null ? `<div class="pc-foot">${spark(p)}<button class="b" data-more="${p.id}">${OPEN.has(p.id) ? "Less" : "More stats"}</button></div>
@@ -1007,14 +1161,14 @@ function renderTiles(){
     <div class="strip">${Array.from({length:n}, (_, i) => `<i${i + 1 === rank ? ' class="me"' : ""}></i>`).join("")}</div>
     <div class="s">${s}</div><div class="s2">${s2}</div></div>`;
   // the lineup as it stands today, no waiver help
-  const all = D.teams.map(t => ({id:t.id, w:worth(t.players, false)}));
+  const all = D.teams.map(t => ({id:t.id, w:worth(t.players, false, t.id === ME)}));
   const place = key => all.slice().sort((a,b) => b.w[key] - a.w[key]).findIndex(x => x.id === ME) + 1;
   const mine = all.find(x => x.id === ME).w;
   if(REG.length) out.push(tile("Lineup · wk " + wkSpan(REG), place("reg"), false, `<b>${f1(mine.reg / REG.length)}</b> pts a week`, "regular season"));
   if(PO.length) out.push(tile("Lineup · wk " + wkSpan(PO), place("po"), false, `<b>${f1(mine.po / PO.length)}</b> pts a week`, "playoffs"));
   for(const pos of SKILL){
     const k = spots(pos) || 1, c = DEPTH[ME][pos];
-    const top = TEAMS[ME].players.map(id => P[id]).filter(p => p.pos === pos).sort((a,b) => b.adj - a.adj);
+    const top = TEAMS[ME].players.map(id => P[id]).filter(p => p.pos === pos).sort((a,b) => rk(b, true) - rk(a, true));
     out.push(tile(pos, BASE[ME][pos], true, top.slice(0, k).map(p => `${esc(short(p))} <b>${f1(p.adj)}</b>`).join(" · ") || "nobody",
       `${c} startable for ${plural(k, "spot")}` + (top[k] ? ` · next ${esc(short(top[k]))} ${f1(top[k].adj)}` : "")));
   }
@@ -1034,182 +1188,305 @@ function renderTiles(){
    3. Their lineup has to come out ahead too, against the waiver-wire alternative.
    `quick` is the package search: bail at the first failed test. */
 const USE = {S:1, F:0.7, B:0.25}, KEEP = {S:1.15, F:0.9, B:0.5};
-function judge(t, mg, tg, quick){
-  const dm = Object.assign({}, DEPTH[ME]), dt = Object.assign({}, DEPTH[t.id]);
-  for(const id of mg){ const p = P[id]; if(p.ok){ dm[p.pos]--; dt[p.pos]++; } }
-  for(const id of tg){ const p = P[id]; if(p.ok){ dt[p.pos]--; dm[p.pos]++; } }
-  const holes = (after, before) => SKILL.filter(pos => after[pos] < before[pos] && after[pos] < spots(pos));
-  const holesThem = holes(dt, DEPTH[t.id]), holesMe = holes(dm, DEPTH[ME]);
-  if(quick && (holesThem.length || holesMe.length)) return null;
-  const giveV = mg.reduce((s,id) => s + val(P[id]), 0), getV = tg.reduce((s,id) => s + val(P[id]), 0);
-  if(quick && (giveV < 0.7 * getV || giveV > 1.7 * getV)) return null;       // nowhere near, either way
-  const G = new Set(mg), R = new Set(tg), mine = TEAMS[ME].players;
-  const mineAfter = swap(mine, G, R);
-  const me = delta(W0[ME], worth(mineAfter));
-  if(quick && me.score < 3) return null;
-  const theirsAfter = swap(t.players, R, G);
-  const them = delta(W0[t.id], worth(theirsAfter));
-  const ra = rolesOf(theirsAfter), rm = rolesOf(mineAfter);
-  const inV = mg.reduce((s,id) => s + val(P[id]) * (USE[ra[id]] || 0.45), 0);
-  const outV = tg.reduce((s,id) => s + val(P[id]) * (KEEP[ROLE0[id]] || 0.75), 0);
+const WORD = {likely:"Likely yes", maybe:"Worth asking", long:"Long shot"}, WORST = {likely:0, maybe:1, long:2};
+const WILLF = {likely:1, maybe:0.85, long:0.5};
+const tName = id => (id === ME ? "Me" : TEAMS[id].abbrev || TEAMS[id].name);
+// one other team's side of a deal: what it gives up, what comes back, and whether it says yes
+function sideJudge(tid, out, inn){
+  const t = TEAMS[tid], d0 = DEPTH[tid], d = Object.assign({}, d0);
+  for(const id of out){ const p = P[id]; if(p.ok) d[p.pos]--; }
+  for(const id of inn){ const p = P[id]; if(p.ok) d[p.pos]++; }
+  const holes = SKILL.filter(pos => d[pos] < d0[pos] && d[pos] < spots(pos));
+  const after = swap(t.players, new Set(out), new Set(inn));
+  const them = delta(W0[tid], worth(after));
+  const ra = rolesOf(after);
+  const inV = inn.reduce((s,id) => s + val(P[id]) * (USE[ra[id]] || 0.45), 0);
+  const outV = out.reduce((s,id) => s + val(P[id]) * (KEEP[ROLE0[id]] || 0.75), 0);
   const ratio = outV ? inV / outV : 9;
-  const starterBack = !tg.some(id => ROLE0[id] === "S") || mg.some(id => ra[id] === "S" || ra[id] === "F");
-  const top = a => Math.max(...a.map(id => val(P[id])));
-  const fairTop = top(mg) >= 0.6 * top(tg);          // no pile of lesser players for the best one in the deal
-  let will = "no";
-  if(!holesThem.length && starterBack && fairTop){
+  const starterBack = !out.some(id => ROLE0[id] === "S") || inn.some(id => ra[id] === "S" || ra[id] === "F");
+  const top = a => (a.length ? Math.max(...a.map(id => val(P[id]))) : 0);
+  const fairTop = top(inn) >= 0.6 * top(out);          // no pile of lesser players for the best one in the deal
+  let will = "long";
+  if(!holes.length && starterBack && fairTop){
     if(ratio >= 1.08 && them.score >= 1 && them.reg >= -0.5 && them.po >= -0.5) will = "likely";
     else if(ratio >= 0.88 && them.score >= 0 && them.reg >= -0.75 && them.po >= -0.75) will = "maybe";
   }
-  if(quick && will === "no") return null;
-  return {team:t.id, give:mg, get:tg, me, them, holesThem, holesMe, dm, dt, inV, outV, ratio, will, starterBack, fairTop, ra, rm, mineAfter, theirsAfter,
-          rank:me.score * (will === "likely" ? 1 : 0.8)};
+  return {id:tid, out, inn, after, d, holes, them, ra, inV, outV, ratio, starterBack, fairTop, will};
+}
+/* A deal is a list of legs, {from, to, ids}. Two teams: me -> them, them -> me. Three teams is
+   a rotation: me -> C, C -> B, B -> me. Every other team is judged on its own roster; the deal's
+   answer is the worst of theirs. `quick` drops it early when it does nothing for me. */
+function judgeDeal(legs, quick){
+  const io = {}, at = id => (io[id] = io[id] || {out:[], inn:[]});
+  for(const l of legs){ at(l.from).out.push(...l.ids); at(l.to).inn.push(...l.ids); }
+  const m = at(ME), mine = TEAMS[ME].players;
+  const mineAfter = swap(mine, new Set(m.out), new Set(m.inn));
+  const me = delta(W0[ME], worth(mineAfter, true, true));
+  if(quick && me.score < 1) return null;
+  const dm = Object.assign({}, DEPTH[ME]);
+  for(const id of m.out){ const p = P[id]; if(counts(p, true)) dm[p.pos]--; }
+  for(const id of m.inn){ const p = P[id]; if(p.ok) dm[p.pos]++; }
+  const holesMe = SKILL.filter(pos => dm[pos] < DEPTH[ME][pos] && dm[pos] < spots(pos));
+  const sides = Object.keys(io).map(Number).filter(id => id !== ME).map(id => sideJudge(id, io[id].out, io[id].inn));
+  const will = sides.reduce((w, s) => (WORST[s.will] > WORST[w] ? s.will : w), "likely");
+  return {legs, sides, teams:sides.map(s => s.id), me, mineAfter, holesMe, dm, rm:rolesOf(mineAfter, true), will,
+          give:m.out, get:m.inn, three:sides.length > 1, rank:me.score * WILLF[will]};
 }
 function sets(ids){
   const out = ids.map(a => [a]);
   for(let i = 0; i < ids.length; i++) for(let j = i + 1; j < ids.length; j++) out.push([ids[i], ids[j]]);
   return out;
 }
-// every 1-for-1 up to 2-for-2 with every team; `only` narrows it to deals that bring one player back
-function findPackages(only){
-  const tradeable = t => t.players.filter(id => SKILL.includes(P[id].pos) && P[id].base >= 5 && P[id].af >= 0.75 && (OV[id] || !["O","IR","SUS","D"].includes(P[id].inj)));   // nobody deals for the injured list
-  const mySets = sets(tradeable(TEAMS[ME])), found = [];
-  for(const t of D.teams){
-    if(t.id === ME || (only && P[only].t !== t.id)) continue;
-    let theirs = sets(tradeable(t));
-    if(only) theirs = theirs.filter(s => s.includes(only));
-    const best = [];
-    for(const tg of theirs) for(const mg of mySets){ const j = judge(t, mg, tg, true); if(j) best.push(j); }
-    best.sort((a,b) => b.rank - a.rank);
-    // up to eight a team, and no headline player more than twice
-    const seen = {}; let n = 0;
-    for(const b of best){
-      const head = b.get.slice().sort((x,y) => val(P[y]) - val(P[x]))[0], key = b.give.slice().sort().join() + ">" + head;
-      if(seen[key]) continue;
-      seen[key] = 1;
-      const kept = found.filter(k => k.team === t.id);
-      if(kept.some(k => k.give.every(id => b.give.includes(id)) && k.get.every(id => b.get.includes(id)))) continue;
-      if(!only && (seen[head] = (seen[head] || 0) + 1) > 2) continue;
-      found.push(b);
-      if(++n === (only ? 12 : 8)) break;
-    }
-  }
-  return found;
+// nobody deals for the injured list: hurt players stay out of the search unless I asked for one
+const tradeable = (t, keep) => t.players.filter(id => id === keep || (SKILL.includes(P[id].pos) && P[id].base >= 5 && P[id].af >= 0.75 && (OV[id] || !["O","IR","SUS","D"].includes(P[id].inj))));
+const sumV = ids => ids.reduce((s,id) => s + P[id].v, 0);
+const maxV = ids => ids.reduce((m,id) => Math.max(m, P[id].v), 0);
+const keepV = ids => ids.reduce((s,id) => s + P[id].v * (KEEP[ROLE0[id]] || 0.75), 0);
+// would this team be left short anywhere? (the same test sideJudge makes, without the lineup maths)
+function holed(tid, out, inn){
+  const d0 = DEPTH[tid], d = Object.assign({}, d0);
+  for(const id of out){ const p = P[id]; if(p.ok) d[p.pos]--; }
+  for(const id of inn){ const p = P[id]; if(p.ok) d[p.pos]++; }
+  return SKILL.some(pos => d[pos] < d0[pos] && d[pos] < spots(pos));
 }
-function pkChips(pk){
-  const t = TEAMS[pk.team], ab = t.abbrev || "They", out = [], seen = new Set();
-  const add = (txt, k) => { if(!seen.has(txt)){ seen.add(txt); out.push([txt, k]); } };
-  for(const id of pk.give){ const p = P[id];
-    if(p.ok && DEPTH[t.id][p.pos] < spots(p.pos)) add(`Fills ${ab}'s ${p.pos} hole`, "g");
-    else if(pk.ra[id] === "S") add(`${short(p)} starts for ${ab}`, "g");
+const key2 = (t, g, r) => t + "|" + g.slice().sort().join() + ">" + r.slice().sort().join();
+/* Every deal that makes my lineup better, with every team - no caps. 1-for-1 up to 2-for-2 with
+   one team, and three-team rotations where I send one or two players to C, C sends one to B and
+   B sends one or two to me. The only thing skipped is the absurd: asking for a player while
+   offering under half his value. Returns a list of tasks so the page can run them in slices. */
+function packageTasks(only, out){
+  const tasks = [], mineT = tradeable(TEAMS[ME]), mySets = sets(mineT), others = D.teams.filter(t => t.id !== ME);
+  // what a swap does for my lineup, worked out once per pair and shared by both searches
+  const memo = new Map(), mine = TEAMS[ME].players;
+  const meGain = (mg, tg) => { const k = mg.join() + ">" + tg.join(); let v = memo.get(k);
+    if(v === undefined){ v = delta(W0[ME], worth(swap(mine, new Set(mg), new Set(tg)), true, true)).score; memo.set(k, v); } return v; };
+  const onlyT = only ? P[only].t : null;
+  // two teams
+  for(const t of others){
+    if(only && onlyT !== t.id) continue;
+    tasks.push(() => {
+      let theirs = sets(tradeable(t, only));
+      if(only) theirs = theirs.filter(s => s.includes(only));
+      for(const tg of theirs){
+        const getV = sumV(tg);
+        for(const mg of mySets){
+          if(sumV(mg) < 0.45 * getV || meGain(mg, tg) < 1) continue;
+          const j = judgeDeal([{from:ME, to:t.id, ids:mg}, {from:t.id, to:ME, ids:tg}], true);
+          if(j) out.push(j);
+        }
+      }
+    });
   }
-  for(const id of pk.get){ const pos = P[id].pos; if(DEPTH[t.id][pos] > spots(pos)) add(`${ab} deep at ${pos}`, "g"); }
+  // three teams: for each thing I could send and each thing B could send me, find a C in the
+  // middle that wants mine and has what B wants
+  for(const B of others){
+    if(only && onlyT !== B.id) continue;
+    let fromB = sets(tradeable(B, only));
+    if(only) fromB = fromB.filter(s => s.includes(only));
+    for(const bg of fromB) tasks.push(() => {
+      const bV = sumV(bg);
+      for(const mg of mySets){
+        const mV = sumV(mg);
+        if(mV < 0.45 * bV) continue;
+        if(meGain(mg, bg) < 1) continue;
+        const bKeep = keepV(bg), bTop = maxV(bg), mTop = maxV(mg);
+        for(const C of others){
+          if(C.id === B.id) continue;
+          for(const a of tradeable(C)){
+            // exact bounds on what judgeDeal would say, so nothing that could pass is skipped:
+            // value only shrinks on the receiving end, and a hole or a lopsided top piece is a no
+            const aV = P[a].v;
+            if(aV < 0.88 * bKeep || mV < 0.88 * keepV([a]) || aV < 0.6 * bTop || mTop < 0.6 * aV) continue;
+            if(holed(B.id, bg, [a]) || holed(C.id, [a], mg)) continue;
+            const j = judgeDeal([{from:ME, to:C.id, ids:mg}, {from:C.id, to:B.id, ids:[a]}, {from:B.id, to:ME, ids:bg}], true);
+            if(j && j.will !== "long") out.push(j);           // a three-way only earns its place when everyone can say yes
+          }
+        }
+      }
+    });
+  }
+  return tasks;
+}
+/* Drop a deal only when a simpler one is at least as good: the same team, a subset of the same
+   players, as big a gain for me and an answer at least as likely. A three-way goes when the
+   straight deal with B (same players out, same back) already works as well. */
+function prune(list){
+  const two = {};
+  for(const j of list) if(!j.three) two[key2(j.teams[0], j.give, j.get)] = j;
+  const subs = a => (a.length === 2 ? [[a[0]], [a[1]], a] : [a]);
+  return list.filter(j => {
+    if(j.three){
+      const k = two[key2(j.legs[2].from, j.give, j.get)];
+      return !(k && WORST[k.will] <= WORST[j.will] && k.me.score >= j.me.score - 0.5);
+    }
+    for(const g of subs(j.give)) for(const r of subs(j.get)){
+      if(g === j.give && r === j.get) continue;
+      const k = two[key2(j.teams[0], g, r)];
+      if(k && WORST[k.will] <= WORST[j.will] && k.me.score >= j.me.score - 0.5) return false;
+    }
+    return true;
+  });
+}
+function findPackages(only){
+  const out = [];
+  for(const f of packageTasks(only, out)) f();
+  return prune(out);
+}
+function searchPackages(){
+  const run = ++SEARCH, out = [], tasks = packageTasks(null, out), n = tasks.length;
+  ALLPK = []; SEARCHING = "Searching every team…";
+  $("pkn").textContent = ""; if(S.view === "packages" && !S.pkFor) renderPackages();
+  if(S.pkFor) FORPK = P[S.pkFor] ? findPackages(S.pkFor) : [];
+  const step = () => {
+    if(run !== SEARCH) return;
+    const t0 = performance.now();
+    while(tasks.length && performance.now() - t0 < 25) tasks.shift()();
+    if(tasks.length){
+      SEARCHING = `Searching every team… ${Math.round(100 * (n - tasks.length) / n)}%`;
+      if(S.view === "packages" && !S.pkFor) $("pks").innerHTML = `<div class="chip">${SEARCHING}</div>`;
+      setTimeout(step, 0); return;
+    }
+    ALLPK = prune(out); SEARCHING = "";
+    $("pkn").textContent = ALLPK.length; renderPackages();
+  };
+  clearTimeout(pkTimer); pkTimer = setTimeout(step, 30);
+}
+// why a deal reads the way it does, as a few coloured words
+function pkChips(pk){
+  const out = [], seen = new Set();
+  const add = (txt, k) => { if(!seen.has(txt)){ seen.add(txt); out.push([txt, k]); } };
+  for(const s of pk.sides){
+    const ab = tName(s.id);
+    for(const pos of s.holes) add(`Leaves ${ab} short at ${pos}`, "r");
+    if(!s.starterBack) add(`${ab} loses a starter, gets none`, "r");
+    if(!s.fairTop) add(`${ab} gives the best player for less`, "r");
+    if(s.holes.length === 0 && s.starterBack && s.fairTop && s.will === "long") add(`Light for ${ab}`, "r");
+  }
+  for(const s of pk.sides){
+    const ab = tName(s.id);
+    for(const id of s.inn){ const p = P[id];
+      if(p.ok && DEPTH[s.id][p.pos] < spots(p.pos)) add(`Fills ${ab}'s ${p.pos} hole`, "g");
+      else if(s.ra[id] === "S") add(`${short(p)} starts for ${ab}`, "g"); }
+    for(const id of s.out){ const pos = P[id].pos; if(DEPTH[s.id][pos] > spots(pos)) add(`${ab} deep at ${pos}`, "g"); }
+  }
   for(const id of pk.get){ const p = P[id], l = p.sg && p.sg.E >= 0.8 ? tagLine(p) : ""; if(l) add(`${short(p)}: ${l}`, "b"); }
   for(const id of pk.give){ const p = P[id], l = p.sg && p.sg.E <= -0.8 ? tagLine(p) : ""; if(l) add(`${short(p)}: ${l}`, ""); }
-  return out.slice(0, 5);
+  return out.slice(0, 6);
 }
 function renderPackages(){
   const forP = S.pkFor && P[S.pkFor];
   $("pkFor").hidden = !forP;
   if(forP) $("pkFor").textContent = `Deals for ${forP.n}  ×`;
   $("pkTeam").hidden = !!forP;
+  if(!forP && SEARCHING){ $("pks").innerHTML = `<div class="chip">${SEARCHING}</div>`; $("pkCount").textContent = ""; return; }
   let list = (forP ? FORPK : ALLPK).map((pk, i) => ({pk, i}));
-  if(!forP && S.pkTeam) list = list.filter(x => x.pk.team === +S.pkTeam);
+  if(!forP && S.pkTeam) list = list.filter(x => x.pk.teams.includes(+S.pkTeam));
   if(S.pkPos) list = list.filter(x => x.pk.get.some(id => P[id].pos === S.pkPos));
+  if(S.pkWill) list = list.filter(x => WORST[x.pk.will] <= WORST[S.pkWill]);
+  if(S.pkKind) list = list.filter(x => (S.pkKind === "3") === x.pk.three);
   if(S.pkQ){
     const q = S.pkQ.toLowerCase();
-    list = list.filter(x => (TEAMS[x.pk.team].name + " " + TEAMS[x.pk.team].abbrev + " " + x.pk.give.concat(x.pk.get).map(id => P[id].n).join(" ")).toLowerCase().includes(q));
+    list = list.filter(x => (x.pk.teams.map(id => TEAMS[id].name + " " + TEAMS[id].abbrev).join(" ") + " " + x.pk.legs.flatMap(l => l.ids).map(id => P[id].n).join(" ")).toLowerCase().includes(q));
   }
-  const by = {gain:x => x.pk.rank, po:x => x.pk.me.po, reg:x => x.pk.me.reg, team:x => x.pk.rank}[S.pkSort];
+  const by = {gain:x => (2 - WORST[x.pk.will]) * 1e5 + x.pk.me.score, raw:x => x.pk.me.score, po:x => x.pk.me.po, reg:x => x.pk.me.reg, team:x => (2 - WORST[x.pk.will]) * 1e5 + x.pk.me.score}[S.pkSort];
   list.sort((a,b) => by(b) - by(a));
   const byTeam = S.pkSort === "team" && !forP;
-  // with every team on screen, show each team's best few rather than all eight
-  if(!forP && !S.pkTeam && !S.pkQ){
-    const cap = byTeam ? 3 : 2, n = {};
-    list = list.filter(x => (n[x.pk.team] = (n[x.pk.team] || 0) + 1) <= cap);
-  }
-  if(byTeam) list.sort((a,b) => TEAMS[a.pk.team].name.localeCompare(TEAMS[b.pk.team].name) || by(b) - by(a));
-  $("pkCount").textContent = plural(list.length, "package");
-  if(!list.length){ $("pks").innerHTML = `<div class="chip">${forP ? `No deal for ${esc(forP.n)} works for both rosters` : "No deal here works for both rosters right now"}</div>`; return; }
+  if(byTeam) list.sort((a,b) => TEAMS[a.pk.teams[0]].name.localeCompare(TEAMS[b.pk.teams[0]].name) || by(b) - by(a));
+  const total = list.length;
+  $("pkCount").textContent = plural(total, "package");
+  if(!total){ $("pks").innerHTML = `<div class="chip">${forP ? `Nothing for ${esc(forP.n)} makes my lineup better` : "No deal here makes my lineup better"}${S.pkWill || S.pkKind ? " with these filters" : ""}</div>`; return; }
+  list = list.slice(0, S.pkLimit);
   const pill = id => { const p = P[id]; return `<div class="pill">${img(p)}<span class="nm" title="${esc(p.n)}">${esc(initial(p))}</span><span class="pos ${p.pos}">${p.pos}</span>${injBadge(p)}<span class="x">${f1(p.adj)}</span></div>`; };
   const gain = (v, lab) => `<div class="gain"><b class="${cls(v)}">${sgn(v)}</b><span>${lab}</span></div>`;
   let last = null;
   $("pks").innerHTML = list.map(({pk, i}) => {
-    const t = TEAMS[pk.team];
+    const lead = TEAMS[pk.teams[0]];
     let head = "";
-    if(byTeam && last !== pk.team){ last = pk.team; head = `<div class="grp-h">${esc(t.name)}<span>${t.w}-${t.l}</span><div class="needs">${needsHtml(t.id)}</div></div>`; }
+    if(byTeam && last !== lead.id){ last = lead.id; head = `<div class="grp-h">${esc(lead.name)}<span>${lead.w}-${lead.l}</span><div class="needs">${needsHtml(lead.id)}</div></div>`; }
+    const title = pk.three ? pk.teams.map(id => esc(TEAMS[id].abbrev || TEAMS[id].name)).join(" + ") : `${esc(lead.name)}<span>${lead.w}-${lead.l}</span>`;
+    const sides = pk.three
+      ? `<div class="legs">${pk.legs.map(l => `<div class="side"><div class="h">${esc(tName(l.from))} → ${esc(tName(l.to))}</div>${l.ids.map(pill).join("")}</div>`).join("")}</div>`
+      : `<div class="sides"><div class="side"><div class="h">I give</div>${pk.give.map(pill).join("")}</div>
+          <div class="arrow">⇄</div>
+          <div class="side"><div class="h">I get</div>${pk.get.map(pill).join("")}</div></div>`;
+    const them = pk.sides.map(s => `${esc(tName(s.id))} <b>${sgn(s.them.reg)}</b> a week${PO.length ? ` / <b>${sgn(s.them.po)}</b> playoffs` : ""}`).join(" &middot; ");
     return head + `<button class="pk" data-i="${i}">
-      <div class="top"><div class="tm"><div>${esc(t.name)}<span>${t.w}-${t.l}</span></div>
-          <span class="will ${pk.will}">${pk.will === "likely" ? "Likely yes" : "Worth asking"}</span></div>
+      <div class="top"><div class="tm"><div>${title}</div>
+          <span class="will ${pk.will}">${WORD[pk.will]}</span>${pk.three ? `<span class="will three">3-team</span>` : ""}</div>
         <div class="gains">${REG.length ? gain(pk.me.reg, "wk " + wkSpan(REG)) : ""}${PO.length ? gain(pk.me.po, "wk " + wkSpan(PO)) : ""}</div></div>
-      <div class="sides"><div class="side"><div class="h">I give</div>${pk.give.map(pill).join("")}</div>
-        <div class="arrow">⇄</div>
-        <div class="side"><div class="h">I get</div>${pk.get.map(pill).join("")}</div></div>
+      ${sides}
       <div class="chips">${pkChips(pk).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join("")}</div>
-      <div class="them">Their lineup <b>${sgn(pk.them.reg)}</b> a week${PO.length ? `, <b>${sgn(pk.them.po)}</b> in wk ${wkSpan(PO)}` : ""}</div>
+      <div class="them">Their lineups: ${them}</div>
     </button>`;
-  }).join("");
-}
-function searchPackages(){
-  clearTimeout(pkTimer);
-  $("pks").innerHTML = `<div class="chip">Searching every team&hellip;</div>`;
-  $("pkn").textContent = ""; $("pkCount").textContent = "";
-  pkTimer = setTimeout(() => {
-    ALLPK = findPackages();
-    if(S.pkFor) FORPK = P[S.pkFor] ? findPackages(S.pkFor) : [];
-    $("pkn").textContent = ALLPK.length; renderPackages();
-  }, 40);
+  }).join("") + (total > list.length ? `<button class="b more pkgrid-more" id="pkmore">Show ${Math.min(40, total - list.length)} more of ${total - list.length}</button>` : "");
 }
 
 /* ---- builder ---------------------------------------------------------------------------*/
 function listHtml(team, sel){
-  const ps = team.players.map(id => P[id]).filter(p => SKILL.includes(p.pos)).sort((a,b) => ORDER[a.pos] - ORDER[b.pos] || b.adj - a.adj);
+  const mine = team.id === ME;
+  const ps = team.players.map(id => P[id]).filter(p => SKILL.includes(p.pos)).sort((a,b) => ORDER[a.pos] - ORDER[b.pos] || rk(b, mine) - rk(a, mine));
   let out = "", last = "";
   for(const p of ps){
     if(p.pos !== last){ out += `<div class="grp">${p.pos}</div>`; last = p.pos; }
     out += `<button class="row${sel.has(p.id) ? " sel" : ""}" data-id="${p.id}">${img(p)}
-      <span class="who"><span class="nm">${esc(p.n)}</span><span class="meta"><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${verdictTag(p)}</span></span>
+      <span class="who"><span class="nm">${esc(p.n)}</span><span class="meta"><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${verdictTag(p)}</span></span>
       <span class="n2"><span>${f1(p.ros)}</span><span>${f1(p.po)}</span></span></button>`;
   }
   return out;
 }
-function renderDeal(partner){
+// the legs of whatever is picked in the builder
+function builderLegs(){
+  const B = +$("partner").value;
+  if(!S.three) return [{from:ME, to:B, ids:[...give]}, {from:B, to:ME, ids:[...get]}];
+  const C = +$("partnerA").value;
+  return [{from:ME, to:C, ids:[...give]}, {from:C, to:B, ids:[...via]}, {from:B, to:ME, ids:[...get]}];
+}
+function renderDeal(){
+  const legs = builderLegs(), setOf = {give, get, via};
   const chip = (id, set) => { const p = P[id]; return `<button class="dchip" data-id="${id}" data-set="${set}"><span class="nm" title="${esc(p.n)}">${esc(initial(p))}</span><span class="pos ${p.pos}">${p.pos}</span><span class="x">×</span></button>`; };
-  const names = set => [...set].map(id => short(P[id])).join(", ");
-  const ab = esc(partner.abbrev || "They");
-  let full = `<div class="dsides">
-    <div class="dside"><div class="lab">I give</div><div class="dchips">${[...give].map(id => chip(id, "give")).join("")}</div></div>
-    <div class="dside"><div class="lab">I get</div><div class="dchips">${[...get].map(id => chip(id, "get")).join("")}</div></div></div>`;
-  let sumWho = give.size || get.size ? `${esc(names(give)) || "…"} ⇄ ${esc(names(get)) || "…"}` : "No players picked", sumV = "Pick players on both sides";
-  if(!give.size || !get.size) full += `<div class="dempty">Pick players on both sides</div>`;
+  const names = ids => ids.map(id => short(P[id])).join(", ");
+  const legSet = i => (S.three ? ["give", "via", "get"][i] : ["give", "get"][i]);
+  const legLab = (l, i) => (S.three ? `${esc(tName(l.from))} → ${esc(tName(l.to))}` : i === 0 ? "I give" : "I get");
+  let full = `<div class="dsides${S.three ? " three" : ""}">${legs.map((l, i) => `<div class="dside"><div class="lab">${legLab(l, i)}</div><div class="dchips">${[...setOf[legSet(i)]].map(id => chip(id, legSet(i))).join("")}</div></div>`).join("")}</div>`;
+  const any = legs.some(l => l.ids.length), ready = legs.every(l => l.ids.length);
+  let sumWho = any ? legs.map(l => esc(names(l.ids)) || "…").join(S.three ? " → " : " ⇄ ") : "No players picked", sumV = S.three ? "Pick players on all three legs" : "Pick players on both sides";
+  if(!ready) full += `<div class="dempty">${sumV}</div>`;
   else {
-    const j = judge(partner, [...give], [...get], false);
+    const j = judgeDeal(legs, false);
     let call, color;
     if(j.me.score >= 3 && j.will === "likely"){ call = "Send it"; color = "var(--good)"; }
     else if(j.me.score >= 3 && j.will === "maybe"){ call = "Worth asking"; color = "var(--warn)"; }
-    else if(j.me.score >= 3){ call = "Good for me, they say no"; color = "var(--warn)"; }
+    else if(j.me.score >= 3){ call = "Good for me, a long shot for them"; color = "var(--warn)"; }
     else if(j.me.score > -3){ call = "A wash"; color = "var(--dim)"; }
     else { call = "Pass"; color = "var(--bad)"; }
     // why: each roster after the deal
     const fl = [], line = (k, t) => fl.push(`<div class="sg ${k}"><i></i><span>${t}</span></div>`);
-    for(const pos of j.holesThem) line("r", `Leaves ${ab} short at ${pos}: ${j.dt[pos]} startable for ${plural(spots(pos), "spot")}`);
-    if(!j.fairTop) line("r", `${ab} gives up the best player in the deal for lesser pieces`);
-    if(!j.starterBack) line("r", `${ab} gives up a starter and gets none back`);
+    for(const s of j.sides){
+      const ab = esc(tName(s.id));
+      for(const pos of s.holes) line("r", `Leaves ${ab} short at ${pos}: ${s.d[pos]} startable for ${plural(spots(pos), "spot")}`);
+      if(!s.fairTop) line("r", `${ab} gives up the best player in its end of the deal for lesser pieces`);
+      if(!s.starterBack) line("r", `${ab} gives up a starter and gets none back`);
+      if(s.holes.length === 0 && s.starterBack && s.fairTop && s.will === "long") line("r", `${ab} would want more: it gets ${f1(s.inV)} of value for ${f1(s.outV)}`);
+      for(const id of s.inn){ const p = P[id], r = s.ra[id];
+        if(p.ok && DEPTH[s.id][p.pos] < spots(p.pos)) line("", `${esc(short(p))} fills a hole for ${ab} at ${p.pos}`);
+        else if(r === "S") line("", `${esc(short(p))} starts for ${ab}`);
+        else if(r === "F") line("a", `${esc(short(p))} would be ${ab}'s flex`);
+        else line("r", `${esc(short(p))} would sit on ${ab}'s bench, they don't need him`); }
+    }
     for(const pos of j.holesMe) line("r", `Leaves me short at ${pos}: ${j.dm[pos]} startable for ${plural(spots(pos), "spot")}`);
-    for(const id of give){ const p = P[id], r = j.ra[id];
-      if(p.ok && DEPTH[partner.id][p.pos] < spots(p.pos)) line("", `${esc(short(p))} fills a hole for ${ab} at ${p.pos}`);
-      else if(r === "S") line("", `${esc(short(p))} starts for ${ab}`);
-      else if(r === "F") line("a", `${esc(short(p))} would be ${ab}'s flex`);
-      else line("r", `${esc(short(p))} would sit on ${ab}'s bench, they don't need him`); }
-    for(const id of get){ const p = P[id], r = j.rm[id];
+    for(const id of j.get){ const p = P[id], r = j.rm[id];
       line(r === "S" ? "" : "a", `${esc(short(p))} ${r === "S" ? "starts for me" : r === "F" ? "would be my flex" : "would sit on my bench"}`); }
-    const after = posRanks({[ME]:j.mineAfter, [partner.id]:j.theirsAfter});
+    for(const id of j.give){ const r = roleOf(id); if(r && r.r === "B") line("", `${esc(short(P[id]))} is a bench call for me: losing him costs my lineup nothing`); }
+    const over = {[ME]:j.mineAfter}; for(const s of j.sides) over[s.id] = s.after;
+    const after = posRanks(over);
     const card = (name, d) => `<div class="dcard"><div class="lab" title="${esc(name)}">${esc(name)}</div>
       ${REG.length ? `<div class="dnum"><b class="${cls(d.reg)}">${sgn(d.reg)}</b><span>wk ${wkSpan(REG)}</span></div>` : ""}
       ${PO.length ? `<div class="dnum"><b class="${cls(d.po)}">${sgn(d.po)}</b><span>wk ${wkSpan(PO)}</span></div>` : ""}</div>`;
-    // the lineup after the trade, slot by slot, for whichever side is picked
-    const pvMe = S.pvSide !== "them", pid = pvMe ? ME : partner.id;
-    const L0 = lineupOf(pvMe ? TEAMS[ME].players : partner.players), L1 = lineupOf(pvMe ? j.mineAfter : j.theirsAfter);
+    // the lineup after the trade, slot by slot, for whichever team is picked
+    const pvTeams = [ME, ...j.teams];
+    if(!pvTeams.includes(S.pvSide === "me" ? ME : +S.pvSide)) S.pvSide = "me";
+    const pid = S.pvSide === "me" ? ME : +S.pvSide, pvMine = pid === ME;
+    const L0 = lineupOf(TEAMS[pid].players, pvMine), L1 = lineupOf(over[pid], pvMine);
     const cellP = p => (p ? `${esc(short(p))}<i>${f1(p.adj)}</i>` : "empty");
     const sum = {}, was = new Set(L0.rows.filter(r => r.p).map(r => r.p.id)), now = new Set(L1.rows.filter(r => r.p).map(r => r.p.id));
     const outs = L0.rows.filter(r => r.p && !now.has(r.p.id));
@@ -1225,45 +1502,191 @@ function renderDeal(partner){
       const a = k === "FLEX" ? null : BASE[pid][k], b = k === "FLEX" ? null : after[pid][k], dv = sum[k] || 0;
       return `<span class="rk ${dv > 0.05 ? "up" : dv < -0.05 ? "dn" : ""}">${k}${a != null ? ` ${ord(a)}${a !== b ? `<i>→</i>${ord(b)}` : ""}` : ""}${Math.abs(dv) > 0.05 ? ` <span class="${cls(dv)}">${sgn(dv)}</span>` : ""}</span>`;
     }).join("");
+    const pvBtns = pvTeams.map(id => `<button data-pv="${id === ME ? "me" : id}"${id === pid ? ' class="on"' : ""}>${esc(id === ME ? "Mine" : tName(id))}</button>`).join("");
+    const vbars = j.sides.map(s => `<div class="lab" style="margin-top:14px">What it is worth to ${esc(tName(s.id))} &middot; ${WORD[s.will]}</div>
+      <div class="vbar"><i style="width:${(s.inV / ((s.inV + s.outV) || 1) * 100).toFixed(0)}%"></i></div>
+      <div class="vlab"><span>they get <b>${f1(s.inV)}</b></span><span>they give <b>${f1(s.outV)}</b></span></div>`).join("");
     full += `<div class="call" style="color:${color}">${call}</div>
       <div class="sig">${fl.join("")}</div>
       <div class="pvh"><div class="lab">Lineup after the trade</div>
-        <div class="seg pvseg"><button data-pv="me"${pvMe ? ' class="on"' : ""}>Mine</button><button data-pv="them"${pvMe ? "" : ' class="on"'}>${ab}</button></div></div>
+        <div class="seg pvseg">${pvBtns}</div></div>
       <div class="ranks">${diff}</div>
       <div class="pv">${rows}</div>
       <div class="bench">Bench: ${L1.bench.map(p => esc(short(p))).join(", ") || "nobody"}</div>
       <div class="lab">Lineup points a week, byes and injuries counted</div>
-      <div class="dgrid">${card("Mine", j.me)}${card(partner.name, j.them)}</div>
-      <div class="lab" style="margin-top:14px">What it is worth to ${ab}</div>
-      <div class="vbar"><i style="width:${(j.inV / ((j.inV + j.outV) || 1) * 100).toFixed(0)}%"></i></div>
-      <div class="vlab"><span>they get <b>${f1(j.inV)}</b></span><span>they give <b>${f1(j.outV)}</b></span></div>`;
+      <div class="dgrid">${card("Mine", j.me)}${j.sides.map(s => card(TEAMS[s.id].name, s.them)).join("")}</div>
+      ${vbars}`;
     sumV = `<b style="color:${color}">${call}</b>${REG.length ? `<span class="${cls(j.me.reg)}">${sgn(j.me.reg)}</span>` : ""}${PO.length ? `<span class="${cls(j.me.po)}">${sgn(j.me.po)} PO</span>` : ""}`;
   }
-  if(give.size || get.size) full += `<div class="dfoot"><button class="b" id="clear">Clear</button></div>`;
+  if(any) full += `<div class="dfoot"><button class="b" id="clear">Clear</button></div>`;
   $("deal").classList.toggle("open", S.dealOpen);
   $("deal").innerHTML = `<button class="dsum" id="dsum"><div class="mid"><div class="who">${sumWho}</div><div class="v">${sumV}</div></div><span class="tog">${S.dealOpen ? "Hide" : "Details"}</span></button>
     <div class="dfull">${full}</div>`;
 }
 function renderBuilder(){
   const partner = TEAMS[+$("partner").value];
+  if(S.three && +$("partnerA").value === partner.id){
+    const alt = D.teams.find(t => t.id !== ME && t.id !== partner.id);
+    $("partnerA").value = alt.id; via.clear();
+  }
+  const third = S.three ? TEAMS[+$("partnerA").value] : null;
   const keep = el => { const y = el.scrollTop; return () => (el.scrollTop = y); };
-  const r1 = keep($("mine")), r2 = keep($("theirs"));
+  const r1 = keep($("mine")), r2 = keep($("theirs")), r3 = keep($("via"));
+  $("p-via").hidden = !S.three;
+  $("bseg").querySelector('[data-s="via"]').hidden = !S.three;
+  $("bseg").querySelector('[data-s="theirs"]').textContent = S.three ? `${partner.abbrev || "B"} → me` : "Their players";
+  if(third) $("bseg").querySelector('[data-s="via"]').textContent = `${third.abbrev || "C"} → ${partner.abbrev || "B"}`;
+  $("mineh").textContent = S.three ? `I give ${third.abbrev || "C"}` : "I give";
+  $("bhint").textContent = S.three ? `I send to C, C sends to B, B sends to me` : "";
+  $("p-theirs").querySelector(".cap").innerHTML = (S.three ? "→ ME &nbsp; " : "") + "ROS &nbsp;&nbsp; PO";
+  if(third) $("p-via").querySelector(".cap").innerHTML = `→ ${esc(partner.abbrev || "B")} &nbsp; ROS &nbsp;&nbsp; PO`;
   $("mine").innerHTML = listHtml(TEAMS[ME], give);
   $("theirs").innerHTML = listHtml(partner, get);
+  if(third) $("via").innerHTML = listHtml(third, via);
   $("myneed").innerHTML = needsHtml(ME);
   $("pneed").innerHTML = needsHtml(partner.id);
-  r1(); r2();
-  renderDeal(partner);
+  if(third) $("aneed").innerHTML = needsHtml(third.id);
+  r1(); r2(); r3();
+  renderDeal();
 }
 function setSide(side){
   $("bgrid").dataset.side = side;
   $("bseg").querySelectorAll("button").forEach(x => x.classList.toggle("on", x.dataset.s === side));
 }
-function openBuilder(teamId, g, r){
-  give.clear(); get.clear(); g.forEach(id => give.add(id)); r.forEach(id => get.add(id));
-  $("partner").value = teamId; S.dealOpen = g.length > 0 && r.length > 0;
-  setSide(g.length && !r.length ? "theirs" : "mine");
+function setThree(on){
+  S.three = on;
+  $("bmode").querySelectorAll("button").forEach(x => x.classList.toggle("on", (x.dataset.n === "3") === on));
+  if(!on){ via.clear(); if($("bgrid").dataset.side === "via") setSide("theirs"); }
+}
+// open a deal (or a start on one) in the builder
+function openBuilder(legs){
+  give.clear(); get.clear(); via.clear();
+  const three = legs.length === 3;
+  setThree(three);
+  if(three){
+    legs[0].ids.forEach(id => give.add(id)); legs[1].ids.forEach(id => via.add(id)); legs[2].ids.forEach(id => get.add(id));
+    $("partner").value = legs[2].from; $("partnerA").value = legs[0].to;
+  } else {
+    legs[0].ids.forEach(id => give.add(id)); legs[1].ids.forEach(id => get.add(id));
+    $("partner").value = legs[0].to;
+  }
+  S.dealOpen = legs.every(l => l.ids.length) ;
+  setSide(give.size && !get.size ? "theirs" : "mine");
   renderBuilder(); show("builder");
+}
+const open2 = (teamId, g, r) => openBuilder([{from:ME, to:teamId, ids:g}, {from:teamId, to:ME, ids:r}]);
+
+/* ---- waivers -------------------------------------------------------------------------------
+   Every free agent is priced by what he would add to each team's lineup, byes and injuries
+   counted, from today to week 17 (playoff weeks count 1.5x). What a team should pay is a share
+   of the FAAB it has left, and that share climbs faster than the points do:
+     share = min(70%, (gain / 10)^1.4)    gain = lineup points a week he adds to that team
+   so +1 a week is worth about 4% of a budget, +3 about 19%, +5 about 38%, +7 or more 60-70%.
+   The bid is what it takes to beat the rival who wants him most (their share of THEIR budget,
+   plus $1), never more than he is worth to me. If that rival can outbid my ceiling, it says so. */
+const share = g => Math.min(0.7, Math.pow(Math.max(0, g) / 10, 1.4));
+function buildWaivers(){
+  WAIV = [];
+  if(!D.faab) return;
+  const denom = (REG.length + 1.5 * PO.length) || 1, left = D.faab.left || {}, min = D.faab.min || 1;
+  const bare = {};
+  for(const t of D.teams) bare[t.id] = worth(t.players, false, t.id === ME);
+  const mine = TEAMS[ME].players;
+  for(const p of Object.values(P)){
+    if(p.t || !SKILL.includes(p.pos) || !(p.base > 0)) continue;
+    const g = {};
+    for(const t of D.teams){
+      const d = delta(bare[t.id], worth(t.players.concat([p.id]), false, t.id === ME));
+      g[t.id] = Math.max(0, d.score / denom);
+    }
+    const dMe = delta(bare[ME], worth(mine.concat([p.id]), false, true));
+    let rival = null, rv = 0, users = 0;
+    for(const t of D.teams){
+      if(t.id === ME) continue;
+      if(g[t.id] >= 0.5) users++;
+      const w = (left[t.id] || 0) * share(g[t.id]);
+      if(w > rv){ rv = w; rival = t.id; }
+    }
+    const cap = Math.floor((left[ME] || 0) * share(g[ME]));
+    const need = Math.max(min, Math.round(rv) + 1);
+    const bid = g[ME] < 0.05 ? 0 : Math.max(min, Math.min(cap, need));
+    WAIV.push({p, g:g[ME], d:dMe, role:rolesOf(mine.concat([p.id]), true)[p.id], cap, bid, rival, rv:Math.round(rv), users, outbid:!!rival && need > cap && g[ME] >= 0.05});
+  }
+  // who to cut for the best few: the player whose loss costs my lineup least once he is in
+  WAIV.sort((a,b) => b.bid - a.bid || b.g - a.g);
+  // never suggest cutting a starter call or a handcuff: both are holds I made on purpose
+  const cut = mine.filter(id => SKILL.includes(P[id].pos) && !(roleOf(id) && (roleOf(id).r === "S" || roleOf(id).c)));
+  for(const x of WAIV.slice(0, 60)){
+    const withP = worth(mine.concat([x.p.id]), false, true);
+    let best = null;
+    for(const id of cut){
+      const d = delta(withP, worth(mine.filter(q => q !== id).concat([x.p.id]), false, true));
+      if(!best || d.score > best.d.score) best = {id, d};
+    }
+    x.drop = best;
+  }
+}
+const xpFor = id => XPBY[id] || [];
+function renderExperts(){
+  const X = D.experts;
+  if(!X || !X.items){ $("xp").hidden = true; return; }
+  const down = Object.entries(X.ok || {}).filter(([, ok]) => !ok).map(([a]) => a);
+  const items = X.items.filter(x => x.wv || x.ids.some(id => !P[id].t));
+  const chip = id => { const p = P[id]; return p.t ? `<span class="chip">${esc(short(p))} &middot; ${esc(ownAb(p))}</span>` : `<span class="chip g">${esc(short(p))} &middot; FA</span>`; };
+  $("xp").hidden = false;
+  if(!$("xp").dataset.set){ $("xp").open = !MQ.matches; $("xp").dataset.set = 1; }
+  $("xp").innerHTML = `<summary>Expert notes<span>${plural(items.length, "recent piece")} from Norris and Winks that name a free agent or cover waivers${down.length ? ` &middot; couldn't reach ${down.join(", ")}` : ""}</span></summary>
+    <div class="xpl">${items.map(x => `<div class="xpi"><span class="xpb">${esc(x.a.join(" + "))}</span>${x.wv ? `<span class="xpb" style="background:#12382a;color:#7fe0aa">WAIVERS</span>` : ""}
+      <a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t || "Untitled")}</a>
+      <span class="who2">${x.ids.map(chip).join("")}</span></div>`).join("") || `<div class="xpi">Nothing new from either of them yet this week</div>`}</div>`;
+}
+function renderWaivers(){
+  const F = D.faab;
+  if(!F){ $("wvs").innerHTML = `<div class="chip">This league doesn't use FAAB</div>`; return; }
+  const left = F.left || {};
+  const rivals = D.teams.filter(t => t.id !== ME).sort((a,b) => (left[b.id] || 0) - (left[a.id] || 0));
+  $("faab").innerHTML = `<span class="mk g">My FAAB $${left[ME] || 0} of $${F.budget}</span>` +
+    rivals.map(t => `<span class="mk" title="${esc(t.name)}">${esc(t.abbrev || t.name)} $${left[t.id] || 0}</span>`).join("");
+  let list = WAIV.slice();
+  if(S.wvPos !== "ALL") list = list.filter(x => x.p.pos === S.wvPos);
+  if(S.wvQ){ const q = S.wvQ.toLowerCase(); list = list.filter(x => (x.p.n + " " + x.p.tm).toLowerCase().includes(q)); }
+  const wvx = x => (xpFor(x.p.id).some(i => i.wv) ? 2 : xpFor(x.p.id).length ? 1 : 0);
+  const by = {bid:x => x.bid * 1000 + x.g, gain:x => x.g, pts:x => x.p.ros, exp:x => wvx(x) * 1e6 + x.bid * 1000 + x.g}[S.wvSort];
+  list.sort((a,b) => by(b) - by(a));
+  const total = list.length;
+  $("wvcount").textContent = plural(total, "free agent");
+  list = list.slice(0, S.wvLimit);
+  const top = WAIV.length ? Math.max(1, ...WAIV.map(x => x.bid)) : 1;
+  $("wvs").innerHTML = list.map(x => {
+    const p = x.p, xs = xpFor(p.id);
+    const meter = (lab, k, r) => { const q = pq(p, k);
+      return `<div class="mt"><span>${lab}</span><div class="bar"><i style="width:${Math.max(5, Math.round(q * 100))}%;background:${solid(q)}"></i></div><b>${p.pos}${r || "–"}</b></div>`; };
+    const lvl = !x.bid ? "d" : x.bid >= top * 0.6 ? "a" : x.bid >= top * 0.3 ? "b" : "c";
+    const starts = x.role !== "B";
+    const gains = `${REG.length ? `<span class="${cls(x.d.reg)}">${sgn(x.d.reg)} / wk</span>` : ""}${PO.length ? `<span class="${cls(x.d.po)}">${sgn(x.d.po)} playoffs</span>` : ""}`;
+    const chips = sigChips(p).slice(0, 3).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`)
+      .concat(xs.slice(0, 3).map(i => `<a class="chip b" href="${esc(i.u)}" target="_blank" rel="noopener" title="${esc(i.t)}">${esc(i.a.join("+"))}${i.wv ? " waiver pick" : " mention"}</a>`)).join("");
+    const ahead = ALLW.map(i => { const w = p.wk[i], out = p.eff[i] === 0 && w.p > 0;
+      return `<span class="mini${w.w >= 15 ? " po" : ""}" style="${w.o === "BYE" || out ? "background:#1f2732;color:#66717e" : rkBg(w.rk)}" title="Wk ${w.w}${w.rk ? " · " + ord(w.rk) + " vs " + p.pos : ""}">${out ? "OUT" : w.o}</span>`; }).join("");
+    const rv = x.rival ? TEAMS[x.rival] : null;
+    const faab = !x.bid ? `Doesn't move my lineup: no bid` :
+      `Bid <b>$${x.bid}</b> &middot; worth up to <b>$${x.cap}</b> to me` +
+      (rv ? ` &middot; ${esc(rv.abbrev || rv.name)} ($${left[rv.id] || 0} left) wants him most, about <b>$${x.rv}</b>` : "") +
+      (x.users ? ` &middot; ${plural(x.users, "rival")} would use him` : " &middot; no rival needs him") +
+      (x.outbid ? `<br><span class="warn">${esc(rv.abbrev || rv.name)} can outbid what he's worth to me</span>` : "");
+    const dd = x.drop ? x.drop.d.score / ((REG.length + 1.5 * PO.length) || 1) : 0;
+    const drop = x.drop && x.bid ? `<div class="faab">Drop <b>${esc(P[x.drop.id].n)}</b>: ${Math.abs(dd) < 0.05 ? "costs my lineup nothing" : `<span class="${cls(dd)}">${sgn(dd)}</span> a week`}</div>` : "";
+    return `<div class="tg">
+      <div class="top">${img(p)}${who(p, xs.some(i => i.wv) ? `<span class="xpb">EXPERT PICK</span>` : "")}<div class="bid ${lvl}"><b>${x.bid ? "$" + x.bid : "–"}</b><span>bid</span></div></div>
+      ${p.g != null ? `<div class="mts">${meter("Workload", "xfp", p.xrk)}${meter("Scoring", "ppg", p.prk)}</div>` : ""}
+      <div class="fit"><b>${starts ? (x.role === "F" ? "My flex" : "Starts for me") : "Bench depth"}</b>${gains}</div>
+      <div class="faab">${faab}</div>
+      ${chips ? `<div class="chips">${chips}</div>` : ""}
+      <div class="ahead">${ahead}</div>
+      ${drop}
+    </div>`;
+  }).join("") + (total > list.length ? `<button class="b more pkgrid-more" id="wvmore">Show ${Math.min(30, total - list.length)} more</button>` : "");
+  if(!total) $("wvs").innerHTML = `<div class="chip">No free agent matches</div>`;
 }
 
 function show(v){
@@ -1272,7 +1695,7 @@ function show(v){
   document.querySelectorAll("#sub button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
   try { history.replaceState(null, "", "#" + v); } catch(e){}
 }
-function renderAll(){ recompute(); renderTargets(); renderTiles(); renderRoster(); renderBuilder(); searchPackages(); }
+function renderAll(){ recompute(); renderTargets(); renderTiles(); renderRoster(); renderBuilder(); renderExperts(); renderWaivers(); searchPackages(); }
 const pickSeg = (id, attr, fn) => ($(id).onclick = e => {
   const b = e.target.closest("button"); if(!b) return;
   $(id).querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
@@ -1288,6 +1711,8 @@ function boot(d){
   for(const id of Object.keys(OV)) if(!P[id] || (OV[id].t === "O" && OV[id].thru < d.weeks[0])) delete OV[id];
   saveOV();
   buildPct(); buildCols();
+  NS = ["QB","RB","WR","TE","K","DST"].map(spots); NF = spots("FLEX");
+  for(const p of Object.values(P)) p.pi = PI[p.pos];
 
   const me = TEAMS[ME], others = d.teams.filter(t => t.id !== ME).sort((a,b) => a.name.localeCompare(b.name));
   $("tname").textContent = me.name;
@@ -1301,24 +1726,37 @@ function boot(d){
     <option value="all">Everyone, with free agents</option><option value="fa">Free agents only</option><optgroup label="Other teams">${teamOpts}</optgroup>`;
   $("tgsrc").innerHTML = `<option value="">Any team</option>${teamOpts}`;
   $("partner").innerHTML = teamOpts;
+  $("partnerA").innerHTML = teamOpts;
+  if(others[1]) $("partnerA").value = others[1].id;
   $("pkTeam").innerHTML = `<option value="">All teams</option>${teamOpts}`;
   $("msort").innerHTML = [["","Sort: roster order"],["ppg","Sort: PPG"],["xfp","Sort: expected (xFP)"],["fpoe","Sort: scored vs expected"],["up","Sort: upside"],
     ["snap","Sort: snap share"],["ts","Sort: target share"],["cs","Sort: carry share"],["wopr","Sort: WOPR"],["tps","Sort: targets per snap"],["opp","Sort: opportunities"],
     ["rz","Sort: red-zone share"],["trend","Sort: trend"],["ros","Sort: rest of season"],["po","Sort: playoffs"],["st","Sort: availability"]]
     .map(o => `<option value="${o[0]}">${o[1]}</option>`).join("");
+  // expert notes by player, newest first as Yahoo lists them
+  XPBY = {};
+  for(const x of ((d.experts || {}).items || [])) for(const id of x.ids) (XPBY[id] = XPBY[id] || []).push(x);
 
   $("msg").hidden = true; $("sub").hidden = false;
   const want = location.hash.slice(1);
   show(VIEWS.includes(want) ? want : "targets");
   renderAll();
 
-  $("sub").onclick = e => { const b = e.target.closest("button"); if(b) show(b.dataset.v); };
-  // any status menu, wherever it is drawn
+  $("sub").onclick = e => { const b = e.target.closest("button"); if(b){ show(b.dataset.v); if(b.dataset.v === "packages") renderPackages(); } };
+  // any status or lineup-call menu, wherever it is drawn
   document.addEventListener("change", e => {
-    const s = e.target.closest("select.st"); if(!s) return;
-    const v = s.value, id = s.dataset.id;
-    if(!v) delete OV[id]; else OV[id] = v === "H" ? {t:"H"} : {t:"O", thru:+v.slice(2)};
-    saveOV(); renderAll();
+    const s = e.target.closest("select.st");
+    if(s){
+      const v = s.value, id = s.dataset.id;
+      if(!v) delete OV[id]; else OV[id] = v === "H" ? {t:"H"} : {t:"O", thru:+v.slice(2)};
+      saveOV(); renderAll(); return;
+    }
+    const r = e.target.closest("select.rl");
+    if(r){
+      const v = r.value, id = r.dataset.id;
+      ROLE[id] = !v ? {r:"A"} : v === "S" ? {r:"S"} : v === "B" ? {r:"B"} : {r:"B", c:v.slice(2)};
+      saveRole(); renderAll();
+    }
   });
   // targets
   pickSeg("tgmode", "m", v => { S.tgMode = v; renderTargets(); });
@@ -1327,10 +1765,10 @@ function boot(d){
   $("tgs").onclick = e => {
     const b = e.target.closest("button[data-a]"); if(!b) return;
     const p = P[b.dataset.id];
-    if(b.dataset.a === "deal"){ S.pkFor = p.id; S.pkQ = ""; $("pkQ").value = ""; FORPK = findPackages(p.id); renderPackages(); show("packages"); }
-    else if(b.dataset.a === "shop"){ S.pkFor = null; S.pkTeam = ""; $("pkTeam").value = ""; S.pkQ = p.n; $("pkQ").value = p.n; renderPackages(); show("packages"); }
-    else if(p.t === ME) openBuilder(+$("partner").value, [p.id], []);
-    else openBuilder(p.t, [], [p.id]);
+    if(b.dataset.a === "deal"){ S.pkFor = p.id; S.pkQ = ""; $("pkQ").value = ""; S.pkLimit = 40; FORPK = findPackages(p.id); renderPackages(); show("packages"); }
+    else if(b.dataset.a === "shop"){ S.pkFor = null; S.pkTeam = ""; $("pkTeam").value = ""; S.pkQ = p.n; $("pkQ").value = p.n; S.pkLimit = 40; renderPackages(); show("packages"); }
+    else if(p.t === ME) open2(+$("partner").value, [p.id], []);
+    else open2(p.t, [], [p.id]);
   };
   // roster
   $("scope").onchange = e => { S.scope = e.target.value; S.sort = null; S.limit = 40; $("msort").value = ""; renderRoster(); $("rscroll").scrollTop = 0; };
@@ -1354,32 +1792,43 @@ function boot(d){
   $("ovclr").onclick = () => { OV = {}; saveOV(); renderAll(); };
   MQ.addEventListener("change", () => { renderRoster(); });
   // packages
-  $("pkFor").onclick = () => { S.pkFor = null; renderPackages(); };
-  $("pkTeam").onchange = e => { S.pkTeam = e.target.value; renderPackages(); };
-  $("pkPos").onchange = e => { S.pkPos = e.target.value; renderPackages(); };
-  $("pkSort").onchange = e => { S.pkSort = e.target.value; renderPackages(); };
-  $("pkQ").oninput = e => { S.pkQ = e.target.value.trim(); renderPackages(); };
+  const pkf = (k, v) => { S[k] = v; S.pkLimit = 40; renderPackages(); };
+  $("pkFor").onclick = () => { S.pkFor = null; S.pkLimit = 40; renderPackages(); };
+  $("pkTeam").onchange = e => pkf("pkTeam", e.target.value);
+  $("pkPos").onchange = e => pkf("pkPos", e.target.value);
+  $("pkWill").onchange = e => pkf("pkWill", e.target.value);
+  $("pkKind").onchange = e => pkf("pkKind", e.target.value);
+  $("pkSort").onchange = e => pkf("pkSort", e.target.value);
+  $("pkQ").oninput = e => pkf("pkQ", e.target.value.trim());
   $("pks").onclick = e => {
+    if(e.target.closest("#pkmore")){ S.pkLimit += 40; renderPackages(); return; }
     const c = e.target.closest(".pk"); if(!c) return;
     const pk = (S.pkFor && P[S.pkFor] ? FORPK : ALLPK)[+c.dataset.i];
-    openBuilder(pk.team, pk.give, pk.get);
+    openBuilder(pk.legs);
   };
   // builder
-  $("partner").onchange = () => { get.clear(); $("theirs").scrollTop = 0; renderBuilder(); };
+  pickSeg("bmode", "n", v => { setThree(v === "3"); renderBuilder(); });
+  $("partner").onchange = () => { get.clear(); via.clear(); $("theirs").scrollTop = 0; renderBuilder(); };
+  $("partnerA").onchange = () => { via.clear(); $("via").scrollTop = 0; renderBuilder(); };
   const toggle = set => e => {
     const r = e.target.closest(".row"); if(!r) return;
     const id = r.dataset.id; set.has(id) ? set.delete(id) : set.add(id); renderBuilder();
   };
-  $("mine").onclick = toggle(give); $("theirs").onclick = toggle(get);
+  $("mine").onclick = toggle(give); $("theirs").onclick = toggle(get); $("via").onclick = toggle(via);
   $("deal").onclick = e => {
     const pv = e.target.closest("button[data-pv]");
     if(pv){ S.pvSide = pv.dataset.pv; renderBuilder(); return; }
     if(e.target.closest("#dsum")){ S.dealOpen = !S.dealOpen; renderBuilder(); return; }
-    if(e.target.closest("#clear")){ give.clear(); get.clear(); S.dealOpen = false; renderBuilder(); return; }
+    if(e.target.closest("#clear")){ give.clear(); get.clear(); via.clear(); S.dealOpen = false; renderBuilder(); return; }
     const c = e.target.closest(".dchip"); if(!c) return;
-    (c.dataset.set === "give" ? give : get).delete(c.dataset.id); renderBuilder();
+    ({give, get, via})[c.dataset.set].delete(c.dataset.id); renderBuilder();
   };
   $("bseg").onclick = e => { const b = e.target.closest("button"); if(b) setSide(b.dataset.s); };
+  // waivers
+  pickSeg("wvpos", "p", v => { S.wvPos = v; S.wvLimit = 30; renderWaivers(); });
+  $("wvsort").onchange = e => { S.wvSort = e.target.value; S.wvLimit = 30; renderWaivers(); };
+  $("wvq").oninput = e => { S.wvQ = e.target.value.trim(); S.wvLimit = 30; renderWaivers(); };
+  $("wvs").onclick = e => { if(e.target.closest("#wvmore")){ S.wvLimit += 30; renderWaivers(); } };
 }
 
 fetch("/api/trade", {cache:"no-cache"}).then(r => r.json()).then(d => {
