@@ -144,10 +144,29 @@ part of a kicker's or defense's edge that can be counted on (`own` for kickers, 
 for defenses, about a quarter and two-thirds), so the tool never pays starter money for a
 kicker.
 
-The Defenses table shows the whole remaining schedule, each opponent shaded by how many
-points it gives up to defenses. The Kickers table adds the numbers for weighing one kicker
-against another, tinted by where they sit among kickers: field-goal attempts a game and
-accuracy (his own), team points a game and game total (the scoring he kicks in).
+**What Hayden Winks uses, and how it is shown.** His weekly Yahoo column charts two inputs for
+each position (data from nflfastR), and the tables carry the same two, averaged over the
+remaining schedule and tinted by where they sit at the position:
+
+- *Defenses*: the opponent's **Vegas implied points** against a **projected sack rate**, which
+  he defines as 67% the opponent offense's sack rate + 33% the defense's own, over the last 8
+  games. Here sack rate = sacks ÷ dropbacks (pass attempts + sacks) from Sleeper's feed.
+  *Setup* is his quadrant: **Strong** = sack rate above the middle defense and opponent points
+  below it, **Weak** = the reverse.
+- *Kickers*: the team's **Vegas implied points** against its **field-goal attempts a game**.
+  **Smash** = both above the middle kicker, **Fade** = both below. His 2026 kicker study (three
+  seasons, kickers with 10+ games for one team) found field goals made track kicker points far
+  more than extra points do (0.80 vs 0.32), with team touchdowns 0.43, first downs 0.41, the
+  kicker's own accuracy 0.44, and fourth-down aggressiveness −0.13; a replacement kicker in a
+  12-team league averaged 8.2 against 11.0 for the best. FG% and game total are shown beside
+  his two inputs.
+
+Implied points use the betting line where ESPN's scoreboard has one (the current week and the
+next; `vegasWeeks` in the payload) and otherwise the team's scoring average + what the
+opponent allows − the league average. The Defenses table shows the whole remaining schedule.
+
+Sources: [Winks' kicker deep dive for 2026](https://sports.yahoo.com/fantasy/article/fantasy-football-yes-its-time-for-hayden-winks-kicker-deep-dive-for-2026-143423456.html),
+[his QB/TE/DEF/K Blueprint, week 9](https://sports.yahoo.com/fantasy/article/fantasy-football-rankings-hayden-winks-qbtedefk-blueprint-for-week-9-160055438.html).
 
 The fallback model follows what the streaming research agrees on — a defense's week is mostly its
 opponent, a kicker's is mostly how many points his team should score — but with no free
@@ -285,7 +304,13 @@ Starters list and out of every suggested package until I overrule ESPN's status 
 
 Not two price tags — two rosters.
 
-- **Is there a running-back premium?** Checked on 11/10 rather than assumed. On ESPN's weekly
+- **Points over replacement.** A player's value is what he scores above the best free agent
+  you could start at his position instead. The Targets tab states it (replacement level at each
+  position, who is scarcer and by how much, and the depth behind it) and the Targets table and
+  the player card carry each player's *Over repl.* number.
+- **Is there a running-back premium?** Yes. The 24th back has scored 11.2 a game this season
+  and 33 receivers are at or above that (the 36th receiver scores 11.0): the league holds
+  about 36 startable receivers for every 24 startable backs. Checked on 11/10 rather than assumed. On ESPN's weekly
   projections the best free-agent backs after the first project to **6.7** a game against
   **8.9** for receivers, so a back is about 2 points a game harder to replace, and the 36th
   back has scored 8.9 a game this season against 11.0 for the 36th receiver. Starter-level

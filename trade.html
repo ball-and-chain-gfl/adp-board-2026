@@ -1103,7 +1103,7 @@ function sigChips(p){
    Targets, Waivers and Packages are all one row per item. A column is
    {k, h, t (header tip), v (sort value), html (cell), c (centre), l (sticky player column), sep, nosort}.
    Clicking a sortable header sorts by it; clicking again flips the order. */
-const WIDE = new Set(["read", "drop", "rival", "top", "fits", "deal", "next"]);
+const WIDE = new Set(["read", "drop", "rival", "top", "fits", "deal", "next"]);   // these get a full-width line in a phone row's panel
 // the tap-open panel under a phone row: every column that didn't fit, as labelled values
 const detailHtml = (cols, r) => `<div class="dg">${cols.map(c => { const v = c.html(r); const st = c.style ? c.style(r) : "";
   return v === "" || v == null ? "" : `<div class="dc${WIDE.has(c.k) ? " w" : ""}"${st ? ` style="${st}"` : ""}><span>${c.h}</span><div>${v}</div></div>`; }).join("")}</div>`;
@@ -1289,11 +1289,19 @@ function renderTargets(){
   renderTiles("ntiles", true);
   renderTops();
   // scarcity, measured not assumed: a player's trade value is his points over what the waiver wire gives at HIS position
-  { const gap = REPL.WR - REPL.RB;
-    $("replline").innerHTML = `Trade value is points over the waiver wire at the same position. Today the wire gives ${SKILL.map(pos => `${pos} <b>${f1(REPL[pos])}</b>`).join(" · ")} a game, so ` +
-      (Math.abs(gap) < 1 ? "running backs and receivers are equally hard to replace right now."
-        : gap > 0 ? `running backs are scarcer: a back is worth about ${f1(gap)} more than a receiver who scores the same.`
-        : `receivers are scarcer: a receiver is worth about ${f1(-gap)} more than a back who scores the same.`); }
+  /* Scarcity, measured not assumed. A player's trade value is his points over replacement:
+     what he scores above the best free agent you could start at HIS position instead. The
+     depth line makes the reason visible: count how many receivers score what the last
+     startable back scores. */
+  { const gap = REPL.WR - REPL.RB, N = STARTN.RB;
+    const byPpg = pos => Object.values(P).filter(p => p.pos === pos && p.g >= (D.minG || 3)).sort((a, b) => b.ppg - a.ppg);
+    const rb = byPpg("RB"), wr = byPpg("WR"), line = rb[N - 1] ? rb[N - 1].ppg : null;
+    const wrAt = line != null ? wr.filter(p => p.ppg >= line).length : 0;
+    $("replline").innerHTML = `<b>Points over replacement.</b> A player is worth what he scores above the waiver wire at his own position: today ${SKILL.map(pos => `${pos} <b>${f1(REPL[pos])}</b>`).join(" · ")} a game. ` +
+      (Math.abs(gap) < 1 ? "Backs and receivers are equally hard to replace right now."
+        : gap > 0 ? `Backs are scarcer, so a back is worth about <b>${f1(gap)}</b> more than a receiver who scores the same.`
+        : `Receivers are scarcer, so a receiver is worth about <b>${f1(-gap)}</b> more than a back who scores the same.`) +
+      (line != null && wrAt > N ? ` The depth shows why: the ${ord(N)} back has scored ${f1(line)} a game this season, and <b>${wrAt} receivers</b> are at or above that.` : ""); }
   const mode = S.tgMode;
   let list = (mode === "buy" ? BUYS : mode === "sell" ? SELLS : DEPTHS).slice();
   if(S.tgPos !== "ALL") list = list.filter(x => x.p.pos === S.tgPos);
@@ -1324,7 +1332,8 @@ function renderTargets(){
   }
   if(mode === "buy") cols.push({k:"deal", h:"Deal", t:"The best answer any package for him gets", c:true,
     v:x => (BESTWILL[x.p.id] ? 3 - WORST[BESTWILL[x.p.id]] : 0), html:x => (BESTWILL[x.p.id] ? `<span class="will ${BESTWILL[x.p.id]}">${WORD[BESTWILL[x.p.id]]}</span>` : SEARCHING ? `<span class="dimn">…</span>` : `<span class="dimn">none</span>`)});
-  if(REG.length) cols.push({k:"ros", h:"ROS", t:COLS.ros.t, sep:true, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
+  cols.push({k:"por", h:"Over repl.", t:"Points over replacement: his projection a game above the waiver wire at his position. This is what his trade value is built on", sep:true, v:x => x.p.base - (REPL[x.p.pos] || 0), html:x => `<b>${sgn(x.p.base - (REPL[x.p.pos] || 0))}</b>`});
+  if(REG.length) cols.push({k:"ros", h:"ROS", t:COLS.ros.t, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
   if(PO.length) cols.push({k:"po", h:"PO", t:COLS.po.t, po:true, v:x => x.p.po, html:x => `<b>${f1(x.p.po)}</b>`});
   if(S.tgCols === "stats" || MQ.matches) cols.push(...statCols(S.tgPos, P_));
   cols.push({k:"read", h:"Read", t:"What his workload, touchdown luck, role and schedule say", sep:true, nosort:true, html:x => readCell(x.p)});
@@ -1453,12 +1462,21 @@ function renderKD(pos){
   if(S.wvAll) for(const p of Object.values(P)) if(p.pos === pos && p.t && p.t !== ME) rows.push({p});
   if(S.wvQ){ const q = S.wvQ.toLowerCase(); rows = rows.filter(r => (r.p.n + " " + r.p.tm).toLowerCase().includes(q)); }
   const dv = (r, k) => (r.mine ? null : r.x ? r.x.d[k] : best ? r.p[k === "reg" ? "ros" : "po"] - best[k === "reg" ? "ros" : "po"] : null);
+  const vg = (D.vegasWeeks || []).length ? ` Betting lines are used for week${D.vegasWeeks.length > 1 ? "s" : ""} ${D.vegasWeeks.join(" and ")}; later weeks use each team's scoring this season.` : "";
   $("wvhint").innerHTML = ((D.proj || {}).src === "espn" ? "Projections are ESPN's, week by week. " : "") + (pos === "DST"
-    ? "The schedule shades each opponent by how many points it gives up to defenses: green is a soft matchup, red a tough one."
-    : "To weigh one kicker against another: field-goal attempts a game and accuracy are his own; team points and game total are the scoring he kicks in. Green is high among kickers, red low.");
-  // where a kicker's number sits among all kickers
-  const kq = k => { const a = Object.values(P).filter(p => p.pos === "K" && p[k] != null).map(p => p[k]).sort((x, y) => x - y);
-    return r => { const v = r.p[k]; if(v == null || a.length < 8) return ""; let n = 0; while(n < a.length && a[n] <= v) n++; const q = n / a.length; return q >= 0.6 || q <= 0.4 ? "background:" + heat(q, 0.6) : ""; }; };
+    ? "The two columns Hayden Winks charts for defenses: <b>projected sack rate</b> (67% the opponents' sack rate allowed + 33% this defense's, last 8 games) and the <b>points opponents are expected to score</b>. <i>Strong</i> = high sack rate and low points, averaged over the remaining schedule."
+    : "The two numbers Hayden Winks charts for kickers: the team's <b>implied points</b> and its <b>field-goal attempts a game</b>. <i>Smash</i> = both above the middle kicker. His study also found accuracy matters (0.44 correlation with points) but less than the team around him.") + vg;
+  // where a number sits among all units at the position; `low` flips it when smaller is better
+  const kq = (k, low) => { const a = Object.values(P).filter(p => p.pos === pos && p[k] != null).map(p => p[k]).sort((x, y) => x - y);
+    return r => { const v = r.p[k]; if(v == null || a.length < 8) return ""; let n = 0; while(n < a.length && a[n] <= v) n++; const q = low ? 1 - n / a.length : n / a.length; return q >= 0.6 || q <= 0.4 ? "background:" + heat(q, 0.6) : ""; }; };
+  const med = k => { const a = Object.values(P).filter(p => p.pos === pos && p[k] != null).map(p => p[k]).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : null; };
+  const M = pos === "K" ? {a:med("fga"), b:med("ip")} : {a:med("sr"), b:med("oip")};
+  // his quadrants: both inputs on the good side, both on the bad side, or split
+  const setup = r => { const p = r.p, x = pos === "K" ? p.fga : p.sr, y = pos === "K" ? p.ip : p.oip;
+    if(x == null || y == null || M.a == null) return null;
+    const gx = x >= M.a, gy = pos === "K" ? y >= M.b : y <= M.b;
+    return gx && gy ? 2 : !gx && !gy ? 0 : 1; };
+  const setupTag = r => { const s = setup(r); return s == null ? "" : s === 2 ? `<span class="chip g">${pos === "K" ? "Smash" : "Strong"}</span>` : s === 0 ? `<span class="chip r">${pos === "K" ? "Fade" : "Weak"}</span>` : `<span class="chip">Mixed</span>`; };
   $("wvcount").textContent = `My FAAB $${left[ME] || 0} · ${plural(rows.length, pos === "K" ? "kicker" : "defense")}`;
   $("wvall").textContent = S.wvAll ? "Only available and mine" : "Show rostered ones too";
   const cols = [
@@ -1469,13 +1487,17 @@ function renderKD(pos){
     ...(PO.length ? [{k:"pog", h:"+PO", po:true, v:r => dv(r, "po"), html:r => (dv(r, "po") == null ? "" : gainCell(dv(r, "po")))}] : []),
     {k:"bid", h:"Bid", c:true, v:r => (r.x ? r.x.bid : null), html:r => (r.x ? `<span class="gr ${r.x.bid >= 0.03 * (left[ME] || 1) ? "b" : r.x.bid ? "c" : "d"}">${r.x.bid ? "$" + r.x.bid : "–"}</span>` : "")},
     {k:"term", h:"Helps for", c:true, v:r => (r.x ? ({long:3, short:2, fill:1, none:0})[r.x.term.k] * 100 + r.x.term.use : null), html:r => (r.x ? termPill(r.x) : "")},
+    {k:"setup", h:"Setup", t:pos === "K" ? "Winks' kicker chart: implied team points against field-goal attempts a game. Smash = both above the middle kicker; Fade = both below" : "Winks' defense chart: opponents' expected points against projected sack rate. Strong = high sack rate and low points; Weak = the reverse", c:true, sep:true, v:setup, html:setupTag},
     ...(pos === "K" ? [
-      {k:"fga", h:"FGA/g", t:"Field-goal attempts a game this season", sep:true, v:r => r.p.fga, html:r => (r.p.fga != null ? f1(r.p.fga) : "–"), style:kq("fga")},
+      {k:"ip", h:"Imp. pts", t:"His team's implied points a game over the remaining schedule: betting lines where posted, otherwise its scoring average adjusted for each opponent", v:r => r.p.ip, html:r => (r.p.ip != null ? f1(r.p.ip) : "–"), style:kq("ip")},
+      {k:"fga", h:"FGA/g", t:"Field-goal attempts a game this season", v:r => r.p.fga, html:r => (r.p.fga != null ? f1(r.p.fga) : "–"), style:kq("fga")},
       {k:"fgp", h:"FG%", t:"Field goals made per attempt", v:r => r.p.fgp, html:r => (r.p.fgp != null ? Math.round(r.p.fgp * 100) + "%" : "–"), style:kq("fgp")},
-      {k:"tpg", h:"Team pts", t:"His team's points a game", v:r => r.p.tpg, html:r => (r.p.tpg != null ? f1(r.p.tpg) : "–"), style:kq("tpg")},
-      {k:"gt", h:"Game total", t:"Combined points a game in his team's games", v:r => r.p.gt, html:r => (r.p.gt != null ? f1(r.p.gt) : "–"), style:kq("gt")},
+      {k:"gt", h:"Game total", t:"Combined points a game in his team's games this season", v:r => r.p.gt, html:r => (r.p.gt != null ? f1(r.p.gt) : "–"), style:kq("gt")},
       {k:"ppg", h:"So far", t:"His points a game this season, league scoring", v:r => r.p.ppg, html:r => (r.p.ppg != null ? f1(r.p.ppg) : "–"), style:kq("ppg")},
-    ] : []),
+    ] : [
+      {k:"sr", h:"Sack rate", t:"Projected sack rate over the remaining schedule: 67% the opponents' sack rate allowed + 33% this defense's own, each over its last 8 games", v:r => r.p.sr, html:r => (r.p.sr != null ? (r.p.sr * 100).toFixed(1) + "%" : "–"), style:kq("sr")},
+      {k:"oip", h:"Opp. pts", t:"Points its remaining opponents are expected to score a game: betting lines where posted, otherwise their scoring average adjusted for this defense. Lower is better", v:r => r.p.oip, html:r => (r.p.oip != null ? f1(r.p.oip) : "–"), style:kq("oip", true)},
+    ]),
     {k:"next", h:pos === "DST" ? "Schedule" : "Next four", t:"Opponent and projection; green is a soft matchup, red a tough one", sep:true, nosort:true,
       html:r => `<div class="wks">${D.weeks.slice(0, pos === "DST" ? D.weeks.length : 4).map((w, i) => wkChip(r.p, i, true)).join("")}</div>`},
   ];
@@ -2262,7 +2284,7 @@ function playerCard(id){
         <div class="meta"><span class="pos ${p.pos}">${p.pos === "DST" ? "DEF" : p.pos}</span><span>${p.tm}${p.prk ? ` · ${p.pos}${p.prk} in scoring` : ""}</span>${injBadge(p)}${roleBadge(p)}</div>
         <div class="own">${owner}</div></div></div>
     ${lens}
-    <div class="pcns">${num(f1(sum(ALLW)), "Projected total", `wk ${wkSpan(ALLW)}`)}${REG.length ? num(f1(sum(REG)), "Rest of season", `${plural(games(REG), "game")} · ${f1(p.ros)} a week`) : ""}${PO.length ? num(f1(sum(PO)), "Playoffs", `${plural(games(PO), "game")} · ${f1(p.po)} a week`) : ""}${p.g != null ? num(f1(p.ppg), "Scored so far", `a game, ${plural(p.g, "game")}`) : ""}</div>
+    <div class="pcns">${skill ? num(sgn(p.base - (REPL[p.pos] || 0)), "Over replacement", `a game vs the ${p.pos} waiver wire (${f1(REPL[p.pos] || 0)})`) : ""}${num(f1(sum(ALLW)), "Projected total", `wk ${wkSpan(ALLW)}`)}${REG.length ? num(f1(sum(REG)), "Rest of season", `${plural(games(REG), "game")} · ${f1(p.ros)} a week`) : ""}${PO.length ? num(f1(sum(PO)), "Playoffs", `${plural(games(PO), "game")} · ${f1(p.po)} a week`) : ""}${p.g != null ? num(f1(p.ppg), "Scored so far", `a game, ${plural(p.g, "game")}`) : ""}</div>
     ${wv ? `<div class="pcwv">Waivers: ${wv.bid ? `bid <b>$${wv.bid}</b>` : "no bid"} · ${termPill(wv).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</div>` : ""}
     <div class="pch">Schedule and projection <span>opponent shaded by how soft it is on ${p.pos === "DST" ? "defences" : p.pos + "s"}; playoff weeks outlined</span></div>
     <div class="pcsched">${sched}</div>

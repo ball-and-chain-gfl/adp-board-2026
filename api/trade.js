@@ -214,6 +214,23 @@ export default async function handler(req, res) {
         .then(r => (r.ok ? r.json() : [])).catch(() => []),
       Promise.all(weeks.map(w => espnWeek(w).catch(() => espnWeek(w)).catch(() => null))),   // one retry each
     ]);
+    /* Vegas implied points: over/under split by the spread. ESPN's scoreboard carries lines for
+       the current week and the next; later weeks have none yet. vegas[TEAM][week] = points. */
+    const vegas = {};
+    await Promise.all(weeks.slice(0, 3).map(async w => {
+      try {
+        const sb = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${w}&dates=${SEASON}`);
+        for (const e of sb.events || []) {
+          const c = (e.competitions || [])[0] || {}, o = (c.odds || [])[0];
+          if (!o || o.overUnder == null) continue;
+          const tms = (c.competitors || []).map(x => (x.team || {}).abbreviation).filter(Boolean);
+          if (tms.length !== 2) continue;
+          const m = /^([A-Z]{2,4})\s+(-?\d+(?:\.\d+)?)/.exec(o.details || "");
+          const fav = m ? m[1] : null, line = m ? Math.abs(+m[2]) : 0;
+          for (const t of tms) (vegas[t] = vegas[t] || {})[w] = o.overUnder / 2 + (fav ? (t === fav ? line / 2 : -line / 2) : 0);
+        }
+      } catch (e) {}
+    }));
 
     // A week that has been played and comes back empty is a failed fetch, not a quiet week.
     // Serving it would build every projection on part of the season (and the edge would cache
@@ -241,7 +258,7 @@ export default async function handler(req, res) {
     const kPts = s => ((s.fgm_0_19 || 0) + (s.fgm_20_29 || 0) + (s.fgm_30_39 || 0)) * kItem(80, 3) + (s.fgm_40_49 || 0) * kItem(77, 4)
       + ((s.fgm_50_59 != null ? s.fgm_50_59 : s.fgm_50p || 0)) * kItem(198, 5) + (s.fgm_60p || 0) * kItem(201, 6)
       + (s.fgmiss || 0) * kItem(85, -1) + (s.xpm || 0) * kItem(86, 1) + (s.xpmiss || 0) * kItem(88, 0);
-    const KD = {}, PA = {}, PF = {};
+    const KD = {}, PA = {}, PF = {}, SKD = {};
     weekly.forEach((rows, i) => {
       const w = i + 1;
       for (const x of rows || []) {
@@ -250,6 +267,7 @@ export default async function handler(req, res) {
         if (pos === "DEF") {
           if (s.pts_allow == null) continue;
           (PA[tm] = PA[tm] || {})[w] = s.pts_allow; (PF[opp] = PF[opp] || {})[w] = s.pts_allow;
+          (SKD[tm] = SKD[tm] || {})[w] = { s: s.sack || 0, opp };
           const u = (KD["DST|" + tm] = KD["DST|" + tm] || { pos: "DST", sid: x.player_id, name: (pl.last_name || tm) + " D/ST", tm, gs: [] });
           u.gs.push({ w, opp, pts: dstPts(s) });
         } else {
@@ -287,7 +305,7 @@ export default async function handler(req, res) {
         p.inj = SL_INJ[pl.injury_status] || "";
         p.gs.push(g);
         const tw = (TW[g.tm + "|" + w] = TW[g.tm + "|" + w] || { tgt: 0, air: 0, att: 0, rz: 0 });
-        tw.tgt += g.tgt; tw.air += Math.max(0, g.air); tw.att += g.att; tw.rz += g.rzt + g.rza;
+        tw.tgt += g.tgt; tw.air += Math.max(0, g.air); tw.att += g.att; tw.rz += g.rzt + g.rza; tw.patt = (tw.patt || 0) + g.patt;
         if (g.opp) {
           const d = (DVP[g.opp] = DVP[g.opp] || { QB: 0, RB: 0, WR: 0, TE: 0, wk: new Set() });
           d[pos] += g.pts; d.wk.add(w);
@@ -433,6 +451,36 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     const loo = (arr, w) => { const o = arr.filter(g => g.w !== w); return o.length ? mean(o.map(g => g.pts)) : null; };
     const tmAvg = (M, tm, skip) => { const v = Object.entries(M[tm] || {}).filter(([w]) => +w !== skip).map(([, p]) => p); return v.length ? mean(v) : null; };
     const lgPts = mean(Object.values(PF).flatMap(m => Object.values(m)));
+    /* ---- the inputs Hayden Winks charts each week (Yahoo, data from nflfastR) ------------------
+       Defences: the opponent's Vegas implied points against a projected sack rate, which he
+       defines as 67% the opponent offence's sack rate + 33% the defence's own, last 8 games.
+       Kickers: the team's Vegas implied points against its field-goal attempts a game.
+       Here: sack rate = sacks / dropbacks (pass attempts + sacks) over each side's last 8 games;
+       implied points = the betting line where ESPN has one, otherwise the team's scoring average
+       + what the opponent allows - the league average. */
+    const recent = m => Object.keys(m || {}).map(Number).sort((a, b) => b - a).slice(0, 8);
+    const defSack = {}, offSack = {}, taken = {};
+    for (const [tm, m] of Object.entries(SKD)) for (const [w, x] of Object.entries(m)) (taken[x.opp] = taken[x.opp] || {})[w] = x.s;
+    for (const tm of Object.keys(SKD)) {
+      let s = 0, db = 0;
+      for (const w of recent(SKD[tm])) { const x = SKD[tm][w]; s += x.s; db += ((TW[x.opp + "|" + w] || {}).patt || 0) + x.s; }
+      defSack[tm] = db ? s / db : null;
+    }
+    for (const tm of Object.keys(taken)) {
+      let s = 0, db = 0;
+      for (const w of recent(taken[tm])) { s += taken[tm][w]; db += ((TW[tm + "|" + w] || {}).patt || 0) + taken[tm][w]; }
+      offSack[tm] = db ? s / db : null;
+    }
+    const lgSack = mean(Object.values(defSack).filter(x => x != null));
+    const projSack = (def, off) => 0.67 * (offSack[off] != null ? offSack[off] : lgSack) + 0.33 * (defSack[def] != null ? defSack[def] : lgSack);
+    const teamAvg = (M, tm) => { const v = Object.values(M[tm] || {}); return v.length ? mean(v) : null; };
+    const lgAll = mean(Object.values(PF).flatMap(m => Object.values(m)));
+    const implied = (tm, opp, w) => {
+      if ((vegas[tm] || {})[w] != null) return { v: vegas[tm][w], vg: 1 };
+      const off = teamAvg(PF, tm), def = teamAvg(PA, opp);
+      return { v: (off != null ? off : lgAll) + (def != null ? def : lgAll) - lgAll, vg: 0 };
+    };
+
     const kdModel = {};
     for (const pos of ["DST", "K"]) {
       const units = Object.values(KD).filter(u => u.pos === pos && u.gs.length);
@@ -472,9 +520,15 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
           const g = (games[TEAM_ID[u.tm]] || {})[w];
           if (!g) return { w, o: "BYE", p: 0 };
           const opp = TEAM[g.opp];
-          return { w, o: (g.home ? "" : "@") + opp, rk: softRk[opp] || null, p: r1(Math.max(0, lg + b[0] * (u.ppg - lg) + b[1] * (match(u.tm, opp) - lgM))) };
+          const x = { w, o: (g.home ? "" : "@") + opp, rk: softRk[opp] || null, p: r1(Math.max(0, lg + b[0] * (u.ppg - lg) + b[1] * (match(u.tm, opp) - lgM))) };
+          if (pos === "DST") { const i = implied(opp, u.tm, w); x.sr = r3(projSack(u.tm, opp)); x.oi = r1(i.v); x.vg = i.vg; }
+          else { const i = implied(u.tm, opp, w); x.it = r1(i.v); x.vg = i.vg; }
+          return x;
         });
         const live = u.wk.filter(x => x.o !== "BYE");
+        // rest-of-season averages of those inputs
+        if (pos === "DST") { u.sr = live.length ? mean(live.map(x => x.sr)) : null; u.oip = live.length ? mean(live.map(x => x.oi)) : null; }
+        else u.ip = live.length ? mean(live.map(x => x.it)) : null;
         u.base = live.length ? mean(live.map(x => x.p)) : u.ppg;
         u.pl = Array(played).fill(null); for (const g of u.gs) u.pl[g.w - 1] = r1(g.pts);
         u.last = Math.max(...u.gs.map(g => g.w));
@@ -484,7 +538,8 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       : Object.values(KD).find(u => u.pos === "K" && norm(u.name) === norm(name)) || null);
     const kdBlock = u => {
       const b = { g: u.gs.length, ppg: r1(u.ppg), pl: u.pl, base: r1(u.base), wk: u.wk };
-      if (u.pos !== "K") return b;
+      if (u.pos !== "K") return Object.assign(b, { sr: r3(u.sr), oip: r1(u.oip), dsk: r3(defSack[u.tm]) });
+      b.ip = r1(u.ip);
       // field-goal attempts a game and accuracy are his; team points and game totals are the
       // scoring environment he kicks in (his team's games this season)
       const fga = u.gs.reduce((s, g) => s + g.fga, 0), fgm = u.gs.reduce((s, g) => s + g.fgm, 0);
@@ -727,7 +782,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       scoring: { rec: recPts != null ? recPts : null, int: intPts != null ? intPts : null },
-      opps, kd: kdModel, proj: { src: espnN ? "espn" : "model", players: espnN, weeks: espnProj.filter(Boolean).length },
+      opps, kd: kdModel, vegasWeeks: [...new Set(Object.values(vegas).flatMap(m => Object.keys(m).map(Number)))].sort((a, b) => a - b), proj: { src: espnN ? "espn" : "model", players: espnN, weeks: espnProj.filter(Boolean).length },
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
       model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
       teams, players, faab, experts,
