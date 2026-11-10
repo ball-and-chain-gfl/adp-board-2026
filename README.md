@@ -52,8 +52,12 @@ mean something for the position are shown: QB = xFP, +/−, trend, upside, rush 
 downs; RB adds snaps, targets, opportunities, red-zone work, TDs and rushing efficiency; WR/TE
 add target share, air yards, WOPR, targets per snap, depth, catch rate and YAC. In a mixed list a
 column is blank for positions it doesn't apply to (`REL` in `trade.html`).
-- **Packages** — filters on the left (on a phone, behind a *Filters* button), one card per deal
-  on the right: the team's logo and name, the answer, my gain a week and in the playoffs, then
+- **Packages** — filters on the left (on a phone, behind a *Filters & my players* button), one
+  column of deal cards on the right. At the top of the filters, **I want to trade**: tick any of
+  my players and the list becomes every package where exactly those players go out — two-team
+  (one or two back) and three-team. That search doesn't require the deal to help my lineup (I've
+  chosen to move them) but drops anything costing more than half a point a week, or asking for
+  more than twice what I send. *Sell-highs* on Targets open it for that player. Each card: the team's logo and name, the answer, my gain a week and in the playoffs, then
   *I give* and *I get* with headshots (three-team deals show each leg), then why and how their
   lineups change. Every deal that makes my lineup better, with every team, no caps: 1-for-1 up
   to 2-for-2 with one team, plus three-team rotations (below). It opens on *Likely or worth
@@ -89,6 +93,14 @@ so if what B gets is under 88% of what it gives at full value it can't reach *Wo
 plus the same hole and top-piece tests, so nothing that could pass is skipped.
 
 ### Waivers and FAAB
+
+**How long he helps.** Every remaining week is scored on its own, the points he adds to that
+week's lineup. A week counts at +1 or more. *Long-term*: useful in at least 60% of the weeks
+left, and valued at his full gain. *Short-term*: two or more weeks, valued at his gain times the
+share of that 60% he covers. *1-week fill-in*: one week only — worth a dollar or two if that
+week is this week, and nothing today otherwise, because he can be picked up the week he's
+needed. Rivals are priced the same way, so "Rivals" counts the teams he'd be a long-term starter
+for.
 
 Every free agent in the pool is priced by what he adds to each team's lineup from now to week
 17, byes and injuries counted, playoff weeks at 1.5×. What a team should pay is a share of the

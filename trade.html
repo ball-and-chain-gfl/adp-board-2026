@@ -164,7 +164,19 @@ button.tile.on{outline:2px solid var(--blue);outline-offset:-1px}
 .top1 .ft{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--blue)}
 
 /* tables */
-.scroll{flex:1 0 auto;height:0;min-height:min(460px,70vh);overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+/* a table is as tall as its rows, up to most of the screen, then scrolls inside */
+.scroll{flex:none;max-height:74vh;overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.scroll table{width:auto;min-width:100%}
+/* everything sits in a centred column instead of running edge to edge */
+.view > *{width:100%;max-width:1180px;margin-left:auto;margin-right:auto}
+.tm{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.tm.long{background:var(--good2);color:var(--good)}.tm.short{background:var(--warn2);color:var(--warn)}.tm.fill,.tm.none{background:#eceef0;color:#6b6f74}
+.tmw{display:block;font-size:10.5px;color:var(--dim);margin-top:2px}
+.opt.pick{padding:4px 6px}
+.opt.pick .av{width:24px;height:24px;flex-basis:24px}
+.opt .ck{width:14px;height:14px;flex:0 0 14px;border:1.5px solid #9aa0a6;border-radius:3px;background:#fff}
+.opt.pick.on .ck{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 2px #fff}
+.lnk{background:none;border:0;padding:0;margin-left:6px;color:var(--blue);font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;cursor:pointer}
 table{border-collapse:separate;border-spacing:0;width:100%;font-size:13.5px}
 th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line2)}
 th{font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--dim);background:#f6f7f8;position:sticky;top:0;z-index:3;padding:8px 10px;user-select:none;border-bottom:1px solid var(--line)}
@@ -188,7 +200,7 @@ td .chip{font-size:11px;padding:1px 7px}
 .go-r{color:var(--blue);font-weight:800;font-size:16px}
 
 /* packages: filters on the left, deals on the right */
-.pkwrap{flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px}
+.pkwrap{flex:1;min-height:0;display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px}
 .pkside{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;min-height:0;display:flex;flex-direction:column;gap:14px;align-self:start;max-height:100%}
 .fl .lab{margin-bottom:6px}
 .opts{display:flex;flex-direction:column;gap:2px}
@@ -205,7 +217,7 @@ td .chip{font-size:11px;padding:1px 7px}
 .pkhead .count{margin-left:0;flex:none!important;text-align:left!important}
 .pkhead .chips{flex:1}
 #pkFilt{display:none}
-.pkl{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px;align-content:start;align-items:start}
+.pkl{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start;align-items:start;max-width:760px}
 .pkc{background:var(--panel);border:1px solid var(--line);border-radius:8px;cursor:pointer;min-width:0;display:flex;flex-direction:column;text-align:left;color:var(--txt);padding:0}
 .pkc:hover{border-color:var(--blue);box-shadow:0 1px 6px rgba(11,111,208,.12)}
 .pkc-h{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line2)}
@@ -350,7 +362,7 @@ td .chip{font-size:11px;padding:1px 7px}
   .tops{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
   .tops::-webkit-scrollbar{display:none}
   .top1{flex:0 0 240px}
-  .scroll{min-height:60vh}
+  .scroll{max-height:70vh}
   th,td{padding:6px 8px}
   .ply{gap:8px}
   .ply .nm{max-width:132px}
@@ -455,6 +467,7 @@ td .chip{font-size:11px;padding:1px 7px}
   <div class="pkwrap" id="pkwrap">
     <aside class="pkside" id="pkside">
       <div class="fl" id="pkForBox" hidden><div class="lab">Getting</div><button class="opt on" id="pkFor"></button></div>
+      <div class="fl"><div class="lab">I want to trade <button class="lnk" id="pkGiveClr" hidden>clear</button></div><div class="opts" id="pkGiveO"></div></div>
       <div class="fl"><div class="lab">Sort by</div>
         <select id="pkSort"><option value="gain">Best for me, likeliest first</option><option value="raw">Biggest gain, any answer</option>
           <option value="po">Playoff gain</option><option value="reg">Regular-season gain</option></select></div>
@@ -465,7 +478,7 @@ td .chip{font-size:11px;padding:1px 7px}
       <div class="fl"><div class="lab">Player or team</div><input type="search" id="pkQ" placeholder="Search"></div>
     </aside>
     <div class="pkmain">
-      <div class="pkhead"><button class="b" id="pkFilt">Filters</button><span class="count" id="pkCount"></span><div class="chips" id="pkActive"></div></div>
+      <div class="pkhead"><button class="b" id="pkFilt">Filters &amp; my players</button><span class="count" id="pkCount"></span><div class="chips" id="pkActive"></div></div>
       <div class="pkl" id="pkl"></div>
     </div>
   </div>
@@ -500,6 +513,7 @@ td .chip{font-size:11px;padding:1px 7px}
     <div class="seg" id="wvpos">
       <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button>
     </div>
+    <div class="seg" id="wvterm"><button data-t="" class="on">Any term</button><button data-t="long">Long-term</button><button data-t="short">Short-term</button><button data-t="fill">Fill-ins</button></div>
     <div class="seg" id="wvcols"><button data-c="basic" class="on">Basic</button><button data-c="stats">Stats</button></div>
     <input type="search" id="wvq" placeholder="Search player or team">
     <button class="b" id="wvall"></button>
@@ -511,14 +525,14 @@ td .chip{font-size:11px;padding:1px 7px}
 <script>
 let D, P, ME, TEAMS = {}, REG = [], PO = [], ALLW = [], COLS = {}, PCT = {}, ALLPK = [], FORPK = [], pkTimer, SEARCH = 0, SEARCHING = "";
 // league view, rebuilt whenever availability changes
-let TGT = {}, BESTWILL = {};
+let TGT = {}, BESTWILL = {}, GIVEPK = [];
 let REPL = {}, START = {}, XSTART = {}, RANK = {}, BASE = {}, DEPTH = {}, ROLE0 = {}, W0 = {}, BUYS = [], SELLS = [], DEPTHS = [], WAIV = [], XPBY = {};
 const SKILL = ["QB","RB","WR","TE"], ORDER = {QB:0,RB:1,WR:2,TE:3,K:4,DST:5}, VIEWS = ["targets","roster","packages","builder","waivers"];
 // who counts as startable, by rank at the position across the whole player pool
 const STARTN = {QB:12, RB:24, WR:24, TE:12, K:12, DST:12};
 const S = {view:"targets", tgMode:"buy", tgPos:"ALL", tgSrc:"", tgSort:{}, tgCols:"basic", wvCols:"basic", wvAll:false, wvSortK:{k:"bid", dir:-1},
            scope:"me", pos:"ALL", cols:"basic", q:"", sort:null, dir:-1, limit:40,
-           pkTeam:"", pkPos:"", pkSort:"gain", pkQ:"", pkFor:null, pkWill:"maybe", pkKind:"", tgGet:false, ol:"", pkLimit:40, dealOpen:false, pvSide:"me",
+           pkTeam:"", pkPos:"", pkSort:"gain", pkQ:"", pkFor:null, pkGive:[], wvTerm:"", pkWill:"maybe", pkKind:"", tgGet:false, ol:"", pkLimit:40, dealOpen:false, pvSide:"me",
            three:false, wvPos:"ALL", wvSort:"bid", wvQ:"", wvLimit:30};
 // 2-team: give = mine to them, get = theirs to me. 3-team rotation: give = mine to team C,
 // via = team C's to the partner, get = the partner's to me
@@ -1148,9 +1162,41 @@ const PKF = {
   pkPos:{lab:"I get a", opts:[["", "Any position"], ["QB", "QB"], ["RB", "RB"], ["WR", "WR"], ["TE", "TE"]], test:(pk, v) => !v || pk.get.some(id => P[id].pos === v)},
   pkTeam:{lab:"Trading with", opts:null, test:(pk, v) => !v || pk.teams.includes(+v)},
 };
+// the list Packages is showing: deals for a target, deals for the players I picked, or everything
+const curPK = () => (S.pkGive.length ? GIVEPK : S.pkFor && P[S.pkFor] ? FORPK : ALLPK);
+/* Shopping my own players: every package where exactly the players I picked go out. Two teams
+   (one or two of theirs back) and three-team rotations (mine to C, C to B, B to me). Unlike the
+   main search it doesn't require the deal to help my lineup - I've decided to move them - but
+   it drops anything that costs my lineup more than half a point a week, and asking a team for
+   more than twice what I'm sending. */
+function findForGive(mg){
+  const out = [], others = D.teams.filter(t => t.id !== ME), mV = sumV(mg), mine = TEAMS[ME].players, mTop = maxV(mg);
+  const floor = -0.5 * ((REG.length + 1.5 * PO.length) || 1);
+  for(const t of others) for(const tg of sets(tradeable(t))){
+    if(sumV(tg) > 2.2 * mV) continue;
+    const j = judgeDeal([{from:ME, to:t.id, ids:mg}, {from:t.id, to:ME, ids:tg}], false);
+    if(j.me.score >= floor) out.push(j);
+  }
+  for(const B of others) for(const bg of sets(tradeable(B))){
+    const bV = sumV(bg);
+    if(bV > 2.2 * mV) continue;
+    if(delta(W0[ME], worth(swap(mine, new Set(mg), new Set(bg)), true, true)).score < floor) continue;
+    const bKeep = keepV(bg), bTop = maxV(bg);
+    for(const C of others){
+      if(C.id === B.id) continue;
+      for(const a of tradeable(C)){
+        const aV = P[a].v;
+        if(aV < 0.88 * bKeep || mV < 0.88 * keepV([a]) || aV < 0.6 * bTop || mTop < 0.6 * aV) continue;
+        if(holed(B.id, bg, [a]) || holed(C.id, [a], mg)) continue;
+        const j = judgeDeal([{from:ME, to:C.id, ids:mg}, {from:C.id, to:B.id, ids:[a]}, {from:B.id, to:ME, ids:bg}], false);
+        if(j.will !== "long") out.push(j);
+      }
+    }
+  }
+  return prune(out);
+}
 function pkBase(){
-  const forP = S.pkFor && P[S.pkFor];
-  let list = forP ? FORPK : ALLPK;
+  let list = curPK();
   if(S.pkQ){
     const q = S.pkQ.toLowerCase();
     list = list.filter(pk => (pk.teams.map(id => TEAMS[id].name + " " + TEAMS[id].abbrev).join(" ") + " " + pk.legs.flatMap(l => l.ids).map(id => P[id].n).join(" ")).toLowerCase().includes(q));
@@ -1158,6 +1204,12 @@ function pkBase(){
   return list;
 }
 const pkPass = (pk, except) => Object.keys(PKF).every(k => k === except || PKF[k].test(pk, S[k]));
+// my players, to pick who I'm trading away
+function renderGivePicker(){
+  const mine = TEAMS[ME].players.map(id => P[id]).filter(p => SKILL.includes(p.pos)).sort((a,b) => ORDER[a.pos] - ORDER[b.pos] || b.adj - a.adj);
+  $("pkGiveO").innerHTML = mine.map(p => `<button class="opt pick${S.pkGive.includes(p.id) ? " on" : ""}" data-give="${p.id}"><span class="ck"></span>${img(p)}<span class="tn">${esc(p.n)}</span><span class="pos ${p.pos}">${p.pos}</span></button>`).join("");
+  $("pkGiveClr").hidden = !S.pkGive.length;
+}
 function renderPkSide(base){
   const opt = (k, v, label, n, extra) => `<button class="opt${String(S[k]) === v ? " on" : ""}" data-f="${k}" data-v="${v}">${extra || ""}<span class="tn">${label}</span><span class="n">${n}</span></button>`;
   for(const k of ["pkWill", "pkKind", "pkPos"]){
@@ -1169,18 +1221,20 @@ function renderPkSide(base){
   $("pkTeamO").innerHTML = opt("pkTeam", "", "Every team", pool.length) + teams.map(({t, n}) => opt("pkTeam", String(t.id), esc(t.name), n, tlogo(t.id))).join("");
 }
 function renderPackages(){
-  const forP = S.pkFor && P[S.pkFor];
+  renderGivePicker();
+  const forP = !S.pkGive.length && S.pkFor && P[S.pkFor];
   $("pkForBox").hidden = !forP;
   if(forP) $("pkFor").innerHTML = `${img(forP)}<span class="tn">${esc(forP.n)}</span><span class="n">×</span>`;
-  if(!forP && SEARCHING){ $("pkl").innerHTML = `<div class="chip">${SEARCHING}</div>`; $("pkCount").textContent = ""; return; }
+  if(!forP && !S.pkGive.length && SEARCHING){ $("pkl").innerHTML = `<div class="chip">${SEARCHING}</div>`; $("pkCount").textContent = ""; return; }
   const base = pkBase();
   renderPkSide(base);
-  let list = base.map(pk => ({pk, i:(forP ? FORPK : ALLPK).indexOf(pk)})).filter(x => pkPass(x.pk));
+  const src = curPK();
+  let list = base.map(pk => ({pk, i:src.indexOf(pk)})).filter(x => pkPass(x.pk));
   const tier = x => (2 - WORST[x.pk.will]) * 1e5;
   const by = {gain:x => tier(x) + x.pk.me.score, raw:x => x.pk.me.score, po:x => x.pk.me.po, reg:x => x.pk.me.reg}[S.pkSort] || (x => tier(x) + x.pk.me.score);
   list.sort((a,b) => by(b) - by(a));
   const total = list.length;
-  $("pkCount").textContent = `${plural(total, "package")}${forP ? ` for ${forP.n}` : ""}`;
+  $("pkCount").textContent = `${plural(total, "package")}${S.pkGive.length ? ` for ${S.pkGive.map(id => short(P[id])).join(" + ")}` : forP ? ` for ${forP.n}` : ""}`;
   const act = [S.pkWill && PKF.pkWill.opts.find(o => o[0] === S.pkWill)[1], S.pkKind && PKF.pkKind.opts.find(o => o[0] === S.pkKind)[1], S.pkPos && "Getting a " + S.pkPos, S.pkTeam && TEAMS[+S.pkTeam].name].filter(Boolean);
   $("pkActive").innerHTML = act.map(a => `<span class="chip b">${esc(a)}</span>`).join("");
   if(!total){ $("pkl").innerHTML = `<div class="chip">${forP ? `Nothing for ${esc(forP.n)} makes my lineup better` : "No deal makes my lineup better"}${act.length ? " with these filters" : ""}</div>`; return; }
@@ -1206,6 +1260,13 @@ function renderPackages(){
 }
 
 /* ---- waivers --------------------------------------------------------------------------------*/
+function termPill(x){
+  const t = x.term, n = D.weeks.length;
+  if(t.k === "long") return `<span class="tm long">Long-term</span><span class="tmw">${t.use} of ${n} wks</span>`;
+  if(t.k === "short") return `<span class="tm short">Short-term</span><span class="tmw">${t.use} of ${n} wks</span>`;
+  if(t.k === "fill") return `<span class="tm fill">1-wk fill-in</span><span class="tmw">${t.wk === D.weeks[0] ? "this week" : "wk " + t.wk + ", grab it then"}</span>`;
+  return `<span class="tm none">Bench only</span>`;
+}
 function renderWaivers(){
   const F = D.faab;
   if(!F){ $("wvscroll").innerHTML = `<div class="chip" style="margin:12px">This league doesn't use FAAB</div>`; return; }
@@ -1217,6 +1278,7 @@ function renderWaivers(){
   if(S.wvPos !== "ALL") list = list.filter(x => x.p.pos === S.wvPos);
   if(S.wvQ){ const q = S.wvQ.toLowerCase(); list = list.filter(x => (x.p.n + " " + x.p.tm).toLowerCase().includes(q)); }
   if(!S.wvAll) list = list.filter(x => x.bid > 0 || x.p.xp);
+  if(S.wvTerm) list = list.filter(x => x.term.k === S.wvTerm);
   $("wvcount").textContent = plural(list.length, "free agent");
   $("wvall").textContent = S.wvAll ? "Only ones worth a bid" : "Show every free agent";
   const top = WAIV.length ? Math.max(1, ...WAIV.map(x => x.bid)) : 1;
@@ -1228,7 +1290,9 @@ function renderWaivers(){
     {k:"bid", h:"Bid", t:"What beats the rival who wants him most, never more than he is worth to me", c:true, v:x => x.bid, html:x => `<span class="gr ${lvl(x)}">${x.bid ? "$" + x.bid : "–"}</span>`},
     {k:"cap", h:"Max", t:"The most he is worth to me: my FAAB left times his share", v:x => x.cap, html:x => (x.cap ? "$" + x.cap : "–")},
     {k:"rival", h:"Top rival", t:"The team that wants him most, and about what it would pay", v:x => x.rv, html:x => (x.rival ? `${esc(TEAMS[x.rival].abbrev || TEAMS[x.rival].name)} <span class="dimn">~$${x.rv}</span>${x.outbid ? ` <span class="warn" title="Can outbid what he's worth to me">!</span>` : ""}` : `<span class="dimn">–</span>`)},
-    {k:"users", h:"Rivals", t:"How many other teams would start him", v:x => x.users, html:x => String(x.users)},
+    {k:"term", h:"Helps for", t:"Long-term: useful (+1 or more) in at least 60% of the weeks left. Short-term: 2 or more weeks. Fill-in: one week only, worth a bid only if it's this week", c:true,
+      v:x => ({long:3, short:2, fill:1, none:0})[x.term.k] * 100 + x.term.use, html:x => termPill(x)},
+    {k:"users", h:"Rivals", t:"Other teams he'd be a long-term starter for", v:x => x.users, html:x => String(x.users)},
     {k:"fits", h:"Fits", sep:true, v:x => x.g, html:x => `<span class="fitc">${x.role === "B" ? "Bench" : x.role === "F" ? "My flex" : "Starts"}</span>`, c:true},
   ];
   if(REG.length) cols.push({k:"reg", h:"+/wk", t:"What he adds to my lineup a week, weeks " + wkSpan(REG), v:x => x.d.reg, html:x => gainCell(x.d.reg)});
@@ -1239,6 +1303,7 @@ function renderWaivers(){
   cols.push({k:"drop", h:"Drop", t:"The player whose loss costs my lineup least once he is in (never a starter call or a handcuff)", sep:true, nosort:true,
     html:x => { if(!x.drop || !x.bid) return ""; const dd = x.drop.d.score / denom;
       return `${esc(short(P[x.drop.id]))} <span class="${Math.abs(dd) < 0.05 ? "dimn" : cls(dd)}">${Math.abs(dd) < 0.05 ? "0.0" : sgn(dd)}</span>`; }});
+  { const i = cols.findIndex(c => c.k === "term"); cols.splice(2, 0, cols.splice(i, 1)[0]); }   // how long he helps sits right by the bid
   const sk = S.wvSortK;
   $("wvscroll").innerHTML = gridHtml(cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir);
 }
@@ -1519,6 +1584,7 @@ function searchPackages(){
   ALLPK = []; BESTWILL = {}; SEARCHING = "Searching every team…";
   $("pkn").textContent = ""; if(S.view === "packages" && !S.pkFor) renderPackages();
   if(S.pkFor) FORPK = P[S.pkFor] ? findPackages(S.pkFor) : [];
+  if(S.pkGive.length) GIVEPK = findForGive(S.pkGive.filter(id => P[id] && P[id].t === ME));
   const step = () => {
     if(run !== SEARCH) return;
     const t0 = performance.now();
@@ -1722,32 +1788,59 @@ const open2 = (teamId, g, r) => openBuilder([{from:ME, to:teamId, ids:g}, {from:
    The bid is what it takes to beat the rival who wants him most (their share of THEIR budget,
    plus $1), never more than he is worth to me. If that rival can outbid my ceiling, it says so. */
 const share = g => Math.min(0.7, Math.pow(Math.max(0, g - 0.5) / 10, 1.5));
+/* How long a pickup helps. Every remaining week is scored on its own: the points he adds to the
+   lineup that week, against the lineup without him. A week counts as "useful" at +1 or more.
+     Long-term   useful in at least 60% of the remaining weeks (a real lineup piece)
+     Short-term  useful in 2 or more weeks, but not most of them (injury cover, a soft stretch)
+     Fill-in     useful in one week only (a bye or a single injury)
+   Value follows from that. A long-term pickup is worth his full gain. A short-term one is worth
+   his gain times the share of the 60% he covers. A fill-in is worth nothing today unless his
+   week is the next one: anyone can be picked up the week he's needed, usually for $0-5. */
+const USEFUL = 1, LONG = 0.6;
+function termOf(dw){
+  const n = dw.length, use = dw.filter(x => x >= USEFUL).length;
+  if(!n || !use) return {k:"none", use, persist:0};
+  if(use >= Math.max(3, Math.ceil(LONG * n))) return {k:"long", use, persist:1};
+  if(use >= 2) return {k:"short", use, persist:Math.min(1, use / (LONG * n))};
+  return {k:"fill", use, persist:0, wk:D.weeks[dw.findIndex(x => x >= USEFUL)]};
+}
 function buildWaivers(){
   WAIV = [];
   if(!D.faab) return;
-  const denom = (REG.length + 1.5 * PO.length) || 1, left = D.faab.left || {}, min = D.faab.min || 1;
-  const bare = {};
-  for(const t of D.teams) bare[t.id] = worth(t.players, false, t.id === ME);
+  const W = D.weeks.length, wt = i => (PO.includes(i) ? 1.5 : 1), denom = (REG.length + 1.5 * PO.length) || 1;
+  const left = D.faab.left || {}, min = D.faab.min || 1;
+  // each team's lineup each week without help
+  const base = {};
+  for(const t of D.teams) base[t.id] = D.weeks.map((w, i) => lineup(t.players, i, false, t.id === ME));
   const mine = TEAMS[ME].players;
+  const gainFor = (t, p) => {
+    const ids = t.players.concat([p.id]), m = t.id === ME;
+    const dw = D.weeks.map((w, i) => Math.max(0, lineup(ids, i, false, m) - base[t.id][i]));
+    const raw = dw.reduce((s, x, i) => s + x * wt(i), 0) / denom, term = termOf(dw);
+    // a fill-in only counts if he's needed this coming week, and only for that week
+    const now = term.k === "fill" && term.wk === D.weeks[0] ? dw[0] * wt(0) / denom : 0;
+    return {dw, raw, term, g:term.k === "fill" ? now : raw * term.persist};
+  };
   for(const p of Object.values(P)){
     if(p.t || !SKILL.includes(p.pos) || !(p.base > 0)) continue;
-    const g = {};
-    for(const t of D.teams){
-      const d = delta(bare[t.id], worth(t.players.concat([p.id]), false, t.id === ME));
-      g[t.id] = Math.max(0, d.score / denom);
-    }
-    const dMe = delta(bare[ME], worth(mine.concat([p.id]), false, true));
+    const by = {};
+    for(const t of D.teams) by[t.id] = gainFor(t, p);
+    const me = by[ME], g = me.g;
+    const dMe = {reg:REG.length ? REG.reduce((s, i) => s + me.dw[i], 0) / REG.length : 0, po:PO.length ? PO.reduce((s, i) => s + me.dw[i], 0) / PO.length : 0};
     let rival = null, rv = 0, users = 0;
     for(const t of D.teams){
       if(t.id === ME) continue;
-      if(g[t.id] >= 0.5) users++;
-      const w = (left[t.id] || 0) * share(g[t.id]);
+      if(by[t.id].term.k === "long") users++;
+      const w = (left[t.id] || 0) * share(by[t.id].g);
       if(w > rv){ rv = w; rival = t.id; }
     }
-    const cap = Math.floor((left[ME] || 0) * share(g[ME]));
+    const cap = Math.floor((left[ME] || 0) * share(g));
     const need = Math.max(min, Math.round(rv) + 1);
-    const bid = g[ME] < 0.5 ? 0 : Math.max(min, Math.min(cap, need));
-    WAIV.push({p, g:g[ME], d:dMe, role:rolesOf(mine.concat([p.id]), true)[p.id], cap, bid, rival, rv:Math.round(rv), users, outbid:!!rival && need > cap && g[ME] >= 0.5});
+    let bid = g < 0.5 ? 0 : Math.max(min, Math.min(cap, need));
+    // a fill-in for this week: a dollar or two, never a real bid
+    if(me.term.k === "fill" && me.term.wk === D.weeks[0] && me.dw[0] >= USEFUL) bid = Math.max(min, Math.min(3, cap || min));
+    WAIV.push({p, g, raw:me.raw, term:me.term, dw:me.dw, d:dMe, role:rolesOf(mine.concat([p.id]), true)[p.id], cap, bid, rival, rv:Math.round(rv), users,
+      outbid:!!rival && need > cap && g >= 0.5 && me.term.k !== "fill"});
   }
   // who to cut for the best few: the player whose loss costs my lineup least once he is in
   WAIV.sort((a,b) => b.bid - a.bid || b.g - a.g);
@@ -1838,9 +1931,9 @@ function boot(d){
   onSort($("tgscroll"), () => S.tgSort[S.tgMode] || {k:"grade", dir:-1}, v => (S.tgSort[S.tgMode] = v), renderTargets);
   pickSeg("tgget", "g", v => { S.tgGet = !!v; renderTargets(); });
   // tap a target: every package that would get him, whatever the answer
-  const dealsFor = id => { S.pkFor = id; S.pkQ = ""; $("pkQ").value = ""; S.pkWill = ""; S.pkTeam = ""; S.pkPos = ""; S.pkKind = ""; S.pkLimit = 40;
+  const dealsFor = id => { S.pkGive = []; GIVEPK = []; S.pkFor = id; S.pkQ = ""; $("pkQ").value = ""; S.pkWill = ""; S.pkTeam = ""; S.pkPos = ""; S.pkKind = ""; S.pkLimit = 40;
     FORPK = findPackages(id); show("packages"); renderPackages(); $("v-packages").scrollTop = 0; };
-  const shop = id => { S.pkFor = null; S.pkQ = P[id].n; $("pkQ").value = P[id].n; S.pkWill = ""; S.pkTeam = ""; S.pkLimit = 40; show("packages"); renderPackages(); };
+  const shop = id => window.shopMine(id);
   $("tgscroll").onclick = e => {
     if(e.target.closest("th")) return;
     const r = e.target.closest("tr.click"); if(!r) return;
@@ -1875,15 +1968,28 @@ function boot(d){
   $("ovclr").onclick = () => { OV = {}; saveOV(); renderAll(); };
   // packages
   const pkf = (k, v) => { S[k] = v; S.pkLimit = 40; renderPackages(); };
-  $("pkFor").onclick = () => { S.pkFor = null; S.pkWill = "maybe"; S.pkLimit = 40; renderPackages(); };
+  $("pkFor").onclick = () => { S.pkFor = null; S.pkGive = []; S.pkWill = "maybe"; S.pkLimit = 40; renderPackages(); };
   $("pkside").addEventListener("click", e => { const o = e.target.closest(".opt[data-f]"); if(o) pkf(o.dataset.f, o.dataset.v); });
+  // picking my own players to move: search again for exactly that group
+  const setGive = ids => {
+    S.pkGive = ids; S.pkFor = null; S.pkLimit = 40;
+    if(ids.length){ S.pkWill = ""; GIVEPK = findForGive(ids); } else { GIVEPK = []; S.pkWill = "maybe"; }
+    renderPackages();
+  };
+  $("pkGiveO").addEventListener("click", e => {
+    const b = e.target.closest("[data-give]"); if(!b) return;
+    const id = b.dataset.give;
+    setGive(S.pkGive.includes(id) ? S.pkGive.filter(x => x !== id) : S.pkGive.concat([id]));
+  });
+  $("pkGiveClr").onclick = e => { e.stopPropagation(); setGive([]); };
+  window.shopMine = id => { show("packages"); setGive([id]); $("v-packages").scrollTop = 0; };
   $("pkSort").onchange = e => pkf("pkSort", e.target.value);
   $("pkQ").oninput = e => pkf("pkQ", e.target.value.trim());
   $("pkFilt").onclick = () => $("pkwrap").classList.toggle("filt");
   $("pkl").onclick = e => {
     if(e.target.closest("#pkmore")){ S.pkLimit += 40; renderPackages(); return; }
     const c = e.target.closest(".pkc"); if(!c) return;
-    const pk = (S.pkFor && P[S.pkFor] ? FORPK : ALLPK)[+c.dataset.i];
+    const pk = curPK()[+c.dataset.i];
     openBuilder(pk.legs);
   };
   // builder
@@ -1907,6 +2013,7 @@ function boot(d){
   // waivers
   pickSeg("wvpos", "p", v => { S.wvPos = v; S.wvLimit = 30; renderWaivers(); });
   pickSeg("wvcols", "c", v => { S.wvCols = v; renderWaivers(); });
+  pickSeg("wvterm", "t", v => { S.wvTerm = v; renderWaivers(); });
   onSort($("wvscroll"), () => S.wvSortK, v => (S.wvSortK = v), renderWaivers);
   $("wvq").oninput = e => { S.wvQ = e.target.value.trim(); renderWaivers(); };
   $("wvall").onclick = () => { S.wvAll = !S.wvAll; renderWaivers(); };
