@@ -384,7 +384,8 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       }
       teams.push({
         id: t.id, name: ti.name || ((ti.location || "") + " " + (ti.nickname || "")).trim() || "Team " + t.id,
-        abbrev: ti.abbrev || "", w: ov.wins || 0, l: ov.losses || 0, pf: r1(ov.pointsFor), players: ids,
+        abbrev: ti.abbrev || "", logo: /^https:\/\//.test(ti.logo || "") ? ti.logo : null,
+        w: ov.wins || 0, l: ov.losses || 0, pf: r1(ov.pointsFor), players: ids,
       });
     }
     if (!teams.some(t => t.id === MY_TEAM)) throw new Error("team " + MY_TEAM + " not in league payload");
