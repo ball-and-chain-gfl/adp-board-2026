@@ -129,6 +129,30 @@ td:has(> .pt){text-align:left}
 .pt.down{background:var(--bad2);color:var(--bad)}
 .pt.sm{font-size:9.5px;padding:1px 5px}
 .hint2{font-size:12.5px;color:var(--dim);margin:0 0 10px;flex:none}
+details.hab{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-bottom:12px;flex:none}
+details.hab summary{cursor:pointer;padding:10px 13px;font-weight:800;font-size:14px;list-style:none;display:flex;gap:4px 10px;align-items:baseline;flex-wrap:wrap}
+details.hab summary::-webkit-details-marker{display:none}
+details.hab summary span{font-weight:600;font-size:12.5px;color:var(--dim)}
+details.hab summary span b{color:var(--good)}
+details.hab summary::after{content:"Show";margin-left:auto;font-size:12px;font-weight:700;color:var(--blue)}
+details.hab[open] summary::after{content:"Hide"}
+details.hab .scroll{border:0;border-top:1px solid var(--line);border-radius:0 0 8px 8px;max-height:none}
+details.hab td{vertical-align:top;line-height:1.5}
+/* phone rows: an arrow opens the rest underneath */
+.xb{width:28px;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--blue);font-size:13px;cursor:pointer;padding:0;line-height:1}
+.xb.on{background:var(--blue);color:#fff;border-color:var(--blue);transform:rotate(180deg)}
+.xc{width:36px;padding-left:0!important;padding-right:6px!important}
+tr.dt > td{background:var(--panel2)!important;padding:10px!important;white-space:normal;text-align:left}
+.dg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.dc{background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:5px 7px;min-width:0;text-align:left}
+.dc.w{grid-column:1/-1}
+.dc > span{display:block;font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.dc > div{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere}
+.dc.ctl > div{display:flex;flex-wrap:wrap;gap:6px}
+.dc.ctl select{max-width:none;flex:1 1 140px}
+.dc .olw{max-width:none}
+.wks{display:flex;flex-wrap:wrap;gap:4px}
+.lr em.pos{font-style:normal}
 .top1 .rp{font-size:12px;color:var(--dim)}
 .top1 .rp b{color:var(--txt)}
 .olw{display:block;font-size:11px;color:var(--dim);margin-top:3px;max-width:190px;white-space:normal;line-height:1.25}
@@ -367,24 +391,35 @@ td .chip{font-size:11px;padding:1px 7px}
   .view{padding:10px 10px 14px}
   .tools{gap:6px;margin:10px 0 8px}
   .tools select{flex:1 1 40%;min-width:0}
-  .tools .seg{max-width:100%;overflow-x:auto}
-  .tools .seg button{padding:8px 12px}
+  .tools .seg{display:flex;width:100%}
+  .tools .seg button{flex:1 1 0;padding:8px 4px;font-size:12.5px;white-space:normal;line-height:1.15;min-width:0}
+  #tgcols,#wvcols,#colsf{display:none}
   input[type=search]{flex:1 1 100%;width:auto}
   .count{flex:1 1 100%;margin:0;text-align:right}
-  .market{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-  .market::-webkit-scrollbar{display:none}
-  .tiles{display:flex;overflow-x:auto;gap:8px;padding-bottom:2px;scrollbar-width:none}
-  .tiles::-webkit-scrollbar{display:none}
-  .tile{flex:0 0 178px}
-  .tops{display:flex;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
-  .tops::-webkit-scrollbar{display:none}
-  .top1{flex:0 0 240px}
-  .scroll{max-height:70vh}
-  th,td{padding:6px 8px}
-  .ply{gap:8px}
-  .ply .nm{max-width:132px}
+  /* nothing scrolls sideways and nothing scrolls inside something else: the page is the only scroller */
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tile{padding:8px 9px 9px}
+  .tile .v{font-size:20px}
+  .tile .s2{display:none}
+  .tile .k{letter-spacing:.3px;font-size:10.5px;white-space:normal}
+  .tops{grid-template-columns:minmax(0,1fr);gap:8px}
+  .top1{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:9px 10px}
+  .top1 .hd{grid-column:1/-1}
+  .top1 .hd .av{width:38px;height:38px;flex-basis:38px}
+  .top1 .nums b{font-size:16px}
+  .top1 .rp{grid-column:1/-1;order:3}
+  .top1 .ft{align-self:center}
+  .top1 .ft span:last-child{display:none}
+  .scroll{max-height:none;overflow:visible}
+  .scroll table{width:100%;min-width:0}
+  th,td{padding:7px 6px}
+  th.l,td.l{position:static;white-space:normal}
+  .ply{gap:8px;align-items:flex-start}
+  .ply .nm{max-width:none;white-space:normal;line-height:1.2;overflow-wrap:anywhere}
   .av{width:28px;height:28px;flex-basis:28px}
-  .olw{max-width:150px}
+  .olw{max-width:104px}
+  td:has(> .pt){white-space:normal}
+  details.hab td{font-size:13px}
   select.st,select.rl{padding:6px 6px;font-size:13px;max-width:130px}
   /* packages */
   .pkwrap{display:flex;flex-direction:column;gap:10px;overflow:visible}
@@ -526,7 +561,7 @@ td .chip{font-size:11px;padding:1px 7px}
 </section>
 
 <section class="view" id="v-waivers" hidden>
-  <div class="market" id="faab"></div>
+  <details class="hab" id="habits"></details>
   <div class="tools">
     <div class="seg" id="wvpos">
       <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button>
@@ -543,7 +578,7 @@ td .chip{font-size:11px;padding:1px 7px}
 <script>
 let D, P, ME, TEAMS = {}, REG = [], PO = [], ALLW = [], COLS = {}, PCT = {}, ALLPK = [], FORPK = [], pkTimer, SEARCH = 0, SEARCHING = "";
 // league view, rebuilt whenever availability changes
-let TGT = {}, BESTWILL = {}, GIVEPK = [], BAR = {};
+let TGT = {}, BESTWILL = {}, GIVEPK = [], BAR = {}, HAB = {};
 let REPL = {}, START = {}, XSTART = {}, RANK = {}, BASE = {}, DEPTH = {}, ROLE0 = {}, W0 = {}, BUYS = [], SELLS = [], DEPTHS = [], WAIV = [], XPBY = {};
 const SKILL = ["QB","RB","WR","TE"], ORDER = {QB:0,RB:1,WR:2,TE:3,K:4,DST:5}, VIEWS = ["targets","roster","packages","builder","waivers"];
 // who counts as startable, by rank at the position across the whole player pool
@@ -977,10 +1012,20 @@ function sigChips(p){
    Targets, Waivers and Packages are all one row per item. A column is
    {k, h, t (header tip), v (sort value), html (cell), c (centre), l (sticky player column), sep, nosort}.
    Clicking a sortable header sorts by it; clicking again flips the order. */
-function gridHtml(cols, rows, sk, dir, rowAttr){
-  const th = c => `<th class="${c.l ? "l" : ""}${c.nosort || !c.v ? "" : " sort"}${sk === c.k ? " on" : ""}${c.sep ? " sep" : ""}${c.c ? " c" : ""}${c.po ? " po" : ""}" data-k="${c.k}"${c.t ? ` title="${esc(c.t)}"` : ""}>${c.h}${sk === c.k ? `<span class="ar">${dir < 0 ? "▾" : "▴"}</span>` : ""}</th>`;
-  const body = rows.map(r => `<tr${rowAttr ? rowAttr(r) : ""}>${cols.map(c => `<td class="${c.l ? "l" : c.c ? "c" : "num"}${c.sep ? " sep" : ""}"${c.style ? ` style="${c.style(r)}"` : ""}>${c.html(r)}</td>`).join("")}</tr>`).join("");
-  return `<table><thead><tr>${cols.map(th).join("")}</tr></thead><tbody>${body}</tbody></table>`;
+const WIDE = new Set(["read", "drop", "rival", "top", "fits", "deal"]);
+// the tap-open panel under a phone row: every column that didn't fit, as labelled values
+const detailHtml = (cols, r) => `<div class="dg">${cols.map(c => { const v = c.html(r); const st = c.style ? c.style(r) : "";
+  return v === "" || v == null ? "" : `<div class="dc${WIDE.has(c.k) ? " w" : ""}"${st ? ` style="${st}"` : ""}><span>${c.h}</span><div>${v}</div></div>`; }).join("")}</div>`;
+const XB = `<td class="c xc"><button class="xb" aria-label="More">▾</button></td>`;
+function gridHtml(cols, rows, sk, dir, rowAttr, mainKeys){
+  const phone = MQ.matches && !!mainKeys;
+  const main = phone ? cols.filter(c => c.l || mainKeys.includes(c.k)) : cols;
+  const rest = phone ? cols.filter(c => !main.includes(c) && c.k !== "act") : [];
+  const th = c => `<th class="${c.l ? "l" : ""}${c.nosort || !c.v ? "" : " sort"}${sk === c.k ? " on" : ""}${c.sep && !phone ? " sep" : ""}${c.c ? " c" : ""}${c.po ? " po" : ""}" data-k="${c.k}"${c.t ? ` title="${esc(c.t)}"` : ""}>${c.h}${sk === c.k ? `<span class="ar">${dir < 0 ? "▾" : "▴"}</span>` : ""}</th>`;
+  const td = (c, r) => `<td class="${c.l ? "l" : c.c ? "c" : "num"}${c.sep && !phone ? " sep" : ""}"${c.style ? ` style="${c.style(r)}"` : ""}>${c.html(r)}</td>`;
+  const body = rows.map(r => `<tr${rowAttr ? rowAttr(r) : ""}>${main.map(c => td(c, r)).join("")}${rest.length ? XB : ""}</tr>` +
+    (rest.length ? `<tr class="dt" hidden><td colspan="${main.length + 1}">${detailHtml(rest, r)}</td></tr>` : "")).join("");
+  return `<table><thead><tr>${main.map(th).join("")}${rest.length ? '<th class="xc"></th>' : ""}</tr></thead><tbody>${body}</tbody></table>`;
 }
 function sortRows(rows, cols, sk, dir){
   const c = cols.find(x => x.k === sk);
@@ -1085,7 +1130,7 @@ function ptag(p, k, mini){
   const c = v >= 2 ? "up2" : v >= PT ? "up1" : v <= -PT ? "down" : "even";
   const lab = c === "even" ? "≈ Even" : (v > 0 ? "▲ " : "▼ ") + sgn(v);
   if(mini) return c === "even" ? "" : `<span class="pt sm ${c}">${lab}${k === "po" ? " PO" : ""}</span>`;
-  return `<span class="pt ${c}">${lab}</span><span class="olw">${p.pos}${r}${o ? ` · ${v <= -PT ? "behind" : v < PT ? "level with" : p[a] > o[a] ? "over" : "sharing weeks with"} ${esc(short(o))}` : ""}</span>`;
+  return `<span class="pt ${c}">${lab}</span><span class="olw">${p.pos}${r}${o ? ` · ${v <= -PT ? "behind" : v < PT ? "level with" : p.base > o.base ? "over" : "sharing weeks with"} ${esc(short(o))}` : ""}</span>`;
 }
 const lensUp = p => !!p.lens && (p.lens.reg >= PT || p.lens.po >= PT);
 
@@ -1144,7 +1189,7 @@ function renderTops(){
       <div class="hd">${img(p)}<div class="who"><div class="nm">${esc(p.n)}</div>
         <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
       <div class="nums">${REG.length ? `<div><b class="${cls(x.d.reg)}">${sgn(x.d.reg)}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(x.d.po)}">${sgn(x.d.po)}</b><span>playoffs</span></div>` : ""}</div>
-      ${x.over ? (p.ros > x.over.ros ? `<div class="rp">replaces <b>${esc(short(x.over))}</b> ${f1(x.over.ros)} → <b>${f1(p.ros)}</b></div>` : `<div class="rp">shares weeks with <b>${esc(short(x.over))}</b></div>`) : ""}
+      ${x.over ? (p.base > x.over.base ? `<div class="rp">replaces <b>${esc(short(x.over))}</b> ${f1(x.over.base)} → <b>${f1(p.base)}</b> a game</div>` : `<div class="rp">shares weeks with <b>${esc(short(x.over))}</b></div>`) : ""}
       <div class="ft">${w ? `<span class="will ${w}">${WORD[w]}</span>` : `<span class="dimn">checking deals…</span>`}<span>See packages →</span></div>
     </button>`;
   }).join("");
@@ -1170,8 +1215,8 @@ function renderTargets(){
   const cols = [{k:"name", h:"Player", l:true, v:x => x.p.n, html:x => plyX(x.p, x.p.t && x.p.t !== ME ? ownTag(x.p) : "")}];
   if(mode === "buy") cols.push(
     {k:"grade", h:"Grade", t:"Half what he adds to my lineup (playoffs count 1.5x), a quarter his upside, the rest workload and playoff schedule", c:true, v:x => x.grade, html:x => gradeCell(x.grade)},
-    {k:"fits", h:"Replaces", t:"The starter in my lineup he would take the place of, and that player's projection", v:x => x.fit,
-      html:x => (x.over ? `<span class="fitc">${x.p.ros > x.over.ros ? "" : "shares w/ "}${esc(short(x.over))}</span> <span class="dimn">${f1(x.over.ros)}</span>` : `<span class="fitc">${fits(x)}</span>`)});
+    {k:"fits", h:"Replaces", t:"The starter in my lineup he would take the place of, and that player's projection a game", v:x => x.fit,
+      html:x => (x.over ? `<span class="fitc">${x.p.base > x.over.base ? "" : "shares w/ "}${esc(short(x.over))}</span> <span class="dimn">${f1(x.over.base)}</span>` : `<span class="fitc">${fits(x)}</span>`)});
   if(mode === "depth") cols.push({k:"fits", h:"Fits", v:x => x.fit, html:x => `<span class="fitc">${x.role !== "B" ? "Starts for me" : "Bench depth"}</span>`, c:true});
   if(mode === "sell") cols.push(
     {k:"grade", h:"Sell", t:"How far he is running ahead of his workload", c:true, v:x => x.grade, html:x => gradeCell(x.grade, "s")},
@@ -1184,13 +1229,14 @@ function renderTargets(){
     v:x => (BESTWILL[x.p.id] ? 3 - WORST[BESTWILL[x.p.id]] : 0), html:x => (BESTWILL[x.p.id] ? `<span class="will ${BESTWILL[x.p.id]}">${WORD[BESTWILL[x.p.id]]}</span>` : SEARCHING ? `<span class="dimn">…</span>` : `<span class="dimn">none</span>`)});
   if(REG.length) cols.push({k:"ros", h:"ROS", t:COLS.ros.t, sep:true, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
   if(PO.length) cols.push({k:"po", h:"PO", t:COLS.po.t, po:true, v:x => x.p.po, html:x => `<b>${f1(x.p.po)}</b>`});
-  if(S.tgCols === "stats") cols.push(...statCols(S.tgPos, P_));
+  if(S.tgCols === "stats" || MQ.matches) cols.push(...statCols(S.tgPos, P_));
   cols.push({k:"read", h:"Read", t:"What his workload, touchdown luck, role and schedule say", sep:true, nosort:true, html:x => readCell(x.p)});
   if(mode !== "depth") cols.push({k:"act", h:"", nosort:true, c:true, html:() => `<span class="go-r">›</span>`});
   const sk = S.tgSort[mode] || {k:mode === "sell" ? "grade" : "grade", dir:-1};
   if(!cols.some(c => c.k === sk.k)) sk.k = "grade";
   $("tgscroll").innerHTML = gridHtml(cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir,
-    mode === "depth" ? null : x => ` class="click" data-id="${x.p.id}" data-a="${mode === "sell" ? "shop" : "deal"}"`);
+    mode === "depth" ? null : x => ` class="click" data-id="${x.p.id}" data-a="${mode === "sell" ? "shop" : "deal"}"`,
+    mode === "sell" ? ["grade", "val"] : mode === "buy" ? ["grade", "reg", "pog"] : ["reg", "pog"]);
 }
 
 /* ---- packages: filters on the left, one card per deal on the right ---------------------------*/
@@ -1309,9 +1355,7 @@ function renderWaivers(){
   const F = D.faab;
   if(!F){ $("wvscroll").innerHTML = `<div class="chip" style="margin:12px">This league doesn't use FAAB</div>`; return; }
   const left = F.left || {};
-  const rivals = D.teams.filter(t => t.id !== ME).sort((a,b) => (left[b.id] || 0) - (left[a.id] || 0));
-  $("faab").innerHTML = `<span class="mk g">My FAAB $${left[ME] || 0} of $${F.budget}</span>` +
-    rivals.map(t => `<span class="mk" title="${esc(t.name)}">${esc(t.abbrev || t.name)} $${left[t.id] || 0}</span>`).join("");
+  renderHabits();
   let list = WAIV.slice();
   if(S.wvPos !== "ALL") list = list.filter(x => x.p.pos === S.wvPos);
   if(S.wvQ){ const q = S.wvQ.toLowerCase(); list = list.filter(x => (x.p.n + " " + x.p.tm).toLowerCase().includes(q)); }
@@ -1328,7 +1372,7 @@ function renderWaivers(){
     {k:"name", h:"Player", l:true, v:x => x.p.n, html:x => plyX(x.p, x.p.xp ? `<span class="xpb" title="Named in ${esc(x.p.xp.join(" and "))}'s waiver show this week; projected on his recent role">EXPERT</span>` : "")},
     {k:"bid", h:"Bid", t:"What beats the rival who wants him most, never more than he is worth to me", c:true, v:x => x.bid, html:x => `<span class="gr ${lvl(x)}">${x.bid ? "$" + x.bid : "–"}</span>`},
     {k:"cap", h:"Max", t:"The most he is worth to me: my FAAB left times his share", v:x => x.cap, html:x => (x.cap ? "$" + x.cap : "–")},
-    {k:"rival", h:"Top rival", t:"The team that wants him most, and about what it would pay", v:x => x.rv, html:x => (x.rival ? `${esc(TEAMS[x.rival].abbrev || TEAMS[x.rival].name)} <span class="dimn">~$${x.rv}</span>${x.outbid ? ` <span class="warn" title="Can outbid what he's worth to me">!</span>` : ""}` : `<span class="dimn">–</span>`)},
+    {k:"rival", h:"Top rival", t:"The team that wants him most, and about what it would pay", v:x => x.rv, html:x => (x.rival ? `${esc(TEAMS[x.rival].abbrev || TEAMS[x.rival].name)} <span class="dimn">~$${x.rv}</span>${(HAB[x.rival] || {}).style === "big" ? ` <span class="chip r" title="Bids well above the league when it wants a player">big spender</span>` : (HAB[x.rival] || {}).style === "thrifty" ? ` <span class="chip g" title="Bids below the league">thrifty</span>` : ""}${x.outbid ? ` <span class="warn" title="Can outbid what he's worth to me">!</span>` : ""}` : `<span class="dimn">–</span>`)},
     {k:"term", h:"Helps for", t:"Long-term: useful (+1 or more) in at least 60% of the weeks left. Short-term: 2 or more weeks. Fill-in: one week only, worth a bid only if it's this week", c:true,
       v:x => ({long:3, short:2, fill:1, none:0})[x.term.k] * 100 + x.term.use, html:x => termPill(x)},
     {k:"users", h:"Rivals", t:"Other teams he'd be a long-term starter for", v:x => x.users, html:x => String(x.users)},
@@ -1338,13 +1382,13 @@ function renderWaivers(){
   if(PO.length) cols.push({k:"pog", h:"+PO", t:"What he adds a week in the playoffs", po:true, v:x => x.d.po, html:x => gainCell(x.d.po)});
   if(REG.length) cols.push({k:"ros", h:"ROS", t:COLS.ros.t, sep:true, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
   if(PO.length) cols.push({k:"po", h:"PO", t:COLS.po.t, po:true, v:x => x.p.po, html:x => `<b>${f1(x.p.po)}</b>`});
-  if(S.wvCols === "stats") cols.push(...statCols(S.wvPos, P_));
+  if(S.wvCols === "stats" || MQ.matches) cols.push(...statCols(S.wvPos, P_));
   cols.push({k:"drop", h:"Drop", t:"The player whose loss costs my lineup least once he is in (never a starter call or a handcuff)", sep:true, nosort:true,
     html:x => { if(!x.drop || !x.bid) return ""; const dd = x.drop.d.score / denom;
       return `${esc(short(P[x.drop.id]))} <span class="${Math.abs(dd) < 0.05 ? "dimn" : cls(dd)}">${Math.abs(dd) < 0.05 ? "0.0" : sgn(dd)}</span>`; }});
   { const i = cols.findIndex(c => c.k === "term"); cols.splice(2, 0, cols.splice(i, 1)[0]); }   // how long he helps sits right by the bid
   const sk = S.wvSortK;
-  $("wvscroll").innerHTML = gridHtml(cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir);
+  $("wvscroll").innerHTML = gridHtml(cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir, null, ["bid", "term"]);
 }
 
 
@@ -1454,9 +1498,26 @@ function renderTable(list){
     }).join("");
     return `<tr class="${!isSingle() && p.t === ME ? "me" : ""}${lensUp(p) ? " o-up" : ""}"><td class="l">${plyX(p, isSingle() ? "" : ownTag(p))}</td>${tds}</tr>`;
   };
+  const phone = MQ.matches;
+  const detail = p => {
+    const cx = k => { const c = COLS[k]; if(!relevant(p, k)) return ""; const t = cellText(c, p);
+      return `<div class="dc"${t != null && c.tint ? ` style="${tint(p, k)}"` : ""}><span>${c.h}</span><div class="${t != null && c.cl ? c.cl(c.v(p)) : ""}">${t == null ? "–" : t}</div></div>`; };
+    const read = sigChips(p).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join(" ");
+    return `<div class="dg"><div class="dc w ctl"><span>Status${p.t === ME && SKILL.includes(p.pos) ? " and lineup call" : ""}</span><div>${stSel(p)}${roleSel(p)}</div></div>
+      ${["ppg", ...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : []), ...(SKILL.includes(p.pos) ? statKeys(p.pos) : [])].map(cx).join("")}
+      <div class="dc w"><span>Schedule</span><div class="wks">${D.weeks.map((w, i) => wkChip(p, i, true)).join("")}</div></div>
+      ${read ? `<div class="dc w"><span>Read</span><div>${read}</div></div>` : ""}</div>`;
+  };
   const html = GROUPS.map(([lab, poss]) => {
     const ps = list.filter(p => poss.includes(p.pos));
     if(!ps.length) return "";
+    if(phone){
+      const skill = SKILL.includes(poss[0]);
+      const keys = skill ? [...(REG.length ? ["oreg"] : []), ...(PO.length ? ["opo"] : [])] : ["ppg", ...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : [])];
+      return `<div class="ptab"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
+        <div class="scroll"><table><thead><tr>${th(COLS.name, "l")}${keys.map(k => th(COLS[k])).join("")}<th class="xc"></th></tr></thead><tbody>${ps.map(p =>
+          row(p, keys).replace(/<\/tr>$/, XB + "</tr>") + `<tr class="dt" hidden><td colspan="${keys.length + 2}">${detail(p)}</td></tr>`).join("")}</tbody></table></div></div>`;
+    }
     const keys = colKeys(poss.length === 1 ? poss[0] : "K");
     return `<div class="ptab"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
       <div class="scroll"><table><thead><tr>${th(COLS.name, "l")}${keys.map(k => th(COLS[k])).join("")}</tr></thead><tbody>${ps.map(p => row(p, keys)).join("")}</tbody></table></div></div>`;
@@ -1764,17 +1825,24 @@ function renderDeal(){
     if(!pvTeams.includes(S.pvSide === "me" ? ME : +S.pvSide)) S.pvSide = "me";
     const pid = S.pvSide === "me" ? ME : +S.pvSide, pvMine = pid === ME;
     const L0 = lineupOf(TEAMS[pid].players, pvMine), L1 = lineupOf(over[pid], pvMine);
-    const cellP = p => (p ? `${esc(short(p))}<i>${f1(p.adj)}</i>` : "empty");
-    const sum = {}, was = new Set(L0.rows.filter(r => r.p).map(r => r.p.id)), now = new Set(L1.rows.filter(r => r.p).map(r => r.p.id));
-    const outs = L0.rows.filter(r => r.p && !now.has(r.p.id));
-    L1.rows.forEach((r, i) => { const b = L0.rows[i]; sum[r.slot] = (sum[r.slot] || 0) + (r.p ? r.p.adj : 0) - (b.p ? b.p.adj : 0); });
-    const rows = L1.rows.map(r => {
-      const chg = !r.p || !was.has(r.p.id);
-      let b = {p:r.p};
-      if(chg){ const k = outs.findIndex(o => o.slot === r.slot); b = outs.splice(k >= 0 ? k : 0, 1)[0] || {p:null}; }
-      const dv = (r.p ? r.p.adj : 0) - (b.p ? b.p.adj : 0);
-      return `<div class="lr ${!chg ? "same" : dv >= 0 ? "up" : "dn"}"><span class="sl">${r.slot}</span>${chg ? `<span class="was">${cellP(b.p)}</span>` : ""}<span class="now"${chg ? "" : ' style="grid-column:span 2"'}>${cellP(r.p)}</span><b class="${cls(dv)}">${Math.abs(dv) > 0.05 ? sgn(dv) : ""}</b></div>`;
-    }).join("");
+    /* Slot by slot. Inside each slot group (QB, RB, WR, TE, FLEX) anyone in it before and after
+       stays put; whoever came in is paired with whoever went out of THAT group. The two counts
+       always match, so a receiver can only ever appear in a WR or FLEX row. */
+    const cellP = (p, slot) => (p ? `${slot === "FLEX" ? `<em class="pos ${p.pos}">${p.pos}</em> ` : ""}${esc(short(p))}<i>${f1(p.adj)}</i>` : "empty");
+    const grp = L => { const g = {}; for(const r of L.rows) (g[r.slot] = g[r.slot] || []).push(r.p); return g; };
+    const G0 = grp(L0), G1 = grp(L1), sum = {};
+    let rows = "";
+    for(const slot of Object.keys(G1)){
+      const a0 = G0[slot] || [], a1 = G1[slot], in0 = new Set(a0.filter(Boolean).map(p => p.id)), in1 = new Set(a1.filter(Boolean).map(p => p.id));
+      const gone = a0.filter(p => !p || !in1.has(p.id));
+      sum[slot] = a1.reduce((s, p) => s + (p ? p.adj : 0), 0) - a0.reduce((s, p) => s + (p ? p.adj : 0), 0);
+      for(const p of a1){
+        const chg = !p || !in0.has(p.id), b = chg ? gone.shift() || null : p;
+        if(!p && !b){ rows += `<div class="lr same"><span class="sl">${slot}</span><span class="now" style="grid-column:span 2">empty</span><b></b></div>`; continue; }
+        const dv = (p ? p.adj : 0) - (b ? b.adj : 0);
+        rows += `<div class="lr ${!chg ? "same" : dv >= 0 ? "up" : "dn"}"><span class="sl">${slot}</span>${chg ? `<span class="was">${cellP(b, slot)}</span>` : ""}<span class="now"${chg ? "" : ' style="grid-column:span 2"'}>${cellP(p, slot)}</span><b class="${cls(dv)}">${Math.abs(dv) > 0.05 ? sgn(dv) : ""}</b></div>`;
+      }
+    }
     const diff = ["QB","RB","WR","TE","FLEX"].map(k => {
       const a = k === "FLEX" ? null : BASE[pid][k], b = k === "FLEX" ? null : after[pid][k], dv = sum[k] || 0;
       return `<span class="rk ${dv > 0.05 ? "up" : dv < -0.05 ? "dn" : ""}">${k}${a != null ? ` ${ord(a)}${a !== b ? `<i>→</i>${ord(b)}` : ""}` : ""}${Math.abs(dv) > 0.05 ? ` <span class="${cls(dv)}">${sgn(dv)}</span>` : ""}</span>`;
@@ -1879,7 +1947,60 @@ function termOf(dw){
   if(use >= 2) return {k:"short", use, persist:Math.min(1, use / (LONG * n))};
   return {k:"fill", use, persist:0, wk:D.weeks[dw.findIndex(x => x >= USEFUL)]};
 }
+/* How each team has bid this season, from every waiver claim ESPN recorded - the ones that won
+   and the ones that lost to a higher bid (a losing bid still shows what they'd pay).
+   Each bid is read as a share of the budget the team had at that moment, so $200 from a full
+   $1,000 and $60 from the last $300 are the same appetite.
+     rate    the average of a team's three biggest shares: how hard it goes when it wants someone
+     f       that rate against the league's median, held between 0.6 and 1.6. A team at 1.4
+             pays about 40% more for the same player than the model's price; one at 0.7, less
+   The price is still a share of what the team has LEFT, so a big spender with little left can't
+   repeat it - the habit scales the bid, the wallet caps it.
+   (Budget-at-the-time ignores FAAB moved in trades, which ESPN doesn't date; shares cap at 1.) */
+function buildHabits(){
+  HAB = {};
+  const F = D.faab;
+  if(!F) return;
+  const rem = {}, bids = {};
+  for(const t of D.teams){ rem[t.id] = F.budget; bids[t.id] = []; }
+  for(const b of F.hist || []){
+    if(!(b.t in rem)) continue;
+    bids[b.t].push(Object.assign({s:Math.min(1, b.a / Math.max(1, rem[b.t]))}, b));
+    if(b.won) rem[b.t] = Math.max(0, rem[b.t] - b.a);
+  }
+  const rate = {};
+  for(const t of D.teams){ const s = bids[t.id].map(x => x.s).sort((a,b) => b - a).slice(0, 3); rate[t.id] = s.length ? s.reduce((a,b) => a + b, 0) / s.length : null; }
+  const known = Object.values(rate).filter(x => x != null).sort((a,b) => a - b);
+  const med = known.length ? (known[(known.length - 1) >> 1] + known[known.length >> 1]) / 2 : 0;
+  for(const t of D.teams){
+    const b = bids[t.id], amts = b.map(x => x.a).sort((x,y) => x - y), won = b.filter(x => x.won);
+    const f = rate[t.id] == null || !med ? 1 : Math.max(0.6, Math.min(1.6, rate[t.id] / med));
+    HAB[t.id] = {f, rate:rate[t.id], n:b.length, won:won.length, lost:b.length - won.length,
+      typ:amts.length ? amts[amts.length >> 1] : null, low:amts.length ? amts.filter(a => a <= 2 * (F.min || 1)).length / amts.length : 0,
+      big:b.slice().sort((x,y) => y.a - x.a)[0] || null, top:b.slice().sort((x,y) => y.a - x.a).slice(0, 3),
+      style:f >= 1.25 ? "big" : f <= 0.8 ? "thrifty" : "avg"};
+  }
+}
+const STYLE = {big:["Big spender", "r"], avg:["Average", ""], thrifty:["Thrifty", "g"]};
+function renderHabits(){
+  const F = D.faab, left = F.left || {};
+  const rows = D.teams.slice().sort((a,b) => (b.id === ME) - (a.id === ME) || (left[b.id] || 0) - (left[a.id] || 0)).map(t => ({t, h:HAB[t.id] || {f:1, n:0, won:0, lost:0, top:[]}}));
+  const bidTxt = b => `$${b.a}${b.n ? " " + esc(b.n) : ""} <span class="dimn">wk ${b.w}${b.won ? "" : ", lost"}</span>`;
+  const cols = [
+    {k:"name", h:"Team", l:true, html:({t}) => `<div class="ply">${tlogo(t.id)}<div class="who"><div class="nm">${esc(t.id === ME ? "Me" : t.name)}</div></div></div>`},
+    {k:"left", h:"Left", t:"FAAB left of $" + F.budget, html:({t}) => `<b>$${left[t.id] || 0}</b>`},
+    {k:"style", h:"Bids like", t:"How hard this team goes when it wants a player, against the league: the average of its three biggest bids as a share of the budget it had at the time", c:true,
+      html:({t, h}) => (t.id === ME ? `<span class="dimn">–</span>` : h.n ? `<span class="chip ${STYLE[h.style][1]}">${STYLE[h.style][0]}</span> <span class="dimn">×${h.f.toFixed(2)}</span>` : `<span class="dimn">no bids</span>`)},
+    {k:"bids", h:"Bids", t:"Waiver bids this season: won / lost to a higher bid", html:({h}) => `${h.won} won · ${h.lost} lost`},
+    {k:"typ", h:"Typical", t:"Median bid", html:({h}) => (h.typ != null ? "$" + h.typ : "–")},
+    {k:"top", h:"Biggest bids", t:"Its three biggest bids, won or lost", html:({h}) => h.top.map(bidTxt).join("<br>") || "–"},
+  ];
+  cols.forEach(c => (c.nosort = true));
+  $("habits").innerHTML = `<summary>How rivals bid<span>my FAAB <b>$${left[ME] || 0}</b> of $${F.budget} · ${(F.hist || []).length} bids on record this season</span></summary>` +
+    `<div class="scroll">${gridHtml(cols, rows, null, -1, ({t}) => (t.id === ME ? ' class="me"' : ""), ["left", "style"])}</div>`;
+}
 function buildWaivers(){
+  buildHabits();
   WAIV = [];
   if(!D.faab) return;
   const W = D.weeks.length, wt = i => (PO.includes(i) ? 1.5 : 1), denom = (REG.length + 1.5 * PO.length) || 1;
@@ -1906,7 +2027,8 @@ function buildWaivers(){
     for(const t of D.teams){
       if(t.id === ME) continue;
       if(by[t.id].term.k === "long") users++;
-      const w = (left[t.id] || 0) * share(by[t.id].g);
+      // what the model says he's worth to them, scaled by how that team actually bids, capped by its wallet
+      const w = Math.min(left[t.id] || 0, (left[t.id] || 0) * share(by[t.id].g) * ((HAB[t.id] || {}).f || 1));
       if(w > rv){ rv = w; rival = t.id; }
     }
     const cap = Math.floor((left[ME] || 0) * share(g));
@@ -2009,8 +2131,18 @@ function boot(d){
   const dealsFor = id => { S.pkGive = []; GIVEPK = []; S.pkFor = id; S.pkQ = ""; $("pkQ").value = ""; S.pkWill = ""; S.pkTeam = ""; S.pkPos = ""; S.pkKind = ""; S.pkLimit = 40;
     FORPK = findPackages(id); show("packages"); renderPackages(); $("v-packages").scrollTop = 0; };
   const shop = id => window.shopMine(id);
+  document.addEventListener("click", e => {
+    const b = e.target.closest(".xb"); if(!b) return;
+    const d = b.closest("tr").nextElementSibling;
+    if(d && d.classList.contains("dt")){ d.hidden = !d.hidden; b.classList.toggle("on", !d.hidden); }
+  });
+  // crossing the phone breakpoint changes what a table is made of
+  let wasPhone = MQ.matches;
+  const reflow = () => { if(MQ.matches === wasPhone) return; wasPhone = MQ.matches; renderTargets(); renderRoster(); renderWaivers(); };
+  MQ.addEventListener("change", reflow);
+  window.addEventListener("resize", reflow);
   $("tgscroll").onclick = e => {
-    if(e.target.closest("th")) return;
+    if(e.target.closest("th, .xb, tr.dt")) return;
     const r = e.target.closest("tr.click"); if(!r) return;
     (r.dataset.a === "shop" ? shop : dealsFor)(r.dataset.id);
   };

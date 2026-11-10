@@ -37,6 +37,8 @@ const GFL = "https://gfl-dashboard.vercel.app/api/espn";
 const ESPN_SCHED = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}?view=proTeamSchedules_wl`;
 const SLEEPER = "https://api.sleeper.app";
 const ESPN_INJ_FEED = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries";
+// every active NFL player's id and name, public: used only to put names on past waiver bids
+const ESPN_PLAYERS = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/players?view=players_wl&scoringPeriodId=0`;
 const SKILL_Q = "position[]=QB&position[]=RB&position[]=WR&position[]=TE";
 const SKILL = ["QB", "RB", "WR", "TE"];
 // how many unrostered players to carry at each position, best first
@@ -94,6 +96,12 @@ function authorItems(html) {
 }
 const slugText = uri => uri.split("/").pop().replace(/-\d+\.html$/, "").replace(/-+/g, " ");
 const isWaiver = s => /waiver|pickup|pick up|flier|add\b|streamer|stash/i.test(s);
+
+// one retry after a short wait: a single dropped connection shouldn't cost a week of stats
+async function getRetry(url) {
+  try { return await getJSON(url); }
+  catch (e) { await new Promise(r => setTimeout(r, 400)); return getJSON(url); }
+}
 
 // Least squares with no intercept. Tiny ridge keeps it solvable if two columns line up.
 function ols(X, y) {
@@ -177,10 +185,27 @@ export default async function handler(req, res) {
 
     // ---- Sleeper weekly stats, every week played so far
     const played = Math.max(1, Math.min(18, Math.min(+state.week || 1, firstWeek)));
-    const weekly = await Promise.all(
-      Array.from({ length: played }, (_, i) =>
-        getJSON(`${SLEEPER}/stats/nfl/${SEASON}/${i + 1}?season_type=regular&${SKILL_Q}`).catch(() => []))
-    );
+    const [weekly, txWeeks, espnNames] = await Promise.all([
+      Promise.all(Array.from({ length: played }, (_, i) =>
+        getRetry(`${SLEEPER}/stats/nfl/${SEASON}/${i + 1}?season_type=regular&${SKILL_Q}`).catch(() => null))),
+      // the league's transactions, a week at a time: every waiver bid, won or lost. Optional.
+      Promise.all(Array.from({ length: Math.min(18, firstWeek) }, (_, i) =>
+        getRetry(`${GFL}?view=mTransactions2&scoringPeriodId=${i + 1}&seasonId=${SEASON}`).catch(() => null))),
+      fetch(ESPN_PLAYERS, { headers: { "X-Fantasy-Filter": '{"filterActive":{"value":true}}', Accept: "application/json" }, signal: AbortSignal.timeout(8000) })
+        .then(r => (r.ok ? r.json() : [])).catch(() => []),
+    ]);
+
+    // A week that has been played and comes back empty is a failed fetch, not a quiet week.
+    // Serving it would build every projection on part of the season (and the edge would cache
+    // it), so fail instead: the page keeps its last good copy.
+    for (let w = 1; w < firstWeek && w <= played; w++)
+      if (!Array.isArray(weekly[w - 1]) || weekly[w - 1].length < 100) throw new Error("week " + w + " stats did not load");
+
+    /* ---- scoring: the league is full PPR and Sleeper's pts_ppr matches it, with one exception.
+       ESPN's settings are read for what an interception costs; Sleeper's number assumes -1. */
+    const item = id => (((settings.settings || {}).scoringSettings || {}).scoringItems || []).find(x => x.statId === id);
+    const recPts = (item(53) || {}).points, intPts = (item(20) || {}).points;
+    const intAdj = intPts != null ? intPts - -1 : 0;
 
     const P = {};        // sleeper player id -> { name, pos, tm, gs: [game rows] }
     const TW = {};       // "TEAM|week" -> team totals that week
@@ -192,7 +217,7 @@ export default async function handler(req, res) {
         const pos = pl.position;
         if (!s || !SKILL.includes(pos)) continue;
         const g = {
-          w, tm: fix(x.team), opp: fix(x.opponent), pts: s.pts_ppr || 0,
+          w, tm: fix(x.team), opp: fix(x.opponent), pts: (s.pts_ppr || 0) + intAdj * (s.pass_int || 0),
           snp: s.off_snp || 0, tsnp: s.tm_off_snp || 0,
           tgt: s.rec_tgt || 0, air: s.rec_air_yd || 0, rzt: s.rec_rz_tgt || 0,
           rec: s.rec || 0, ryd: s.rec_yd || 0, yar: s.rec_yar || 0, rfd: s.rec_fd || 0,
@@ -439,10 +464,27 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
 
     // ---- FAAB: the league budget and what every team has left to spend
     const acq = (settings.settings || {}).acquisitionSettings || {};
+    /* Every waiver bid this season, oldest first: who, which week, how much, and whether it won.
+       A bid that lost to a higher one (FAILED_INVALIDPLAYERSOURCE) still shows what the team was
+       willing to pay, so it is kept. Cancelled and blocked claims are not. */
+    const nameOf = {};
+    for (const x of Array.isArray(espnNames) ? espnNames : []) if (x && x.id) nameOf[x.id] = x.fullName;
+    const seen = new Set(), hist = [];
+    for (const wk of txWeeks) for (const x of (wk && wk.transactions) || []) {
+      if (x.type !== "WAIVER" || x.bidAmount == null || seen.has(x.id)) continue;
+      if (x.status !== "EXECUTED" && x.status !== "FAILED_INVALIDPLAYERSOURCE") continue;
+      seen.add(x.id);
+      const add = (x.items || []).find(i => i.type === "ADD") || {};
+      hist.push({ t: x.teamId, w: x.scoringPeriodId, a: x.bidAmount, won: x.status === "EXECUTED" ? 1 : 0,
+        n: nameOf[add.playerId] || (players[add.playerId] || {}).n || null, d: x.processDate || x.proposedDate || 0 });
+    }
+    hist.sort((a, b) => a.d - b.d);
+    for (const x of hist) delete x.d;
     const faab = acq.isUsingAcquisitionBudget ? {
       budget: acq.acquisitionBudget || 0, min: acq.minimumBid != null ? acq.minimumBid : 1,
       left: Object.fromEntries(teams.map(t => [t.id,
         Math.max(0, (acq.acquisitionBudget || 0) - (((info[t.id] || {}).transactionCounter || {}).acquisitionBudgetSpent || 0))])),
+      hist,
     } : null;
 
     // ---- expert notes: every recent piece by either analyst, and which of our players it names
@@ -506,6 +548,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     res.status(200).json({
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
+      scoring: { rec: recPts != null ? recPts : null, int: intPts != null ? intPts : null },
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
       model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
       teams, players, faab, experts,

@@ -56,8 +56,12 @@ each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
   player, free agents, or everyone. Column sets: *Basic* (the default: status, lineup call, PPG,
   next week, rest of season, playoffs), *Stats*, *Schedule*.
 
-Every list is a table, phones included (the table scrolls sideways inside its box, the player
-column stays put). Advanced stats are hidden until *Stats* is picked, and only the ones that
+Every list is a table. **On a phone nothing scrolls sideways and nothing scrolls inside
+something else**: each row keeps the player and the two or three numbers that matter (grade
+and gains on Targets, bid and term on Waivers, the two period tags on the Roster), and the
+arrow at the end of the row opens everything else underneath as labelled values — status and
+lineup menus, stats for the position, the schedule, the read. Names wrap instead of being cut
+off, need tiles sit two across, and top targets stack. Advanced stats are hidden until *Stats* is picked, and only the ones that
 mean something for the position are shown: QB = xFP, +/−, trend, upside, rush share, first
 downs; RB adds snaps, targets, opportunities, red-zone work, TDs and rushing efficiency; WR/TE
 add target share, air yards, WOPR, targets per snap, depth, catch rate and YAC. In a mixed list a
@@ -101,6 +105,26 @@ dropped when the straight deal with B (same players out, same back) is already a
 search skips a candidate only on exact bounds — value can only shrink once it lands (`USE` ≤ 1),
 so if what B gets is under 88% of what it gives at full value it can't reach *Worth asking* —
 plus the same hole and top-piece tests, so nothing that could pass is skipped.
+
+### How rivals bid
+
+`api/trade.js` reads the league's transactions a week at a time (`mTransactions2` through the
+GFL proxy) and keeps every waiver bid: the ones that won and the ones that lost to a higher bid
+(`FAILED_INVALIDPLAYERSOURCE`), since a losing bid still shows what a team would pay. Player
+names come from ESPN's public players feed.
+
+Each bid is read as a **share of the budget the team had at that moment**, so $200 out of a
+full $1,000 and $60 out of the last $300 are the same appetite. A team's *rate* is the average
+of its three biggest shares; its factor is that rate against the league median, held between
+0.6 and 1.6 (*Big spender* at 1.25 and up, *Thrifty* at 0.8 and under). A rival's expected bid
+is then
+
+    min(FAAB left,  FAAB left × share(gain) × factor)
+
+so habit scales the bid and the wallet caps it: a team that spent big early bids like a big
+spender on whatever it has left. Budget-at-the-time ignores FAAB moved in trades (ESPN doesn't
+date it), so shares cap at 1. The Waivers tab opens with a *How rivals bid* panel: FAAB left,
+style, bids won and lost, typical bid and the three biggest.
 
 ### Waivers and FAAB
 
@@ -251,8 +275,12 @@ everything.
 - No routes run in any free feed, so no yards or targets per route; targets per snap stands in.
 - No PFF grades, and no projections but its own.
 - The willingness rules are a model of how managers behave, not a survey of this league.
-- Points are Sleeper full PPR, which tracked the league's ESPN scoring to within a few tenths
-  per player.
+- **Scoring is full PPR**, checked against the league's ESPN settings on every load (reception
+  = 1; the payload carries `scoring`). Points come from Sleeper's `pts_ppr`, which matches
+  ESPN's settings here except interceptions: ESPN charges −2, Sleeper assumes −1, so each
+  interception is docked the difference.
+- A played week that comes back empty from Sleeper is treated as a failed fetch: one retry,
+  then the API fails (502, not cached) rather than build projections on part of the season.
 
 Sleeper and ESPN spell a few team codes differently (`WAS`/`WSH`); `FIX` in `api/trade.js`
 maps them. Players are joined ESPN-to-Sleeper on normalised name + position.
