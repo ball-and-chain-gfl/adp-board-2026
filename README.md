@@ -22,7 +22,19 @@ It analyses one ESPN team — The Bryan Football Team, team 10 in league 1327340
 **read-only**: nothing is ever written to ESPN.
 
 Five sections, built around one question: where can I reasonably improve my team? On a wide
-screen they are tabs under my team's header; on a phone they are a bar along the bottom. The
+screen they are tabs under the site bar (there is no team header); on a phone they are a bar
+along the bottom.
+
+**Player card.** Tapping a player's name or photo anywhere opens a card: what he does for my
+lineup (the two period tags), projected totals for the rest of the season and the playoffs, his
+schedule week by week with the projection for each game and the opponent shaded by matchup, a
+plain-language line on how his number is built, his games so far, the stats for his position,
+my status and lineup calls, and a button to the packages that would get him (or to shop him).
+The rest of a row still does what it did: on Targets it opens his packages. In the builder a
+row selects the player, so only the photo opens the card there.
+
+Photos are large rounded tiles backed by the position's colour, and lineup gains are coloured
+pills, so a list reads by colour before it reads by number. The
 page uses a light theme in the style of a fantasy-sports site (white panels on light grey, a dark
 top bar, one blue for actions, green = good for me, red = bad for me, amber = maybe), and shows
 each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
@@ -163,6 +175,27 @@ one the analysts think has a new role the season numbers haven't caught up with,
 projected on his **last three games alone** instead of the season blend (only ever upward), and
 that flows into his lineup value and FAAB bid like anyone else's. He carries an *EXPERT* tag. If
 Yahoo is unreachable or changes its markup, nobody gets the adjustment and everything else works.
+
+### Where the projections come from
+
+They are this tool's own, built in `api/trade.js` on every load. No outside projection is used
+— not ESPN's, not Sleeper's, not an analyst's.
+
+1. **Per-game rate.** Half *workload*, half *production*. Workload is xFP: a model refitted on
+   every load from this season's player-games (Sleeper's weekly stat feed) that prices carries,
+   red-zone carries, targets and red-zone targets separately for RB, WR and TE, and pass
+   attempts and runs for QBs. Production is his actual full-PPR points a game. Both run on the
+   whole season; the last three games only weigh in when his role changed (see *role* below).
+2. **Each week.** That rate times a matchup factor: how many points the week's opponent has
+   allowed to his position against the league average, taking half the gap, capped at ±20%.
+   Zero on a bye.
+3. **Availability.** ESPN's injury status and return dates, or my own call, zero out the weeks
+   he misses.
+4. **Exceptions.** Kickers and defences use their ESPN season average. A free agent the
+   analysts named in a waiver piece is projected on his last three games.
+
+What it does not know: Vegas totals, weather, depth-chart news that hasn't shown up in snaps
+yet, or anyone else's projections.
 
 ### How a player is read (Targets)
 

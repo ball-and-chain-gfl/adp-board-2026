@@ -22,12 +22,6 @@ header{background:var(--panel);z-index:30;flex:none;border-bottom:1px solid var(
 .tab{padding:9px 14px;font-size:12.5px;font-weight:700;letter-spacing:.3px;text-decoration:none;color:#b9bcc0;border-bottom:3px solid transparent}
 .tab.on{color:#fff;border-bottom-color:var(--blue)}
 a.tab:hover{color:#fff}
-.bar{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;padding:12px 20px 10px}
-.bar .tlg{width:44px;height:44px;flex-basis:44px}
-.bar h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.2px}
-.bar .rec{color:var(--dim);font-size:14px;font-weight:700}
-.bar .dl{margin-left:auto;color:var(--dim);font-size:12.5px}
-.bar .dl b{color:var(--txt)}
 
 /* section switch: text tabs with a blue underline */
 .sub{display:flex;gap:4px;padding:0 20px;flex:none;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -63,13 +57,17 @@ button.b.sm{padding:5px 10px;font-size:12px}
 .more{display:block;margin:14px auto;padding:10px 18px}
 
 /* people and teams */
-.av{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;background:#e3e6e9;border:1px solid var(--line)}
-.av img{width:100%;height:100%;object-fit:cover;object-position:50% 12%}
-.av.d img{object-fit:contain;padding:3px}
+.av{width:46px;height:46px;flex:0 0 46px;border-radius:10px;overflow:hidden;background:#e3e6e9;border:1px solid var(--line);display:block}
+.av.QB{background:#e7d6f7}.av.RB{background:#d3eedd}.av.WR{background:#d6e6f8}.av.TE{background:#f8e3c4}.av.K,.av.DST{background:#e3e6e9}
+.av img{width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block}
+.av.d img{object-fit:contain;padding:5px}
+.av.xl{width:104px;height:104px;flex-basis:104px;border-radius:14px}
+[data-pid]{cursor:pointer}
+.nm[data-pid]:hover,.tpn[data-pid]:hover{color:var(--blue);text-decoration:underline}
 .tlg{position:relative;width:24px;height:24px;flex:0 0 24px;border-radius:50%;overflow:hidden;background:#d5d9de;display:inline-flex;align-items:center;justify-content:center;
   font-size:9px;font-weight:800;color:var(--soft);vertical-align:middle}
 .tlg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
-.nm{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .meta{font-size:11.5px;color:var(--dim);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .meta > *{white-space:nowrap}
 .pos{font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.3px}
@@ -122,7 +120,7 @@ select.rl.on{border-color:#e0a800;background:var(--warn2);color:var(--warn)}
 .ol{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:4px;white-space:nowrap}
 .ol.target{background:var(--good);color:#fff}.ol.avoid{background:var(--bad);color:#fff}
 .ol.sell{background:#d86a00;color:#fff}.ol.core{background:var(--blue);color:#fff}.ol.hold{background:#e3e6e9;color:var(--soft)}
-td:has(> .pt){text-align:left}
+td:has(> .olw){text-align:left}
 .pt{display:inline-block;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:4px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .pt.up2,.pt.t1{background:var(--good);color:#fff}.pt.up1,.pt.t2{background:var(--good2);color:var(--good)}
 .pt.t3{background:var(--warn2);color:var(--warn)}.pt.even,.pt.out,.pt.t4{background:#eceef0;color:#6b6f74}
@@ -138,6 +136,51 @@ details.hab summary::after{content:"Show";margin-left:auto;font-size:12px;font-w
 details.hab[open] summary::after{content:"Hide"}
 details.hab .scroll{border:0;border-top:1px solid var(--line);border-radius:0 0 8px 8px;max-height:none}
 details.hab td{vertical-align:top;line-height:1.5}
+/* the player card */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(15,18,22,.55);overflow-y:auto;padding:24px 14px;display:flex;justify-content:center;align-items:flex-start}
+.mbox{position:relative;background:var(--panel);border-radius:14px;width:100%;max-width:560px;padding:18px 18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.mclose{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-size:20px;line-height:1;cursor:pointer;color:var(--soft)}
+.mclose:hover{border-color:var(--blue);color:var(--blue)}
+.pct{display:flex;gap:14px;align-items:center;padding-right:34px}
+.pcid{min-width:0}
+.pcid h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:1.15}
+.pcid .own{margin-top:6px;font-size:12.5px}
+.pcid .own .tlg{width:18px;height:18px;flex-basis:18px;font-size:7px}
+.pcls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.pcl{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px}
+.pcl .lab{margin-bottom:5px}
+.pcl .pt{font-size:14px;padding:4px 10px}
+.pcl .olw{max-width:none;font-size:12px}
+.pcns{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:10px}
+.pcn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;line-height:1.2}
+.pcn b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.pcn span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--dim)}
+.pcn i{display:block;font-style:normal;font-size:11.5px;color:var(--dim);margin-top:2px}
+.pcwv{margin-top:10px;font-size:13px;color:var(--soft)}
+.pch{margin:16px 0 7px;font-size:13px;font-weight:800;letter-spacing:.2px}
+.pch span{font-size:11.5px;font-weight:600;color:var(--dim);margin-left:6px}
+.pcsched{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.pcw{display:grid;grid-template-columns:52px 74px minmax(0,1fr) 56px;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line2);font-size:13.5px}
+.pcw:last-child{border-bottom:0}
+.pcw .wk{font-size:11.5px;font-weight:800;color:var(--dim)}
+.pcw .op{font-weight:800;text-align:center;border-radius:5px;padding:3px 4px;background:#eef0f2}
+.pcw .mr{font-size:12px;color:var(--dim)}
+.pcw b{text-align:right;font-size:15px;font-variant-numeric:tabular-nums}
+.pcw.po{box-shadow:inset 3px 0 0 #1958a0}
+.pcw.po .wk{color:#1958a0}
+.pcw.off b,.pcw.off .op{color:#9a9ea3}
+.pcw.tot{background:var(--panel2);font-weight:800}
+.pchow{margin-top:10px;font-size:12.5px;line-height:1.5;color:var(--soft);background:var(--blue2);border-radius:8px;padding:9px 11px}
+.pclog{display:flex;gap:4px;align-items:flex-end;height:92px;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.pcb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;min-width:0}
+.pcb em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--soft)}
+.pcb i{display:block;width:100%;max-width:26px;border-radius:3px 3px 0 0;background:var(--blue)}
+.pcb.none i{background:#d5d9de}
+.pcb span{font-size:10px;color:var(--dim)}
+.pcctl{display:flex;flex-wrap:wrap;gap:8px}
+.pcctl select{max-width:none;flex:1 1 180px;padding:7px 8px}
+.pcact{margin-top:16px;display:flex}
+.pcact .b{flex:1;padding:11px;font-size:14px}
 /* phone rows: an arrow opens the rest underneath */
 .xb{width:28px;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--blue);font-size:13px;cursor:pointer;padding:0;line-height:1}
 .xb.on{background:var(--blue);color:#fff;border-color:var(--blue);transform:rotate(180deg)}
@@ -177,7 +220,7 @@ button.tile.on{outline:2px solid var(--blue);outline-offset:-1px}
 .tile .v .rkn{font-weight:800}.rkn.g{color:var(--good)}.rkn.r{color:var(--bad)}
 .tps{display:flex;flex-direction:column;gap:4px;margin-bottom:5px}
 .tp{display:flex;align-items:center;gap:7px;font-size:12.5px;min-width:0}
-.tp .av{width:24px;height:24px;flex-basis:24px}
+.tp .av{width:34px;height:34px;flex-basis:34px;border-radius:8px}
 .tp .tpn{flex:1;min-width:0;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
 .tp b{font-variant-numeric:tabular-nums;color:var(--soft)}
 .tbig{font-size:20px;font-weight:800;margin-bottom:4px}
@@ -195,7 +238,7 @@ button.tile.on{outline:2px solid var(--blue);outline-offset:-1px}
 .top1{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--good);border-radius:8px;padding:11px 12px;cursor:pointer;text-align:left;color:var(--txt);min-width:0}
 .top1:hover{border-color:var(--blue);border-left-color:var(--good)}
 .top1 .hd{display:flex;gap:10px;align-items:center;min-width:0}
-.top1 .hd .av{width:44px;height:44px;flex-basis:44px}
+.top1 .hd .av{width:64px;height:64px;flex-basis:64px;border-radius:12px}
 .top1 .who{flex:1;min-width:0}
 .top1 .nm{font-size:15px}
 .top1 .nums{display:flex;gap:16px;align-items:baseline}
@@ -214,7 +257,7 @@ button.tile.on{outline:2px solid var(--blue);outline-offset:-1px}
 .tm.long{background:var(--good2);color:var(--good)}.tm.short{background:var(--warn2);color:var(--warn)}.tm.fill,.tm.none{background:#eceef0;color:#6b6f74}
 .tmw{display:block;font-size:10.5px;color:var(--dim);margin-top:2px}
 .opt.pick{padding:4px 6px}
-.opt.pick .av{width:24px;height:24px;flex-basis:24px}
+.opt.pick .av{width:30px;height:30px;flex-basis:30px;border-radius:7px}
 .opt .ck{width:14px;height:14px;flex:0 0 14px;border:1.5px solid #9aa0a6;border-radius:3px;background:#fff}
 .opt.pick.on .ck{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 2px #fff}
 .lnk{background:none;border:0;padding:0;margin-left:6px;color:var(--blue);font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;cursor:pointer}
@@ -280,7 +323,7 @@ td .chip{font-size:11px;padding:1px 7px}
 .leg .lh .tlg{width:16px;height:16px;flex-basis:16px;font-size:7px}
 .leg.get .lh{color:var(--good)}.leg.give .lh{color:var(--bad)}
 .pr{display:flex;align-items:center;gap:8px;min-width:0;padding:3px 0}
-.pr .av{width:32px;height:32px;flex-basis:32px}
+.pr .av{width:46px;height:46px;flex-basis:46px}
 .pr .who{flex:1;min-width:0}
 .pr .nm{font-size:13.5px}
 .pr .pts{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--soft)}
@@ -309,7 +352,7 @@ td .chip{font-size:11px;padding:1px 7px}
 .row{display:flex;align-items:center;gap:9px;padding:6px 10px;border:0;border-bottom:1px solid var(--line2);cursor:pointer;width:100%;background:none;color:var(--txt);text-align:left}
 .row:hover{background:#f4f8fd}
 .row.sel{background:var(--blue2);box-shadow:inset 4px 0 0 var(--blue)}
-.row .av{width:30px;height:30px;flex-basis:30px}
+.row .av{width:38px;height:38px;flex-basis:38px;border-radius:8px}
 .row .who{min-width:0;flex:1}
 .row .nm{font-size:13.5px;display:block}
 .row .meta{gap:3px 6px;margin-top:1px}
@@ -380,10 +423,6 @@ td .chip{font-size:11px;padding:1px 7px}
 @media (max-width:820px){
   .tabs{padding:0 10px}
   .tab{padding:7px 10px;font-size:12px}
-  .bar{padding:9px 12px 8px;gap:2px 10px}
-  .bar .tlg{width:34px;height:34px;flex-basis:34px}
-  .bar h1{font-size:17px}
-  .bar .dl{font-size:11.5px;flex:1 1 100%;margin-left:0}
   .sub{order:3;padding:0 4px env(safe-area-inset-bottom);gap:0;border-top:1px solid var(--line);border-bottom:0}
   .sub button{flex:1;padding:12px 2px 10px;font-size:12.5px;min-width:0;border-bottom:0;border-top:3px solid transparent}
   .sub button.on{border-top-color:var(--blue)}
@@ -396,6 +435,11 @@ td .chip{font-size:11px;padding:1px 7px}
   #tgcols,#wvcols,#colsf{display:none}
   input[type=search]{flex:1 1 100%;width:auto}
   .count{flex:1 1 100%;margin:0;text-align:right}
+  .modal{padding:0;align-items:flex-end}
+  .mbox{border-radius:16px 16px 0 0;max-width:none;padding:16px 14px 22px;max-height:94dvh;overflow-y:auto}
+  .av.xl{width:84px;height:84px;flex-basis:84px}
+  .pcid h2{font-size:19px}
+  .pcw{grid-template-columns:44px 64px minmax(0,1fr) 50px;padding:6px 8px}
   /* nothing scrolls sideways and nothing scrolls inside something else: the page is the only scroller */
   .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .tile{padding:8px 9px 9px}
@@ -405,7 +449,7 @@ td .chip{font-size:11px;padding:1px 7px}
   .tops{grid-template-columns:minmax(0,1fr);gap:8px}
   .top1{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:9px 10px}
   .top1 .hd{grid-column:1/-1}
-  .top1 .hd .av{width:38px;height:38px;flex-basis:38px}
+  .top1 .hd .av{width:56px;height:56px;flex-basis:56px}
   .top1 .nums b{font-size:16px}
   .top1 .rp{grid-column:1/-1;order:3}
   .top1 .ft{align-self:center}
@@ -416,9 +460,9 @@ td .chip{font-size:11px;padding:1px 7px}
   th.l,td.l{position:static;white-space:normal}
   .ply{gap:8px;align-items:flex-start}
   .ply .nm{max-width:none;white-space:normal;line-height:1.2;overflow-wrap:anywhere}
-  .av{width:28px;height:28px;flex-basis:28px}
+  .av{width:42px;height:42px;flex-basis:42px}
   .olw{max-width:104px}
-  td:has(> .pt){white-space:normal}
+  td:has(> .olw){white-space:normal}
   details.hab td{font-size:13px}
   select.st,select.rl{padding:6px 6px;font-size:13px;max-width:130px}
   /* packages */
@@ -461,10 +505,6 @@ td .chip{font-size:11px;padding:1px 7px}
 <div class="tabs">
   <a class="tab" href="/">ADP Board</a>
   <div class="tab on">Trade Analyzer</div>
-</div>
-<div class="bar">
-  <span id="tlogo"></span><h1 id="tname">Trade Analyzer</h1><span class="rec" id="trec"></span>
-  <span class="dl" id="dl"></span>
 </div>
 </header>
 <nav class="sub" id="sub" hidden>
@@ -575,6 +615,7 @@ td .chip{font-size:11px;padding:1px 7px}
   <div class="scroll" id="wvscroll"></div>
 </section>
 </div>
+<div class="modal" id="pcard" hidden></div>
 <script>
 let D, P, ME, TEAMS = {}, REG = [], PO = [], ALLW = [], COLS = {}, PCT = {}, ALLPK = [], FORPK = [], pkTimer, SEARCH = 0, SEARCHING = "";
 // league view, rebuilt whenever availability changes
@@ -629,11 +670,11 @@ const wkSpan = idx => idx.length ? (idx.length > 1 ? `${D.weeks[idx[0]]}–${D.w
 const spots = pos => D.slots[pos] || 0;
 const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
 
-function img(p){
+function img(p, x){
   const src = p.pos === "DST" ? `https://a.espncdn.com/i/teamlogos/nfl/500/${p.tm.toLowerCase()}.png`
     : p.sid ? `https://sleepercdn.com/content/nfl/players/thumb/${p.sid}.jpg`
     : `https://a.espncdn.com/i/headshots/nfl/players/full/${p.id}.png`;
-  return `<span class="av${p.pos === "DST" ? " d" : ""}"><img src="${src}" alt="" loading="lazy" onerror="this.style.display='none'"></span>`;
+  return `<span class="av ${p.pos}${p.pos === "DST" ? " d" : ""}${x ? " " + x : ""}" data-pid="${p.id}"><img src="${src}" alt="" loading="lazy" onerror="this.style.display='none'"></span>`;
 }
 // opponent colour: ESPN convention, 1 = stingiest defence (red), 32 = softest (green)
 function rkBg(rk){
@@ -910,7 +951,7 @@ function roleBadge(p){
   return r.c && P[r.c] ? `<span class="rtag C">CUFF · ${esc(short(P[r.c]).toUpperCase())}</span>` : `<span class="rtag B">BENCH</span>`;
 }
 function who(p, extra){
-  return `<div class="who"><div class="nm">${esc(p.n)}</div>
+  return `<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div>
     <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${extra || ""}</div></div>`;
 }
 // my lineup call for one of my players: automatic, always start, bench, or handcuff to a teammate
@@ -1072,7 +1113,7 @@ const statCols = (pos, P_) => statKeys(pos).map((k, i) => ({k:"s_" + k, h:COLS[k
   html:r => statCell(P_(r), k),
   style:r => { const p = P_(r); return COLS[k].tint && relevant(p, k) ? tint(p, k) : ""; }}));
 const plyX = (p, extra) => `<div class="ply">${img(p)}${who(p, extra)}</div>`;
-const gainCell = v => `<b class="${cls(v)}">${sgn(v)}</b>`;
+const gainCell = v => `<span class="pt ${v >= 2 ? "up2" : v >= PT ? "up1" : v <= -PT ? "down" : "even"}">${sgn(v)}</span>`;
 const readCell = p => sigChips(p).slice(0, 2).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join(" ");
 const gradeCell = (g, kind) => `<span class="gr ${kind || (g >= 70 ? "a" : g >= 50 ? "b" : g >= 35 ? "c" : "d")}">${g}</span>`;
 
@@ -1148,7 +1189,7 @@ function renderTiles(el, clickable){
     <div class="strip">${Array.from({length:n}, (_, i) => `<i${i + 1 === rank ? ' class="me"' : ""}></i>`).join("")}</div>
     <div class="tps">${s}</div><div class="s2">${s2}</div>${clickable && pos ? `<div class="s3">${cnt ? plural(cnt, "upgrade") + " →" : "no upgrade out there"}</div>` : ""}</${tag}>`;
   };
-  const tp = p => `<div class="tp">${img(p)}<span class="tpn">${esc(short(p))}</span><b>${f1(p.adj)}</b></div>`;
+  const tp = p => `<div class="tp">${img(p)}<span class="tpn" data-pid="${p.id}">${esc(short(p))}</span><b>${f1(p.adj)}</b></div>`;
   // the lineup as it stands today, no waiver help
   const all = D.teams.map(t => ({id:t.id, w:worth(t.players, false, t.id === ME)}));
   const place = key => all.slice().sort((a,b) => b.w[key] - a.w[key]).findIndex(x => x.id === ME) + 1;
@@ -1186,7 +1227,7 @@ function renderTops(){
   $("tops").innerHTML = list.map(x => {
     const p = x.p, w = BESTWILL[p.id];
     return `<button class="top1" data-id="${p.id}">
-      <div class="hd">${img(p)}<div class="who"><div class="nm">${esc(p.n)}</div>
+      <div class="hd">${img(p)}<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div>
         <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
       <div class="nums">${REG.length ? `<div><b class="${cls(x.d.reg)}">${sgn(x.d.reg)}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(x.d.po)}">${sgn(x.d.po)}</b><span>playoffs</span></div>` : ""}</div>
       ${x.over ? (p.base > x.over.base ? `<div class="rp">replaces <b>${esc(short(x.over))}</b> ${f1(x.over.base)} → <b>${f1(p.base)}</b> a game</div>` : `<div class="rp">shares weeks with <b>${esc(short(x.over))}</b></div>`) : ""}
@@ -1323,7 +1364,7 @@ function renderPackages(){
   $("pkActive").innerHTML = act.map(a => `<span class="chip b">${esc(a)}</span>`).join("");
   if(!total){ $("pkl").innerHTML = `<div class="chip">${forP ? `Nothing for ${esc(forP.n)} makes my lineup better` : "No deal makes my lineup better"}${act.length ? " with these filters" : ""}</div>`; return; }
   list = list.slice(0, S.pkLimit);
-  const pr = id => { const p = P[id]; return `<div class="pr">${img(p)}<div class="who"><div class="nm">${esc(p.n)}</div><div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}</span>${injBadge(p)}${roleBadge(p)}</div></div><span class="pts">${f1(p.ros)}</span></div>`; };
+  const pr = id => { const p = P[id]; return `<div class="pr">${img(p)}<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div><div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}</span>${injBadge(p)}${roleBadge(p)}</div></div><span class="pts">${f1(p.ros)}</span></div>`; };
   const who = id => (id === ME ? "Me" : `${tlogo(id)}${esc(TEAMS[id].abbrev || TEAMS[id].name)}`);
   $("pkl").innerHTML = list.map(({pk, i}) => {
     const lead = TEAMS[pk.teams[0]];
@@ -2054,6 +2095,76 @@ function buildWaivers(){
   }
 }
 
+/* ---- player card -----------------------------------------------------------------------------
+   Tap a player's name or photo anywhere and this opens: what he does for my team, his schedule
+   week by week with the projection for each game, the totals, how the projection is built, his
+   games so far, and the stats that matter at his position. */
+let CARD = null;
+function playerCard(id){
+  const p = P[id];
+  if(!p) return;
+  CARD = id;
+  const skill = SKILL.includes(p.pos), sum = idx => idx.reduce((s, i) => s + p.eff[i], 0);
+  const games = idx => idx.filter(i => p.eff[i] > 0).length;
+  const num = (v, lab, sub) => `<div class="pcn"><b>${v}</b><span>${lab}</span>${sub ? `<i>${sub}</i>` : ""}</div>`;
+  const owner = p.t ? `${tlogo(p.t)}<span>${esc(p.t === ME ? "My team" : TEAMS[p.t].name)}</span>` : `<span>Free agent</span>`;
+  // what he is to my team
+  let lens = "";
+  if(skill){
+    const cell = (k, lab) => { const h = ptag(p, k); return h ? `<div class="pcl"><span class="lab">${lab}</span><div>${h}</div></div>` : ""; };
+    lens = `<div class="pcls">${cell("reg", "Rest of season · wk " + wkSpan(REG))}${cell("po", "Playoffs · wk " + wkSpan(PO))}</div>`;
+  }
+  // schedule, one line a week
+  const sched = D.weeks.map((w, i) => {
+    const g = p.wk[i], bye = g.o === "BYE", out = !bye && p.eff[i] === 0 && g.p > 0;
+    return `<div class="pcw${w >= 15 ? " po" : ""}${bye || out ? " off" : ""}"><span class="wk">Wk ${w}</span>
+      <span class="op" style="${bye || out ? "" : rkBg(g.rk)}">${bye ? "BYE" : g.o}</span>
+      <span class="mr">${bye ? "" : out ? "out" : g.rk ? ord(g.rk) + " vs " + p.pos : ""}</span>
+      <b>${bye ? "–" : out ? "0.0" : f1(p.eff[i])}</b></div>`;
+  }).join("");
+  // games so far
+  let log = "";
+  if(p.pl){
+    const max = Math.max(30, ...p.pl.map(x => x || 0));
+    log = `<div class="pch">Games so far</div><div class="pclog">${p.pl.map((x, i) => `<div class="pcb${x == null ? " none" : ""}"><em>${x == null ? "" : Math.round(x)}</em><i style="height:${x == null ? 2 : Math.max(3, Math.round(x / max * 56))}px"></i><span>${i + 1}</span></div>`).join("")}</div>`;
+  }
+  // stats for his position
+  let stats = "";
+  if(skill && p.g != null){
+    const cx = k => { const c = COLS[k], t = cellText(c, p);
+      return `<div class="dc"${t != null && c.tint ? ` style="${tint(p, k)}"` : ""}><span title="${esc(c.t || "")}">${c.h}</span><div class="${t != null && c.cl ? c.cl(c.v(p)) : ""}">${t == null ? "–" : t}</div></div>`; };
+    stats = `<div class="pch">${p.pos} numbers <span>green = high for the position, red = low</span></div><div class="dg">${["ppg", ...statKeys(p.pos)].map(cx).join("")}</div>`;
+  }
+  const read = skill ? sigChips(p).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join(" ") : "";
+  // how the number is built
+  const how = skill && p.g != null
+    ? `<b>${f1(p.base)}</b> a game when healthy = half his workload (${f1(p.xfp)} expected points from his carries and targets${p.pos === "QB" ? ", passes and runs" : ""}) and half what he has scored (${f1(p.ppg)} a game over ${plural(p.g, "game")})${p.xp ? ", lifted to his last three games because the analysts flagged him this week" : Math.abs(p.rs || 0) >= 0.05 ? `, leaning on his last three because his role moved ${p.rs > 0 ? "up" : "down"} ${Math.round(Math.abs(p.rs) * 100)}%` : ""}. Each week is that rate times the matchup (how many points the opponent gives up to ${p.pos}s, up to ±20%), zero on a bye, and nothing while he's out.`
+    : `<b>${f1(p.base)}</b> a game: his ESPN season average, adjusted for each week's matchup where there is one.`;
+  const wv = !p.t && skill ? WAIV.find(x => x.p.id === p.id) : null;
+  const act = p.t && p.t !== ME && skill ? `<button class="b go" data-card-act="deal">Packages to get him</button>`
+    : p.t === ME && skill ? `<button class="b go" data-card-act="shop">Shop him</button>` : "";
+  $("pcard").innerHTML = `<div class="mbox" role="dialog" aria-label="${esc(p.n)}">
+    <button class="mclose" data-card-close aria-label="Close">×</button>
+    <div class="pct">${img(p, "xl")}
+      <div class="pcid"><h2>${esc(p.n)}</h2>
+        <div class="meta"><span class="pos ${p.pos}">${p.pos === "DST" ? "DEF" : p.pos}</span><span>${p.tm}${p.prk ? ` · ${p.pos}${p.prk} in scoring` : ""}</span>${injBadge(p)}${roleBadge(p)}</div>
+        <div class="own">${owner}</div></div></div>
+    ${lens}
+    <div class="pcns">${num(f1(sum(ALLW)), "Projected total", `wk ${wkSpan(ALLW)}`)}${REG.length ? num(f1(sum(REG)), "Rest of season", `${plural(games(REG), "game")} · ${f1(p.ros)} a week`) : ""}${PO.length ? num(f1(sum(PO)), "Playoffs", `${plural(games(PO), "game")} · ${f1(p.po)} a week`) : ""}${p.g != null ? num(f1(p.ppg), "Scored so far", `a game, ${plural(p.g, "game")}`) : ""}</div>
+    ${wv ? `<div class="pcwv">Waivers: ${wv.bid ? `bid <b>$${wv.bid}</b>` : "no bid"} · ${termPill(wv).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</div>` : ""}
+    <div class="pch">Schedule and projection <span>opponent shaded by how soft it is on ${p.pos === "DST" ? "defences" : p.pos + "s"}; playoff weeks outlined</span></div>
+    <div class="pcsched">${sched}<div class="pcw tot"><span class="wk">Total</span><span></span><span class="mr">${plural(games(ALLW), "game")}</span><b>${f1(sum(ALLW))}</b></div></div>
+    <div class="pchow">${how}</div>
+    ${read ? `<div class="pch">The read</div><div class="chips">${read}</div>` : ""}
+    ${log}${stats}
+    <div class="pch">My call</div><div class="pcctl">${stSel(p)}${roleSel(p)}</div>
+    ${act ? `<div class="pcact">${act}</div>` : ""}
+  </div>`;
+  $("pcard").hidden = false;
+  $("pcard").scrollTop = 0;
+}
+function closeCard(){ CARD = null; $("pcard").hidden = true; $("pcard").innerHTML = ""; }
+
 function show(v){
   S.view = v;
   for(const k of VIEWS) $("v-" + k).hidden = k !== v;
@@ -2080,13 +2191,6 @@ function boot(d){
   for(const p of Object.values(P)) p.pi = PI[p.pos];
 
   const me = TEAMS[ME], others = d.teams.filter(t => t.id !== ME).sort((a,b) => a.name.localeCompare(b.name));
-  $("tname").textContent = me.name;
-  $("tlogo").outerHTML = tlogo(ME).replace('class="tlg"', 'class="tlg" id="tlogo"');
-  $("trec").textContent = `${me.w}-${me.l}`;
-  if(d.deadline){
-    const days = Math.ceil((d.deadline - Date.now()) / 864e5);
-    $("dl").innerHTML = days >= 0 ? `Trade deadline <b>${new Date(d.deadline).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</b> &middot; ${plural(days, "day")}` : "Trade deadline passed";
-  }
   const teamOpts = others.map(t => `<option value="${t.id}">${esc(t.name)} (${t.w}-${t.l})</option>`).join("");
   $("scope").innerHTML = `<option value="me">My roster</option><option value="league">Every rostered player</option>
     <option value="all">Everyone, with free agents</option><option value="fa">Free agents only</option><optgroup label="Other teams">${teamOpts}</optgroup>`;
@@ -2111,15 +2215,29 @@ function boot(d){
     if(s){
       const v = s.value, id = s.dataset.id;
       if(!v) delete OV[id]; else OV[id] = v === "H" ? {t:"H"} : {t:"O", thru:+v.slice(2)};
-      saveOV(); renderAll(); return;
+      saveOV(); renderAll(); if(CARD) playerCard(CARD); return;
     }
     const r = e.target.closest("select.rl");
     if(r){
       const v = r.value, id = r.dataset.id;
       ROLE[id] = !v ? {r:"A"} : v === "S" ? {r:"S"} : v === "B" ? {r:"B"} : {r:"B", c:v.slice(2)};
-      saveRole(); renderAll();
+      saveRole(); renderAll(); if(CARD) playerCard(CARD);
     }
   });
+  // a name or a photo, anywhere: open his card instead of whatever the row does
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-pid]");
+    if(!t || t.closest(".opt, .dchip") || (t.closest("#pcard") && t.dataset.pid === CARD)) return;
+    e.stopPropagation(); e.preventDefault();
+    playerCard(t.dataset.pid);
+  }, true);
+  $("pcard").addEventListener("click", e => {
+    if(e.target === $("pcard") || e.target.closest("[data-card-close]")){ closeCard(); return; }
+    const a = e.target.closest("[data-card-act]"); if(!a) return;
+    const id = CARD; closeCard();
+    (a.dataset.cardAct === "shop" ? window.shopMine : window.dealsFor)(id);
+  });
+  document.addEventListener("keydown", e => { if(e.key === "Escape" && CARD) closeCard(); });
   // targets
   pickSeg("tgmode", "m", v => { S.tgMode = v; renderTargets(); });
   pickSeg("tgpos", "p", v => { S.tgPos = v; renderTargets(); });
@@ -2131,6 +2249,7 @@ function boot(d){
   const dealsFor = id => { S.pkGive = []; GIVEPK = []; S.pkFor = id; S.pkQ = ""; $("pkQ").value = ""; S.pkWill = ""; S.pkTeam = ""; S.pkPos = ""; S.pkKind = ""; S.pkLimit = 40;
     FORPK = findPackages(id); show("packages"); renderPackages(); $("v-packages").scrollTop = 0; };
   const shop = id => window.shopMine(id);
+  window.dealsFor = dealsFor;
   document.addEventListener("click", e => {
     const b = e.target.closest(".xb"); if(!b) return;
     const d = b.closest("tr").nextElementSibling;
