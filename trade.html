@@ -503,36 +503,23 @@ td .chip{font-size:11px;padding:1px 7px}
   .dside{min-height:0}
 }
 
-/* ==== photos: full height on the left of their container, fading into it ==================== */
+/* ==== photos: rounded tiles on the position's colour; top targets keep the full-height fade == */
 .av{border:0}
-.av.QB{background:linear-gradient(90deg,#d4baf0,#efe3fb)}.av.RB{background:linear-gradient(90deg,#b5e2c8,#e2f4ea)}
-.av.WR{background:linear-gradient(90deg,#b9d4f4,#e4effb)}.av.TE{background:linear-gradient(90deg,#f3cf9a,#fcefdc)}
-.pr,.row,.tp,.top1,.pct{position:relative}
-.plb > .av,.pr > .av,.row > .av,.tp > .av,.top1 .hd > .av,.pct > .av{position:absolute;left:0;top:0;bottom:0;height:auto;flex:none;border-radius:0;
-  -webkit-mask-image:linear-gradient(90deg,#000 60%,transparent);mask-image:linear-gradient(90deg,#000 60%,transparent)}
-.plb > .av img,.pr > .av img,.row > .av img,.top1 .hd > .av img,.pct > .av img{object-position:50% 0}
-.av.d img{object-fit:contain!important;padding:6px}
-.plb > .av{width:66px}
-td.l:has(> .plb){padding-left:74px;height:60px}
-tr.o-up td.l,tr.me td.l{box-shadow:none}
-tr.o-up td.l::after,tr.me td.l::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--good)}
-tr.me td.l::after{background:var(--blue)}
-.pr{padding:6px 0 6px 68px;min-height:56px}
-.pr > .av{width:60px;top:2px;bottom:2px;border-radius:8px 0 0 8px}
-.row{padding-left:96px;min-height:54px}
-.row > .ck{position:absolute;left:10px;top:50%;margin-top:-9px;width:18px;height:18px;border:1.5px solid #9aa0a6;border-radius:5px;background:#fff}
+.av.QB{background:linear-gradient(135deg,#d4baf0,#efe3fb)}.av.RB{background:linear-gradient(135deg,#b5e2c8,#e2f4ea)}
+.av.WR{background:linear-gradient(135deg,#b9d4f4,#e4effb)}.av.TE{background:linear-gradient(135deg,#f3cf9a,#fcefdc)}
+.av.d img{object-fit:contain!important;padding:5px}
+.row > .ck{width:18px;height:18px;flex:0 0 18px;border:1.5px solid #9aa0a6;border-radius:5px;background:#fff}
 .row.sel > .ck{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 3px #fff}
-.row > .av{left:36px;width:54px}
 .row .nm[data-pid]{display:inline-block;max-width:100%}
-.tp{padding-left:46px;min-height:38px}
-.tp > .av{width:40px;border-radius:6px 0 0 6px}
 .tops{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
-.top1{padding-left:132px;overflow:hidden;min-height:132px}
-.top1 .hd > .av{width:124px}
+.top1{position:relative;padding-left:132px;overflow:hidden;min-height:132px}
+.top1 .hd > .av{position:absolute;left:0;top:0;bottom:0;width:124px;height:auto;flex:none;border-radius:0;
+  -webkit-mask-image:linear-gradient(90deg,#000 60%,transparent);mask-image:linear-gradient(90deg,#000 60%,transparent)}
+.top1 .hd > .av img{object-position:50% 0}
 .top1 .ft span:last-child{white-space:nowrap}
-.pct{margin:-18px -18px 0;padding:16px 50px 14px 142px;min-height:132px;border-radius:14px 14px 0 0;overflow:hidden;background:var(--panel2);border-bottom:1px solid var(--line)}
-.pct > .av.xl{width:130px}
 .mclose{z-index:2}
+td > .wks{flex-wrap:nowrap}
+td > .wks .wkc{min-width:50px}
 /* ==== the card: a compact schedule, and a game log that stays inside its box ============== */
 .pcsched{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;border:0;border-radius:0;overflow:visible}
 .pcw{display:flex;flex-direction:column;align-items:center;gap:0;padding:5px 2px 6px;border:0;border-radius:7px;background:#eef0f2;line-height:1.25;min-width:0}
@@ -545,17 +532,12 @@ tr.me td.l::after{background:var(--blue)}
 .pch{margin:14px 0 6px}
 .pcls,.pcns{margin-top:12px}
 @media (max-width:820px){
-  td.l{position:relative}
   th,td{padding:7px 4px}
-  .plb > .av{width:52px}
-  td.l:has(> .plb){padding-left:58px}
   td.num .pt{padding:3px 6px}
   .xc{width:32px;padding-right:4px!important}
   .tops{grid-template-columns:minmax(0,1fr)}
   .top1{padding-left:104px;min-height:112px}
   .top1 .hd > .av{width:96px}
-  .pct{margin:-16px -14px 0;padding:14px 46px 12px 120px;min-height:116px;border-radius:16px 16px 0 0}
-  .pct > .av.xl{width:110px}
   .pcsched{grid-template-columns:repeat(4,minmax(0,1fr))}
   .pcls{grid-template-columns:1fr 1fr}
 }
@@ -579,6 +561,7 @@ tr.me td.l::after{background:var(--blue)}
 <section class="view" id="v-targets" hidden>
   <div class="sect-h">Where I need help <span>my lineup's rank at each spot — tap a position to see who fixes it</span></div>
   <div class="tiles" id="ntiles"></div>
+  <div class="hint2" id="replline"></div>
   <div class="sect-h">Top targets <span id="topsub"></span></div>
   <div class="tops" id="tops"></div>
   <div class="sect-h">Everyone who helps <span id="tgsub"></span></div>
@@ -661,7 +644,6 @@ tr.me td.l::after{background:var(--blue)}
 </section>
 
 <section class="view" id="v-waivers" hidden>
-  <details class="hab" id="habits"></details>
   <div class="tools">
     <div class="seg" id="wvmode"><button data-m="" class="on">Players</button><button data-m="K">Kickers</button><button data-m="DST">Defenses</button></div>
     <div class="seg" id="wvpos">
@@ -863,6 +845,11 @@ function lineupOf(ids, mine){
 // when ESPN's status says he plays again: `back` is the week (99 = not this fantasy season),
 // `first` is how much of his first game back to count on
 function autoOut(p){
+  // ESPN's projections already know who is out: he is back the first week ESPN gives him points
+  if(p.ep){
+    const i = p.wk.findIndex(w => w.o !== "BYE" && !w.z);
+    return {back:i < 0 ? 99 : p.wk.slice(0, i).some(w => w.z) ? p.wk[i].w : D.weeks[0], first:1, espn:true};
+  }
   const w0 = D.weeks[0], hurt = p.inj === "O" || p.inj === "IR" || p.inj === "SUS";
   const first = p.inj === "D" ? 0.25 : p.inj === "Q" ? 0.8 : hurt ? 0.85 : 1;
   if(!p.inj) return {back:w0, first:1};
@@ -879,6 +866,7 @@ function recompute(){
       if(w.o === "BYE") return 0;
       let a = 1;
       if(o){ if(o.t === "O" && w.w <= o.thru) a = 0; }
+      else if(p.ep){ if(w.z) a = 0; }                 // a week ESPN projects at zero
       else if(w.w < au.back) a = 0;
       else if(!back){ a = au.first; back = true; }
       raw += w.p; tot += w.p * a;
@@ -980,7 +968,7 @@ function buildTargets(){
     }
     // hurt players are nobody's target: anyone out, doubtful, on IR or suspended is left off
     // until I overrule ESPN's status myself, however soon he is due back
-    if(p.af < 0.9 || (!OV[p.id] && ["O","IR","SUS","D"].includes(p.inj))) continue;
+    if(p.af < 0.9 || (!p.ep && !OV[p.id] && ["O","IR","SUS","D"].includes(p.inj))) continue;
     const after = mine.concat([p.id]), role = rolesOf(after, true)[p.id];
     if(!p.t){
       const d = delta(bare, worth(after, false, true));
@@ -1002,8 +990,8 @@ function buildTargets(){
 function injBadge(p){
   const o = OV[p.id], w0 = D.weeks[0], last = D.weeks[D.weeks.length - 1];
   if(o) return o.t === "O" ? `<span class="inj man">OUT${o.thru >= last ? " season" : o.thru === w0 ? " wk " + o.thru : " thru " + o.thru}</span>` : "";
-  if(!p.inj) return "";
   const b = p.au.back;
+  if(!p.inj) return p.ep && b > w0 ? `<span class="inj">OUT${b > last ? " · season" : " · back wk " + b}</span>` : "";
   return `<span class="inj ${p.inj}">${p.inj}${b > last ? " · season" : b > w0 ? " · back wk " + b : ""}</span>`;
 }
 function roleBadge(p){
@@ -1054,7 +1042,7 @@ function wkChip(p, i, lab){
 function stSel(p){
   const o = OV[p.id], cur = o ? (o.t === "H" ? "H" : "O:" + o.thru) : "";
   const nm = {"":"Active", Q:"Questionable", D:"Doubtful", O:"Out", IR:"On IR", SUS:"Suspended"}[p.inj || ""];
-  const bk = p.au.back, auto = !p.inj ? nm : bk > D.weeks[D.weeks.length - 1] ? nm + (p.au.unknown ? ", no return date" : " for season") : bk > D.weeks[0] ? `${nm}, back wk ${bk}` : nm;
+  const bk = p.au.back, auto = !p.inj && !(p.ep && bk > D.weeks[0]) ? nm : bk > D.weeks[D.weeks.length - 1] ? (p.inj ? nm : "Out") + (p.au.unknown ? ", no return date" : p.ep ? ": ESPN projects 0" : " for season") : bk > D.weeks[0] ? `${nm}, back wk ${bk}` : nm;
   const last = D.weeks[D.weeks.length - 1];
   let opts = `<option value=""${cur === "" ? " selected" : ""}>${auto}</option>`;
   if(p.inj) opts += `<option value="H"${cur === "H" ? " selected" : ""}>Healthy</option>`;
@@ -1300,6 +1288,12 @@ function renderTops(){
 function renderTargets(){
   renderTiles("ntiles", true);
   renderTops();
+  // scarcity, measured not assumed: a player's trade value is his points over what the waiver wire gives at HIS position
+  { const gap = REPL.WR - REPL.RB;
+    $("replline").innerHTML = `Trade value is points over the waiver wire at the same position. Today the wire gives ${SKILL.map(pos => `${pos} <b>${f1(REPL[pos])}</b>`).join(" · ")} a game, so ` +
+      (Math.abs(gap) < 1 ? "running backs and receivers are equally hard to replace right now."
+        : gap > 0 ? `running backs are scarcer: a back is worth about ${f1(gap)} more than a receiver who scores the same.`
+        : `receivers are scarcer: a receiver is worth about ${f1(-gap)} more than a back who scores the same.`); }
   const mode = S.tgMode;
   let list = (mode === "buy" ? BUYS : mode === "sell" ? SELLS : DEPTHS).slice();
   if(S.tgPos !== "ALL") list = list.filter(x => x.p.pos === S.tgPos);
@@ -1459,10 +1453,13 @@ function renderKD(pos){
   if(S.wvAll) for(const p of Object.values(P)) if(p.pos === pos && p.t && p.t !== ME) rows.push({p});
   if(S.wvQ){ const q = S.wvQ.toLowerCase(); rows = rows.filter(r => (r.p.n + " " + r.p.tm).toLowerCase().includes(q)); }
   const dv = (r, k) => (r.mine ? null : r.x ? r.x.d[k] : best ? r.p[k === "reg" ? "ros" : "po"] - best[k === "reg" ? "ros" : "po"] : null);
-  $("wvhint").innerHTML = pos === "DST"
-    ? `Defenses are projected mostly from the <b>matchup</b>: a week is the league average (${f1(m.lg)}) plus ${Math.round((m.match || 0) * 100)}% of how far that opponent is above or below average in points given up to defenses, plus ${Math.round((m.own || 0) * 100)}% of the unit's own edge. Weights are fitted on this season's games, blended with published streaming research.`
-    : `Kickers mostly regress to the average (${f1(m.lg)}): a week is that, plus ${Math.round((m.own || 0) * 100)}% of the kicker's own edge, plus ${(m.match || 0).toFixed(2)} for every point his team is expected to score above average. Weights are fitted on this season's games, blended with published research.`;
-  $("wvcount").textContent = plural(rows.length, pos === "K" ? "kicker" : "defense");
+  $("wvhint").innerHTML = ((D.proj || {}).src === "espn" ? "Projections are ESPN's, week by week. " : "") + (pos === "DST"
+    ? "The schedule shades each opponent by how many points it gives up to defenses: green is a soft matchup, red a tough one."
+    : "To weigh one kicker against another: field-goal attempts a game and accuracy are his own; team points and game total are the scoring he kicks in. Green is high among kickers, red low.");
+  // where a kicker's number sits among all kickers
+  const kq = k => { const a = Object.values(P).filter(p => p.pos === "K" && p[k] != null).map(p => p[k]).sort((x, y) => x - y);
+    return r => { const v = r.p[k]; if(v == null || a.length < 8) return ""; let n = 0; while(n < a.length && a[n] <= v) n++; const q = n / a.length; return q >= 0.6 || q <= 0.4 ? "background:" + heat(q, 0.6) : ""; }; };
+  $("wvcount").textContent = `My FAAB $${left[ME] || 0} · ${plural(rows.length, pos === "K" ? "kicker" : "defense")}`;
   $("wvall").textContent = S.wvAll ? "Only available and mine" : "Show rostered ones too";
   const cols = [
     {k:"name", h:pos === "K" ? "Kicker" : "Defense", l:true, v:r => r.p.n, html:r => plyX(r.p, r.mine ? `<span class="rtag S">MINE</span>` : r.p.t ? ownTag(r.p) : `<span class="own fa">FA</span>`)},
@@ -1472,9 +1469,15 @@ function renderKD(pos){
     ...(PO.length ? [{k:"pog", h:"+PO", po:true, v:r => dv(r, "po"), html:r => (dv(r, "po") == null ? "" : gainCell(dv(r, "po")))}] : []),
     {k:"bid", h:"Bid", c:true, v:r => (r.x ? r.x.bid : null), html:r => (r.x ? `<span class="gr ${r.x.bid >= 0.03 * (left[ME] || 1) ? "b" : r.x.bid ? "c" : "d"}">${r.x.bid ? "$" + r.x.bid : "–"}</span>` : "")},
     {k:"term", h:"Helps for", c:true, v:r => (r.x ? ({long:3, short:2, fill:1, none:0})[r.x.term.k] * 100 + r.x.term.use : null), html:r => (r.x ? termPill(r.x) : "")},
-    {k:"next", h:"Next four", t:"Opponent and projection; green is a soft matchup, red a tough one", sep:true, nosort:true, html:r => `<div class="wks">${D.weeks.slice(0, 4).map((w, i) => wkChip(r.p, i, true)).join("")}</div>`},
-    {k:"ppg", h:"So far", t:"Points a game this season, league scoring", v:r => r.p.ppg, html:r => (r.p.ppg != null ? f1(r.p.ppg) : "–")},
-    {k:"drop", h:"Drop", nosort:true, html:r => (r.x && r.x.drop && r.x.bid ? esc(short(P[r.x.drop.id])) : "")},
+    ...(pos === "K" ? [
+      {k:"fga", h:"FGA/g", t:"Field-goal attempts a game this season", sep:true, v:r => r.p.fga, html:r => (r.p.fga != null ? f1(r.p.fga) : "–"), style:kq("fga")},
+      {k:"fgp", h:"FG%", t:"Field goals made per attempt", v:r => r.p.fgp, html:r => (r.p.fgp != null ? Math.round(r.p.fgp * 100) + "%" : "–"), style:kq("fgp")},
+      {k:"tpg", h:"Team pts", t:"His team's points a game", v:r => r.p.tpg, html:r => (r.p.tpg != null ? f1(r.p.tpg) : "–"), style:kq("tpg")},
+      {k:"gt", h:"Game total", t:"Combined points a game in his team's games", v:r => r.p.gt, html:r => (r.p.gt != null ? f1(r.p.gt) : "–"), style:kq("gt")},
+      {k:"ppg", h:"So far", t:"His points a game this season, league scoring", v:r => r.p.ppg, html:r => (r.p.ppg != null ? f1(r.p.ppg) : "–"), style:kq("ppg")},
+    ] : []),
+    {k:"next", h:pos === "DST" ? "Schedule" : "Next four", t:"Opponent and projection; green is a soft matchup, red a tough one", sep:true, nosort:true,
+      html:r => `<div class="wks">${D.weeks.slice(0, pos === "DST" ? D.weeks.length : 4).map((w, i) => wkChip(r.p, i, true)).join("")}</div>`},
   ];
   const sk = S.kdSortK;
   $("wvscroll").innerHTML = gridHtml(cols, sortRows(rows, cols, sk.k, sk.dir), sk.k, sk.dir, r => (r.mine ? ' class="me"' : ""), ["ros", "po"]);
@@ -1492,7 +1495,6 @@ function renderWaivers(){
   const F = D.faab;
   if(!F){ $("wvscroll").innerHTML = `<div class="chip" style="margin:12px">This league doesn't use FAAB</div>`; return; }
   const left = F.left || {};
-  renderHabits();
   const kd = S.wvMode === "K" || S.wvMode === "DST";
   for(const id of ["wvpos", "wvterm", "wvcols"]) $(id).hidden = kd;
   $("wvhint").hidden = !kd;
@@ -1502,7 +1504,7 @@ function renderWaivers(){
   if(S.wvQ){ const q = S.wvQ.toLowerCase(); list = list.filter(x => (x.p.n + " " + x.p.tm).toLowerCase().includes(q)); }
   if(!S.wvAll) list = list.filter(x => x.bid > 0 || x.p.xp);
   if(S.wvTerm) list = list.filter(x => x.term.k === S.wvTerm);
-  $("wvcount").textContent = plural(list.length, "free agent");
+  $("wvcount").textContent = `My FAAB $${left[ME] || 0} · ${plural(list.length, "free agent")}`;
   $("wvall").textContent = S.wvAll ? "Only ones worth a bid" : "Show every free agent";
   const top = WAIV.length ? Math.max(1, ...WAIV.map(x => x.bid)) : 1;
   // colour by how much of my budget it is, not by how it compares with a thin week's best
@@ -1765,7 +1767,7 @@ function sets(ids){
   return out;
 }
 // nobody deals for the injured list: hurt players stay out of the search unless I asked for one
-const tradeable = (t, keep) => t.players.filter(id => id === keep || (SKILL.includes(P[id].pos) && P[id].base >= 5 && P[id].af >= 0.75 && (OV[id] || !["O","IR","SUS","D"].includes(P[id].inj))));
+const tradeable = (t, keep) => t.players.filter(id => id === keep || (SKILL.includes(P[id].pos) && P[id].base >= 5 && P[id].af >= 0.75 && (OV[id] || P[id].ep || !["O","IR","SUS","D"].includes(P[id].inj))));
 const sumV = ids => ids.reduce((s,id) => s + P[id].v, 0);
 const maxV = ids => ids.reduce((m,id) => Math.max(m, P[id].v), 0);
 const keepV = ids => ids.reduce((s,id) => s + P[id].v * (KEEP[ROLE0[id]] || 0.75), 0);
@@ -2143,24 +2145,6 @@ function buildHabits(){
       style:f >= 1.25 ? "big" : f <= 0.8 ? "thrifty" : "avg"};
   }
 }
-const STYLE = {big:["Big spender", "r"], avg:["Average", ""], thrifty:["Thrifty", "g"]};
-function renderHabits(){
-  const F = D.faab, left = F.left || {};
-  const rows = D.teams.slice().sort((a,b) => (b.id === ME) - (a.id === ME) || (left[b.id] || 0) - (left[a.id] || 0)).map(t => ({t, h:HAB[t.id] || {f:1, n:0, won:0, lost:0, top:[]}}));
-  const bidTxt = b => `$${b.a}${b.n ? " " + esc(b.n) : ""} <span class="dimn">wk ${b.w}${b.won ? "" : ", lost"}</span>`;
-  const cols = [
-    {k:"name", h:"Team", l:true, html:({t}) => `<div class="ply">${tlogo(t.id)}<div class="who"><div class="nm">${esc(t.id === ME ? "Me" : t.name)}</div></div></div>`},
-    {k:"left", h:"Left", t:"FAAB left of $" + F.budget, html:({t}) => `<b>$${left[t.id] || 0}</b>`},
-    {k:"style", h:"Bids like", t:"How hard this team goes when it wants a player, against the league: the average of its three biggest bids as a share of the budget it had at the time", c:true,
-      html:({t, h}) => (t.id === ME ? `<span class="dimn">–</span>` : h.n ? `<span class="chip ${STYLE[h.style][1]}">${STYLE[h.style][0]}</span> <span class="dimn">×${h.f.toFixed(2)}</span>` : `<span class="dimn">no bids</span>`)},
-    {k:"bids", h:"Bids", t:"Waiver bids this season: won / lost to a higher bid", html:({h}) => `${h.won} won · ${h.lost} lost`},
-    {k:"typ", h:"Typical", t:"Median bid", html:({h}) => (h.typ != null ? "$" + h.typ : "–")},
-    {k:"top", h:"Biggest bids", t:"Its three biggest bids, won or lost", html:({h}) => h.top.map(bidTxt).join("<br>") || "–"},
-  ];
-  cols.forEach(c => (c.nosort = true));
-  $("habits").innerHTML = `<summary>How rivals bid<span>my FAAB <b>$${left[ME] || 0}</b> of $${F.budget} · ${(F.hist || []).length} bids on record this season</span></summary>` +
-    `<div class="scroll">${gridHtml(cols, rows, null, -1, ({t}) => (t.id === ME ? ' class="me"' : ""), ["left", "style"])}</div>`;
-}
 function buildWaivers(){
   buildHabits();
   WAIV = [];
@@ -2177,7 +2161,12 @@ function buildWaivers(){
     const raw = dw.reduce((s, x, i) => s + x * wt(i), 0) / denom, term = termOf(dw);
     // a fill-in only counts if he's needed this coming week, and only for that week
     const now = term.k === "fill" && term.wk === D.weeks[0] ? dw[0] * wt(0) / denom : 0;
-    return {dw, raw, term, g:term.k === "fill" ? now : raw * term.persist};
+    /* A kicker's or a defence's projected edge is far less dependable than a skill player's:
+       this season only about a quarter of a kicker's edge over the average carried into his
+       next game, and about two-thirds of a defence's (own form plus matchup). A bid is sized
+       on the part that can be counted on, so nobody pays starter money for a kicker. */
+    const kd = (D.kd || {})[p.pos], rel = SKILL.includes(p.pos) ? 1 : kd ? Math.min(1, p.pos === "K" ? kd.own : kd.own + kd.match) : 0.4;
+    return {dw, raw, term, g:(term.k === "fill" ? now : raw * term.persist) * rel};
   };
   for(const p of Object.values(P)){
     if(p.t || !(p.base > 0)) continue;
@@ -2256,7 +2245,9 @@ function playerCard(id){
   }
   const read = skill ? sigChips(p).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join(" ") : "";
   // how the number is built
-  const how = skill && p.g != null
+  const how = p.ep
+    ? `<b>${f1(p.base)}</b> a game in the weeks he plays. These are <b>ESPN's projections</b>, week by week, in this league's scoring.${p.wk.some(w => w.z) ? " A week ESPN projects at zero counts as out unless I overrule it under My call." : ""}${skill && p.g != null ? ` For reference: his workload is worth ${f1(p.xfp)} expected points a game, and he has scored ${f1(p.ppg)} a game over ${plural(p.g, "game")}.` : p.g != null ? ` So far: ${f1(p.ppg)} a game.` : ""}`
+    : skill && p.g != null
     ? `<b>${f1(p.base)}</b> a game when healthy = half his workload (${f1(p.xfp)} expected points from his carries and targets${p.pos === "QB" ? ", passes and runs" : ""}) and half what he has scored (${f1(p.ppg)} a game over ${plural(p.g, "game")})${p.xp ? ", lifted to his last three games because the analysts flagged him this week" : Math.abs(p.rs || 0) >= 0.05 ? `, leaning on his last three because his role moved ${p.rs > 0 ? "up" : "down"} ${Math.round(Math.abs(p.rs) * 100)}%` : ""}. Each week is that rate times the matchup (how many points the opponent gives up to ${p.pos}s, up to ±20%), zero on a bye, and nothing while he's out.`
     : (D.kd || {})[p.pos] && p.g != null
       ? `<b>${f1(p.base)}</b> a game on average. ${p.pos === "DST" ? "A defense's week is mostly its opponent" : "Kickers mostly regress to the average"}: each week starts at the league average (${f1(D.kd[p.pos].lg)}), adds ${Math.round(D.kd[p.pos].own * 100)}% of ${p.pos === "DST" ? "this unit's" : "his"} own edge (${f1(p.ppg)} a game so far), and ${p.pos === "DST" ? Math.round(D.kd[p.pos].match * 100) + "% of how far that opponent is above or below average in points given up to defenses" : D.kd[p.pos].match.toFixed(2) + " for every point his team is expected to score above average"}.`

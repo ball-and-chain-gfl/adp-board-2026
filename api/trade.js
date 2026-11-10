@@ -39,6 +39,24 @@ const SLEEPER = "https://api.sleeper.app";
 const ESPN_INJ_FEED = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries";
 // every active NFL player's id and name, public: used only to put names on past waiver bids
 const ESPN_PLAYERS = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/players?view=players_wl&scoringPeriodId=0`;
+/* ESPN's own projections, one week at a time, for the 500 most-owned players. This is ESPN's
+   public full-PPR default league (the same scoring as this one, kickers and defences included),
+   so it needs no login and covers free agents. The rank filters only trim the payload. */
+const ESPN_PROJ = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}/segments/0/leaguedefaults/3?view=kona_player_info`;
+async function espnWeek(w) {
+  const filter = { players: { filterSlotIds: { value: [0, 2, 4, 6, 17, 16] }, sortPercOwned: { sortPriority: 1, sortAsc: false }, limit: 500, offset: 0,
+    filterStatsForTopScoringPeriodIds: { value: 1, additionalValue: ["11" + SEASON + w] },
+    filterRanksForScoringPeriodIds: { value: [w] }, filterRanksForRankTypes: { value: ["PPR"] }, filterRanksForSlotIds: { value: [0] } } };
+  const r = await fetch(ESPN_PROJ + "&scoringPeriodId=" + w, { headers: { "x-fantasy-filter": JSON.stringify(filter), "User-Agent": "adp-board/1.0", Accept: "application/json" }, signal: AbortSignal.timeout(12000) });
+  if (!r.ok) throw new Error("espn projections returned " + r.status);
+  const out = {};
+  for (const p of (await r.json()).players || []) {
+    const pl = p.player || {}, s = (pl.stats || []).find(x => x.statSourceId === 1 && x.statSplitTypeId === 1 && x.scoringPeriodId === w);
+    if (s && s.appliedTotal != null) out[pl.id] = { v: s.appliedTotal, n: pl.fullName, pos: POS[pl.defaultPositionId], tm: pl.proTeamId };
+  }
+  if (Object.keys(out).length < 150) throw new Error("espn projections: only " + Object.keys(out).length + " players");
+  return out;
+}
 const SKILL_Q = "position[]=QB&position[]=RB&position[]=WR&position[]=TE&position[]=K&position[]=DEF";
 const SKILL = ["QB", "RB", "WR", "TE"];
 // how many unrostered players to carry at each position, best first
@@ -186,7 +204,7 @@ export default async function handler(req, res) {
 
     // ---- Sleeper weekly stats, every week played so far
     const played = Math.max(1, Math.min(18, Math.min(+state.week || 1, firstWeek)));
-    const [weekly, txWeeks, espnNames] = await Promise.all([
+    const [weekly, txWeeks, espnNames, espnProj] = await Promise.all([
       Promise.all(Array.from({ length: played }, (_, i) =>
         getRetry(`${SLEEPER}/stats/nfl/${SEASON}/${i + 1}?season_type=regular&${SKILL_Q}`).catch(() => null))),
       // the league's transactions, a week at a time: every waiver bid, won or lost. Optional.
@@ -194,6 +212,7 @@ export default async function handler(req, res) {
         getRetry(`${GFL}?view=mTransactions2&scoringPeriodId=${i + 1}&seasonId=${SEASON}`).catch(() => null))),
       fetch(ESPN_PLAYERS, { headers: { "X-Fantasy-Filter": '{"filterActive":{"value":true}}', Accept: "application/json" }, signal: AbortSignal.timeout(8000) })
         .then(r => (r.ok ? r.json() : [])).catch(() => []),
+      Promise.all(weeks.map(w => espnWeek(w).catch(() => espnWeek(w)).catch(() => null))),   // one retry each
     ]);
 
     // A week that has been played and comes back empty is a failed fetch, not a quiet week.
@@ -237,7 +256,7 @@ export default async function handler(req, res) {
           if (!s.fga && !s.xpa) continue;
           const u = (KD["K|" + x.player_id] = KD["K|" + x.player_id] || { pos: "K", sid: x.player_id, name: ((pl.first_name || "") + " " + (pl.last_name || "")).trim(), gs: [] });
           u.tm = fix(pl.team) || tm;
-          u.gs.push({ w, opp, tm, pts: kPts(s) });
+          u.gs.push({ w, opp, tm, pts: kPts(s), fga: s.fga || 0, fgm: s.fgm || 0, xpa: s.xpa || 0 });
         }
       }
     });
@@ -463,7 +482,16 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     }
     const kdOf = (pos, name, proTeamId) => (pos === "DST" ? KD["DST|" + TEAM[proTeamId]]
       : Object.values(KD).find(u => u.pos === "K" && norm(u.name) === norm(name)) || null);
-    const kdBlock = u => ({ g: u.gs.length, ppg: r1(u.ppg), pl: u.pl, base: r1(u.base), wk: u.wk });
+    const kdBlock = u => {
+      const b = { g: u.gs.length, ppg: r1(u.ppg), pl: u.pl, base: r1(u.base), wk: u.wk };
+      if (u.pos !== "K") return b;
+      // field-goal attempts a game and accuracy are his; team points and game totals are the
+      // scoring environment he kicks in (his team's games this season)
+      const fga = u.gs.reduce((s, g) => s + g.fga, 0), fgm = u.gs.reduce((s, g) => s + g.fgm, 0);
+      const tg = Object.keys(PF[u.tm] || {});
+      return Object.assign(b, { fga: r1(fga / u.gs.length), fgp: fga ? r3(fgm / fga) : null, xpa: r1(u.gs.reduce((s, g) => s + g.xpa, 0) / u.gs.length),
+        tpg: tg.length ? r1(mean(tg.map(w => PF[u.tm][w]))) : null, gt: tg.length ? r1(mean(tg.map(w => PF[u.tm][w] + ((PA[u.tm] || {})[w] || 0)))) : null });
+    };
 
     // the rate everything is projected from: half usage (xFP), half production, on the SEASON.
     // The last three games only get a say when the role itself moved - up to 60% of the weight
@@ -668,11 +696,38 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     }
     const experts = { ok: Object.fromEntries(AUTHORS.map(([who], i) => [who, !!authorPages[i]])), picks };
 
+    /* ---- ESPN's projections replace the model's, wherever ESPN has one ------------------------
+       Each remaining week takes ESPN's projected points. A week ESPN projects at zero (out, or
+       not expected to play) is flagged `z` and carries the player's average for the weeks he
+       does play, so the page can show him at zero by default and still answer "what if he's
+       healthy" when I overrule it. `base` becomes that average; `own` keeps the model's number
+       for reference. The model stays as the fallback for anyone ESPN doesn't cover. */
+    const eIdx = {}, eDst = {};
+    for (const m of espnProj) for (const [id, x] of Object.entries(m || {})) {
+      if (x.pos === "DST") eDst[TEAM[x.tm]] = id; else if (x.n) eIdx[norm(x.n) + "|" + x.pos] = id;
+    }
+    let espnN = 0;
+    for (const pl of Object.values(players)) {
+      const eid = pl.t ? pl.id : pl.pos === "DST" ? eDst[pl.tm] : eIdx[norm(pl.n) + "|" + pl.pos];
+      if (eid == null) continue;
+      const vals = weeks.map((w, i) => (espnProj[i] && espnProj[i][eid] ? espnProj[i][eid].v : null));
+      if (vals.every(v => v == null)) continue;
+      const plays = vals.filter(v => v > 0);
+      const healthy = plays.length ? mean(plays) : pl.base || 0;
+      pl.wk = pl.wk.map((x, i) => {
+        if (x.o === "BYE") return x;
+        const v = vals[i];
+        return v > 0 ? { ...x, p: r1(v) } : v === 0 ? { ...x, p: r1(healthy), z: 1 } : { ...x, p: r1(healthy) };
+      });
+      pl.own = pl.base; pl.base = r1(healthy); pl.ep = 1; delete pl.xpRole;
+      espnN++;
+    }
+
     res.status(200).json({
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       scoring: { rec: recPts != null ? recPts : null, int: intPts != null ? intPts : null },
-      opps, kd: kdModel,
+      opps, kd: kdModel, proj: { src: espnN ? "espn" : "model", players: espnN, weeks: espnProj.filter(Boolean).length },
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
       model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
       teams, players, faab, experts,

@@ -34,8 +34,8 @@ The rest of a row still does what it did: on Targets it opens his packages; in t
 ticks the player into the deal (each row has a checkbox), while his name or photo opens the
 card.
 
-Photos fill the left side of their row or card at full height and fade into it, on a gradient
-of the position's colour; lineup gains are coloured pills, so a list reads by colour before it
+Photos are rounded tiles on a tint of the position's colour; top-target cards alone show the
+photo at full height on the left, fading into the card. Lineup gains are coloured pills, so a list reads by colour before it
 reads by number. Both pages use Inter (Google Fonts) with tabular figures. The
 page uses a light theme in the style of a fantasy-sports site (white panels on light grey, a dark
 top bar, one blue for actions, green = good for me, red = bad for me, amber = maybe), and shows
@@ -138,7 +138,18 @@ turnovers, return TDs; field goals by distance), which reproduces ESPN's season 
 decimal for nearly every unit. Free-agent kickers and defenses are in the pool, so they get a
 bid, a term and a player card like anyone else.
 
-The projection follows what the streaming research agrees on — a defense's week is mostly its
+**Projections are ESPN's** (above). The model described next is only the fallback for a unit
+ESPN doesn't cover, and the source of the reliability discount on bids: a bid is sized on the
+part of a kicker's or defense's edge that can be counted on (`own` for kickers, `own + match`
+for defenses, about a quarter and two-thirds), so the tool never pays starter money for a
+kicker.
+
+The Defenses table shows the whole remaining schedule, each opponent shaded by how many
+points it gives up to defenses. The Kickers table adds the numbers for weighing one kicker
+against another, tinted by where they sit among kickers: field-goal attempts a game and
+accuracy (his own), team points a game and game total (the scoring he kicks in).
+
+The fallback model follows what the streaming research agrees on — a defense's week is mostly its
 opponent, a kicker's is mostly how many points his team should score — but with no free
 rest-of-season betting lines it is built from this season's results:
 
@@ -179,8 +190,8 @@ is then
 
 so habit scales the bid and the wallet caps it: a team that spent big early bids like a big
 spender on whatever it has left. Budget-at-the-time ignores FAAB moved in trades (ESPN doesn't
-date it), so shares cap at 1. The Waivers tab opens with a *How rivals bid* panel: FAAB left,
-style, bids won and lost, typical bid and the three biggest.
+date it), so shares cap at 1. There is no panel for this; it shows up as the rival's expected
+bid in the *Top rival* column, tagged *big spender* or *thrifty* where it applies.
 
 ### Waivers and FAAB
 
@@ -222,24 +233,25 @@ Yahoo is unreachable or changes its markup, nobody gets the adjustment and every
 
 ### Where the projections come from
 
-They are this tool's own, built in `api/trade.js` on every load. No outside projection is used
-— not ESPN's, not Sleeper's, not an analyst's.
+**ESPN.** Every remaining week uses ESPN's own projected points for that player, read from
+ESPN's public full-PPR default league (`leaguedefaults/3`, `kona_player_info`, one call per
+week, the 500 most-owned players). That league's scoring is the same as this one's, kickers
+and defenses included, and it needs no login, so free agents are covered too. The payload
+says so in `proj` (`src`, players covered, weeks loaded): 392 of 415 players on 11/10.
 
-1. **Per-game rate.** Half *workload*, half *production*. Workload is xFP: a model refitted on
-   every load from this season's player-games (Sleeper's weekly stat feed) that prices carries,
-   red-zone carries, targets and red-zone targets separately for RB, WR and TE, and pass
-   attempts and runs for QBs. Production is his actual full-PPR points a game. Both run on the
-   whole season; the last three games only weigh in when his role changed (see *role* below).
-2. **Each week.** That rate times a matchup factor: how many points the week's opponent has
-   allowed to his position against the league average, taking half the gap, capped at ±20%.
-   Zero on a bye.
-3. **Availability.** ESPN's injury status and return dates, or my own call, zero out the weeks
-   he misses.
-4. **Exceptions.** Kickers and defenses have their own model (see *Kickers and defenses*). A free agent the
-   analysts named in a waiver piece is projected on his last three games.
+- A week ESPN projects at **zero** (out, or not expected to play) counts as out. It is flagged
+  `z` and still carries the player's average for the weeks he does play, so overruling it with
+  *Healthy* under "My call" gives a real number.
+- `base` is ESPN's average over the weeks he plays; `own` keeps this tool's number for
+  reference.
+- ESPN's projections already carry injuries, so the status-and-return-date logic only applies
+  to the few players ESPN doesn't cover.
 
-What it does not know: Vegas totals, weather, depth-chart news that hasn't shown up in snaps
-yet, or anyone else's projections.
+**Fallback.** Anyone ESPN has no projection for (a few deep free agents) keeps this tool's own
+model: half workload (xFP, a model refitted on this season's player-games that prices carries,
+red-zone carries, targets and red-zone targets by position), half scoring, times a matchup
+factor capped at ±20%. If ESPN's feed is down, everyone falls back to it. The workload model
+is still what the *Read* column, the stats and the Role signal are built on.
 
 ### How a player is read (Targets)
 
@@ -273,6 +285,18 @@ Starters list and out of every suggested package until I overrule ESPN's status 
 
 Not two price tags — two rosters.
 
+- **Is there a running-back premium?** Checked on 11/10 rather than assumed. On ESPN's weekly
+  projections the best free-agent backs after the first project to **6.7** a game against
+  **8.9** for receivers, so a back is about 2 points a game harder to replace, and the 36th
+  back has scored 8.9 a game this season against 11.0 for the 36th receiver. Starter-level
+  depth is even (12 backs and 10 receivers project 16+; the 24th of each sits ~4 over its own
+  replacement). Published multi-season work puts a top back at roughly 1.3× a top receiver's
+  value over replacement. The premium needs no special rule: value is measured against each
+  position's own waiver wire (next bullet), so it is whatever that gap is today, and the
+  Targets tab prints the current replacement levels and who is scarcer.
+  Sources: [Fantasy Points, WAR position trends](https://www.fantasypoints.com/nfl/articles/2024/fantasy-war-position-trends),
+  [The Fantasy Footballers, positional replacement value](https://www.thefantasyfootballers.com/articles/positional-replacement-value-by-draft-round-in-fantasy-football/),
+  [Sharp Football Analysis, replacement value](https://www.sharpfootballanalysis.com/fantasy/fantasy-football-high-scorers-replacement-value-and-repeating-starting-weeks/amp/).
 - **Position scarcity.** Trade value is points over the waiver wire *at the same position*
   (average of the 2nd–4th best free agents). Where free agents are thin a starter is worth more
   than an equal scorer at a position you can replace for free. The Targets header shows the
