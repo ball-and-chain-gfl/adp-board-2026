@@ -207,6 +207,13 @@ week, the 500 most-owned players). That league's scoring is the same as this one
 and defenses included, and it needs no login, so free agents are covered too. The payload
 says so in `proj` (`src`, players covered, weeks loaded): 392 of 415 players on 11/10.
 
+- **A bye is not a game.** A player's rest-of-season and playoff numbers (ROS, PO, the
+  "15.7 a game" under his tag, his rank at the position) average only the weeks his team
+  plays. His bye is left out, so it never makes him look like a worse player, and shown
+  instead as a **BYE N** tag beside his name wherever he appears. Lineup numbers (what he
+  adds to my lineup a week, a trade's gain) still count the week he sits, because the lineup
+  really is without him then.
+
 - A week ESPN projects at **zero** (out, or not expected to play) counts as out. It is flagged
   `z` and still carries the player's average for the weeks he does play, so overruling it with
   *Healthy* under "My call" gives a real number.

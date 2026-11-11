@@ -77,6 +77,7 @@ button.b.sm{padding:5px 10px;font-size:12px}
 .TE{background:#fcefdc;color:#94520a}.K,.DST{background:#eceef0;color:#555a60}
 .inj{font-size:10px;font-weight:800;color:#fff;background:var(--bad);border-radius:3px;padding:0 5px;white-space:nowrap}
 .inj.Q{background:#c98200}
+.byeb{font-size:10px;font-weight:800;color:#6b4a00;background:var(--warn2);border-radius:3px;padding:0 5px;white-space:nowrap}
 .inj.man{background:var(--blue)}
 .num{font-variant-numeric:tabular-nums}
 .pos-n{color:var(--good)}.neg-n{color:var(--bad)}.dimn{color:#9a9ea3}
@@ -752,6 +753,10 @@ const sgn = (x, d = 1) => (x > 0.049 ? "+" : x < -0.049 ? "−" : "") + Math.abs
 const cls = x => (x > 0.05 ? "pos-n" : x < -0.05 ? "neg-n" : "dimn");
 const ord = n => n + (["th","st","nd","rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)]);
 const avg = (arr, idx) => idx.length ? idx.reduce((s,i) => s + arr[i], 0) / idx.length : 0;
+/* A player's points a game over a stretch of weeks. His bye is not a game: it is left out of the
+   average, so a bye inside the stretch doesn't make him look like a worse player, and flagged
+   with a BYE tag instead. (The lineup maths still knows he scores nothing that week.) */
+const playAvg = (p, idx) => { let s = 0, n = 0; for(const i of idx) if(p.wk[i].o !== "BYE"){ s += p.eff[i]; n++; } return n ? s / n : 0; };
 const short = p => p.pos === "DST" ? p.n : (p.n.replace(/ (Jr\.?|Sr\.?|II|III|IV|V)$/, "").split(" ").slice(1).join(" ") || p.n);
 const initial = p => (p.pos === "DST" || !p.n.includes(" ") ? p.n : p.n[0] + ". " + short(p));
 const ownAb = p => (p.t ? (TEAMS[p.t].abbrev || "T" + p.t) : "FA");
@@ -922,7 +927,7 @@ function recompute(){
     });
     p.af = raw ? tot / raw : 1;          // share of his remaining value he is actually there for
     p.adj = p.base * p.af;
-    p.ros = avg(p.eff, REG); p.po = avg(p.eff, PO);
+    p.ros = playAvg(p, REG); p.po = playAvg(p, PO);
     p.ko = p.eff.map(v => (v > 0 ? 2000 + v : 0));
     const role = roleOf(p.id);
     p.km = !role ? p.ko : p.eff.map(v => (v <= 0 ? 0 : role.r === "B" && role.c ? -1 : TIER(role) + v));
@@ -1110,7 +1115,9 @@ function buildTargets(){
 }
 
 
-function injBadge(p){
+const byeBadge = p => { const b = (p.wk || []).find(w => w.o === "BYE"); return b ? `<span class="byeb" title="Bye week ${b.w}. Not counted in his per-game numbers">BYE ${b.w}</span>` : ""; };
+function injBadge(p){ return injBadge0(p) + byeBadge(p); }
+function injBadge0(p){
   const o = OV[p.id], w0 = D.weeks[0], last = D.weeks[D.weeks.length - 1];
   if(o) return o.t === "O" ? `<span class="inj man">OUT${o.thru >= last ? " season" : o.thru === w0 ? " wk " + o.thru : " thru " + o.thru}</span>` : "";
   const b = p.au.back;
@@ -1354,7 +1361,7 @@ function ptagAvg(p, k, mini){
   if(outW > idx.length / 2) return mini ? "" : `<span class="pt out">Out</span><span class="olw">${outW} of ${plural(idx.length, "week")}</span>`;
   if(p.t === ME){
     const N = STARTN[p.pos], t = r <= Math.ceil(N / 3) ? ["t1", "Elite"] : r <= N ? ["t2", "Starter"] : r <= Math.round(N * 1.5) ? ["t3", "Fringe"] : ["t4", "Bench"];
-    return mini ? "" : `<span class="pt ${t[0]}">${t[1]}</span><span class="olw">${p.pos}${r} · ${f1(p[a])} a week</span>`;
+    return mini ? "" : `<span class="pt ${t[0]}">${t[1]}</span><span class="olw">${p.pos}${r} · ${f1(p[a])} a game</span>`;
   }
   const v = p.lens[k], o = p.lens.over[k];
   const c = v >= 2 ? "up2" : v >= PT ? "up1" : v <= -PT ? "down" : "even";
@@ -1417,7 +1424,7 @@ function renderTops(){
     const p = x.p, w = BESTWILL[p.id];
     return `<button class="top1" data-id="${p.id}">
       <div class="hd">${img(p)}<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div>
-        <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
+        <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${byeBadge(p)}${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
       <div class="nums">${REG.length ? `<div><b class="${cls(x.d.reg)}">${sgn(x.d.reg)}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(x.d.po)}">${sgn(x.d.po)}</b><span>playoffs</span></div>` : ""}</div>
       ${x.over ? (p.base > x.over.base ? `<div class="rp">replaces <b>${esc(short(x.over))}</b> ${f1(x.over.base)} → <b>${f1(p.base)}</b> a game</div>` : `<div class="rp">shares weeks with <b>${esc(short(x.over))}</b></div>`) : ""}
       <div class="tmr">${mkCell(p)}${winCell(p)}</div>
@@ -1637,8 +1644,8 @@ function renderKD(pos){
   $("wvall").textContent = S.wvAll ? "Only available and mine" : "Show rostered ones too";
   const cols = [
     {k:"name", h:pos === "K" ? "Kicker" : "Defense", l:true, v:r => r.p.n, html:r => plyX(r.p, r.mine ? `<span class="rtag S">MINE</span>` : r.p.t ? ownTag(r.p) : `<span class="own fa">FA</span>`)},
-    ...(REG.length ? [{k:"ros", h:"Wk " + wkSpan(REG), t:"Projected points a week, rest of the regular season", v:r => r.p.ros, html:r => `<b>${f1(r.p.ros)}</b>`}] : []),
-    ...(PO.length ? [{k:"po", h:"Playoffs", t:"Projected points a week, weeks " + wkSpan(PO), po:true, v:r => r.p.po, html:r => `<b>${f1(r.p.po)}</b>`}] : []),
+    ...(REG.length ? [{k:"ros", h:"Wk " + wkSpan(REG), t:"Projected points a game, rest of the regular season. His bye is not counted", v:r => r.p.ros, html:r => `<b>${f1(r.p.ros)}</b>`}] : []),
+    ...(PO.length ? [{k:"po", h:"Playoffs", t:"Projected points a game, weeks " + wkSpan(PO), po:true, v:r => r.p.po, html:r => `<b>${f1(r.p.po)}</b>`}] : []),
     ...(REG.length ? [{k:"reg", h:"+/wk", t:"For free agents, what my lineup gains with him and mine to pick from each week. For rostered ones, his average against my best", sep:true, v:r => dv(r, "reg"), html:r => (dv(r, "reg") == null ? "" : gainCell(dv(r, "reg")))}] : []),
     ...(PO.length ? [{k:"pog", h:"+PO", po:true, v:r => dv(r, "po"), html:r => (dv(r, "po") == null ? "" : gainCell(dv(r, "po")))}] : []),
     {k:"bid", h:"Bid", c:true, v:r => (r.x ? r.x.bid : null), html:r => (r.x ? `<span class="gr ${r.x.bid >= 0.03 * (left[ME] || 1) ? "b" : r.x.bid ? "c" : "d"}">${r.x.bid ? "$" + r.x.bid : "–"}</span>` : "")},
@@ -1748,8 +1755,8 @@ function buildCols(){
     trend:{k:"trend", h:"Role", t:"Change in his role, last three games against the ones before: his share of the team's carries and targets, and only when his playing time moved the same way. A cold stretch on the same snaps is not a role change", v:p => (p.g >= 5 ? p.tr : null),
            f:x => (Math.abs(x) < 0.05 ? "steady" : (x > 0 ? "▲ +" : "▼ −") + Math.round(Math.abs(x) * 100) + "%"), cl:x => cls(Math.abs(x) >= 0.15 ? x : 0)},
     up:   {k:"up", h:"Upside", t:"What his workload, touchdown luck, role trend and schedule say he should gain or lose per game", v:p => (p.sg ? p.sg.E : null), f:x => sgn(x), cl:x => cls(Math.abs(x) >= 0.8 ? x : 0)},
-    ros:  {k:"ros", h:"ROS", t:"Projected points per week, weeks " + wkSpan(REG), v:p => p.ros, f:f1, bold:true, sep:true},
-    po:   {k:"po", h:"PO", t:"Projected points per week, weeks " + wkSpan(PO), v:p => p.po, f:f1, bold:true, hd:"po"},
+    ros:  {k:"ros", h:"ROS", t:"Projected points a game, weeks " + wkSpan(REG) + ". His bye is not counted in the average: see the BYE tag by his name", v:p => p.ros, f:f1, bold:true, sep:true},
+    po:   {k:"po", h:"PO", t:"Projected points a game, weeks " + wkSpan(PO), v:p => p.po, f:f1, bold:true, hd:"po"},
     fsos: {k:"fsos", h:"Faced", t:"Average rank of the defences he has already played, against his position (32 = softest)", v:p => (p.fsos != null ? p.fsos : null), f:x => x.toFixed(0), sep:true},
     sos:  {k:"sos", h:"Ahead", t:"Average rank of the defences left in weeks " + wkSpan(REG) + " (32 = softest)", v:p => avgRk(p, REG), f:x => x.toFixed(0)},
     psos: {k:"psos", h:"PO ahead", t:"Average rank of the defences in weeks " + wkSpan(PO) + " (32 = softest)", v:p => avgRk(p, PO), f:x => x.toFixed(0), hd:"po"},
@@ -2507,7 +2514,7 @@ function playerCard(id){
         <div class="meta"><span class="pos ${p.pos}">${p.pos === "DST" ? "DEF" : p.pos}</span><span>${p.tm}${p.prk ? ` · ${p.pos}${p.prk} in scoring` : ""}</span>${injBadge(p)}${roleBadge(p)}</div>
         <div class="own">${owner}</div></div></div>
     ${lens}
-    <div class="pcns">${skill ? num(sgn(p.base - (REPL[p.pos] || 0)), "Over replacement", `a game vs the ${p.pos} waiver wire (${f1(REPL[p.pos] || 0)})`) : ""}${num(f1(sum(ALLW)), "Projected total", `wk ${wkSpan(ALLW)}`)}${REG.length ? num(f1(sum(REG)), "Rest of season", `${plural(games(REG), "game")} · ${f1(p.ros)} a week`) : ""}${PO.length ? num(f1(sum(PO)), "Playoffs", `${plural(games(PO), "game")} · ${f1(p.po)} a week`) : ""}${p.g != null ? num(f1(p.ppg), "Scored so far", `a game, ${plural(p.g, "game")}`) : ""}</div>
+    <div class="pcns">${skill ? num(sgn(p.base - (REPL[p.pos] || 0)), "Over replacement", `a game vs the ${p.pos} waiver wire (${f1(REPL[p.pos] || 0)})`) : ""}${num(f1(sum(ALLW)), "Projected total", `wk ${wkSpan(ALLW)}`)}${REG.length ? num(f1(sum(REG)), "Rest of season", `${plural(games(REG), "game")} · ${f1(p.ros)} a game`) : ""}${PO.length ? num(f1(sum(PO)), "Playoffs", `${plural(games(PO), "game")} · ${f1(p.po)} a game`) : ""}${p.g != null ? num(f1(p.ppg), "Scored so far", `a game, ${plural(p.g, "game")}`) : ""}</div>
     ${timing}
     ${wv ? `<div class="pcwv">Waivers: ${wv.bid ? `bid <b>$${wv.bid}</b>` : "no bid"} · ${termPill(wv).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</div>` : ""}
     <div class="pch">Schedule and projection <span>opponent shaded by how soft it is on ${p.pos === "DST" ? "defences" : p.pos + "s"}; playoff weeks outlined</span></div>
