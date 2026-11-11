@@ -499,6 +499,15 @@ out through any later week, or out for the season. Your calls are saved in the b
 (`localStorage`, key `trade.ov`), drop off by themselves once the week has passed, and feed
 everything.
 
+**A status for any stretch of weeks.** In a player's card, under his schedule, *My call* has a
+row: *For weeks [from] to [to]*, then *Out*, *Playing* or *ESPN's status*, and *Set*. Calls
+stack: out weeks 12–13, playing from 14. Each one shows as a chip that removes it. A call is
+kept week by week (`OV[id] = {w: {12:"O", 13:"O"}}`): *O* is out that week, *H* is playing
+whatever ESPN says (the way to bring back a player ESPN projects at zero), and a week with no
+entry follows ESPN. The Status menu shows the weeks picked and has *Pick the weeks…*, which
+opens the card at that row. Calls saved in the old shape are read as out through that week
+and playing after.
+
 ### Data
 
 - `api/trade.js` builds the whole payload and edge-caches it for 30 minutes. It also carries

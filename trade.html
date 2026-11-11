@@ -179,6 +179,14 @@ details.hab td{vertical-align:top;line-height:1.5}
 .pcb.none i{background:#d5d9de}
 .pcb span{font-size:10px;color:var(--dim)}
 .pcctl{display:flex;flex-wrap:wrap;gap:8px}
+.pcrange{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;color:var(--soft)}
+.pcrange select{padding:7px 6px;font-size:13px;font-weight:600;border-radius:5px}
+.pcrange .rgs{flex:1 1 110px}
+.pcrange .b{padding:7px 14px}
+.pccalls{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rcall{font:inherit;font-size:12px;font-weight:700;border:0;border-radius:999px;padding:5px 10px;cursor:pointer;background:var(--blue2);color:var(--blue)}
+.rcall.O{background:var(--bad2);color:var(--bad)}
+.rcall i{font-style:normal;opacity:.6;margin-left:2px}
 .pcctl select{max-width:none;flex:1 1 180px;padding:7px 8px}
 .pcact{margin-top:16px;display:flex}
 .pcact .b{flex:1;padding:11px;font-size:14px}
@@ -883,6 +891,39 @@ const MQ = window.matchMedia("(max-width:820px)"), CQ = window.matchMedia("(max-
 let OV = {};
 try { OV = JSON.parse(localStorage.getItem("trade.ov") || "{}") || {}; } catch(e){}
 const saveOV = () => { try { localStorage.setItem("trade.ov", JSON.stringify(OV)); } catch(e){} };
+/* A status call is kept week by week: OV[id] = {w: {12:"O", 13:"O", 14:"H"}}. "O" = out that
+   week, "H" = playing whatever ESPN says; a week with no entry follows ESPN. Calls are made for
+   a range of weeks and can be stacked (out 12-13, playing from 14). An older call saved as
+   {t:"H"} or {t:"O", thru} is read as the same thing: out through that week, playing after. */
+function normOV(){
+  for(const id of Object.keys(OV)){
+    let o = OV[id];
+    if(!P[id] || !o){ delete OV[id]; continue; }
+    if(!o.w) o = OV[id] = {w:Object.fromEntries(D.weeks.map(w => [w, o.t === "O" && w <= o.thru ? "O" : "H"]))};
+    for(const w of Object.keys(o.w)) if(!D.weeks.includes(+w) || (o.w[w] !== "O" && o.w[w] !== "H")) delete o.w[w];     // weeks already played drop off
+    if(!Object.keys(o.w).length) delete OV[id];
+  }
+}
+// the call as runs of weeks: [{s:"O", a:12, b:13}, {s:"H", a:14, b:17}]
+function ovRuns(id){
+  const o = OV[id], out = [];
+  if(!o) return out;
+  for(const w of D.weeks){
+    const s = o.w[w], last = out[out.length - 1];
+    if(!s) continue;
+    if(last && last.s === s && last.b === w - 1) last.b = w; else out.push({s, a:w, b:w});
+  }
+  return out;
+}
+const runText = r => { const last = D.weeks[D.weeks.length - 1], w0 = D.weeks[0];
+  const span = r.a === r.b ? "wk " + r.a : r.b >= last && r.a === w0 ? "for the season" : r.b >= last ? "from wk " + r.a : "wk " + r.a + "–" + r.b;
+  return (r.s === "O" ? "Out " : "Playing ") + span; };
+function setCall(id, s, a, b){
+  const o = (OV[id] = OV[id] || {w:{}});
+  for(const w of D.weeks) if(w >= Math.min(a, b) && w <= Math.max(a, b)){ if(s) o.w[w] = s; else delete o.w[w]; }
+  if(!Object.keys(o.w).length) delete OV[id];
+  saveOV();
+}
 /* Banked trades. A trade I've decided on is "banked": it is applied to every roster in the tool,
    so the next one is built - and judged, and searched for - on top of it. Kept on this device.
    ORIG is the league as ESPN has it; applyBank() replays the banked trades over it in order and
@@ -1170,7 +1211,9 @@ function recompute(){
     p.eff = p.wk.map(w => {
       if(w.o === "BYE") return 0;
       let a = 1;
-      if(o){ if(o.t === "O" && w.w <= o.thru) a = 0; }
+      const c = o && o.w[w.w];                          // my call for this week, if I made one
+      if(c === "O") a = 0;
+      else if(c === "H"){ back = true; }                // playing, whatever the feed says
       else if(p.ep){ if(w.z) a = 0; }                 // a week ESPN projects at zero
       else if(w.w < au.back) a = 0;
       else if(!back){ a = au.first; back = true; }
@@ -1375,7 +1418,8 @@ const byeBadge = p => { const b = (p.wk || []).find(w => w.o === "BYE"); return 
 function injBadge(p){ return injBadge0(p) + byeBadge(p); }
 function injBadge0(p){
   const o = OV[p.id], w0 = D.weeks[0], last = D.weeks[D.weeks.length - 1];
-  if(o) return o.t === "O" ? `<span class="inj man">OUT${o.thru >= last ? " season" : o.thru === w0 ? " wk " + o.thru : " thru " + o.thru}</span>` : "";
+  if(o){ const r = ovRuns(p.id).find(x => x.s === "O");      // my call: the first stretch I have him out
+    return r ? `<span class="inj man">OUT${r.a === w0 && r.b >= last ? " season" : r.a === r.b ? " wk " + r.a : r.a === w0 ? " thru " + r.b : " wk " + r.a + "–" + r.b}</span>` : ""; }
   const b = p.au.back;
   if(!p.inj) return p.ep && b > w0 ? `<span class="inj">OUT${b > last ? " · season" : " · back wk " + b}</span>` : "";
   return `<span class="inj ${p.inj}">${p.inj}${b > last ? " · season" : b > w0 ? " · back wk " + b : ""}</span>`;
@@ -1426,7 +1470,11 @@ function wkChip(p, i, lab){
 }
 // the rule-out control: ESPN's call, or mine
 function stSel(p){
-  const o = OV[p.id], cur = o ? (o.t === "H" ? "H" : "O:" + o.thru) : "";
+  // which menu entry my call matches: playing all the way, out through a week then playing, or a set of weeks of my own
+  const o = OV[p.id], runs = ovRuns(p.id), w0s = D.weeks[0], lasts = D.weeks[D.weeks.length - 1];
+  const full = o && D.weeks.every(w => o.w[w]);
+  const cur = !o ? "" : full && runs.length === 1 && runs[0].s === "H" ? "H"
+    : full && runs[0].s === "O" && runs[0].a === w0s && (runs.length === 1 || (runs.length === 2 && runs[1].s === "H")) ? "O:" + runs[0].b : "C";
   const nm = {"":"Active", Q:"Questionable", D:"Doubtful", O:"Out", IR:"On IR", SUS:"Suspended"}[p.inj || ""];
   const bk = p.au.back, auto = !p.inj && !(p.ep && bk > D.weeks[0]) ? nm : bk > D.weeks[D.weeks.length - 1] ? (p.inj ? nm : "Out") + (p.au.unknown ? ", no return date" : p.ep ? ": ESPN projects 0" : " for season") : bk > D.weeks[0] ? `${nm}, back wk ${bk}` : nm;
   const last = D.weeks[D.weeks.length - 1];
@@ -1436,6 +1484,8 @@ function stSel(p){
     const v = "O:" + w;
     opts += `<option value="${v}"${cur === v ? " selected" : ""}>${i === 0 ? "Out wk " + w : w === last ? "Out for season" : "Out thru wk " + w}</option>`;
   });
+  if(cur === "C") opts += `<option value="C" selected>${esc(runs.map(runText).join(", "))}</option>`;
+  opts += `<option value="R">Pick the weeks…</option>`;
   return `<select class="st ${o ? "man" : (p.inj || "")}" data-id="${p.id}" aria-label="Status for ${esc(p.n)}">${opts}</select>`;
 }
 // short / set / deep at each position, by how many startable players a team holds
@@ -2935,13 +2985,25 @@ function playerCard(id){
     ${wv ? `<div class="pcwv">Waivers: ${wv.bid ? `bid <b>$${wv.bid}</b>` : "no bid"} · ${termPill(wv).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</div>` : ""}
     <div class="pch">Schedule and projection <span>opponent shaded by how soft it is on ${p.pos === "DST" ? "defences" : p.pos + "s"}; playoff weeks outlined</span></div>
     <div class="pcsched">${sched}</div>
+    <div class="pch">My call <span>his status week by week, and where he plays for me</span></div><div class="pcctl">${stSel(p)}${roleSel(p)}</div>
+    ${rangeForm(p)}
     <div class="pchow">${how}</div>
     ${read ? `<div class="pch">The read</div><div class="chips">${read}</div>` : ""}
     ${log}${stats}
-    <div class="pch">My call</div><div class="pcctl">${stSel(p)}${roleSel(p)}</div>
   </div>`;
   $("pcard").hidden = false;
   $("pcard").scrollTop = 0;
+}
+// set a status for any stretch of weeks: out, playing, or back to ESPN's own status
+function rangeForm(p){
+  if(!D.weeks.length) return "";
+  const wk = sel => D.weeks.map(w => `<option value="${w}"${w === sel ? " selected" : ""}>Wk ${w}</option>`).join("");
+  const runs = ovRuns(p.id);
+  return `<div class="pcrange" data-id="${p.id}"><span class="rl0">For weeks</span>
+      <select class="rga" aria-label="From week">${wk(D.weeks[0])}</select><span>to</span><select class="rgb" aria-label="Through week">${wk(D.weeks[0])}</select>
+      <select class="rgs" aria-label="Status"><option value="O">Out</option><option value="H">Playing</option><option value="">ESPN's status</option></select>
+      <button class="b" data-range-set>Set</button></div>
+    ${runs.length ? `<div class="pccalls">${runs.map(r => `<button class="rcall ${r.s}" data-range-del="${r.a}-${r.b}" title="Remove this call">${runText(r)} <i>×</i></button>`).join("")}</div>` : ""}`;
 }
 function closeCard(){ CARD = null; $("pcard").hidden = true; $("pcard").innerHTML = ""; }
 
@@ -3002,7 +3064,7 @@ function boot(d){
   OPPW = {};
   for(const [w, t] of Object.entries(d.opps || {})){ const wi = d.weeks.indexOf(+w); if(wi >= 0) (OPPW[t] = OPPW[t] || []).push(wi); }
   // drop status calls that have run their course
-  for(const id of Object.keys(OV)) if(!P[id] || (OV[id].t === "O" && OV[id].thru < d.weeks[0])) delete OV[id];
+  normOV();
   saveOV();
   buildPct(); buildCols();
   NS = ["QB","RB","WR","TE","K","DST"].map(spots); NF = spots("FLEX");
@@ -3032,7 +3094,10 @@ function boot(d){
     const s = e.target.closest("select.st");
     if(s){
       const v = s.value, id = s.dataset.id;
-      if(!v) delete OV[id]; else OV[id] = v === "H" ? {t:"H"} : {t:"O", thru:+v.slice(2)};
+      if(v === "C") return;                                     // the weeks I already picked
+      if(v === "R"){ playerCard(id); const f = $("pcard").querySelector(".pcrange"); if(f) f.scrollIntoView({block:"center"}); return; }
+      if(!v) delete OV[id];
+      else { const thru = v === "H" ? -1 : +v.slice(2); OV[id] = {w:Object.fromEntries(D.weeks.map(w => [w, w <= thru ? "O" : "H"]))}; }
       saveOV(); renderAll(); if(CARD) playerCard(CARD); return;
     }
     const r = e.target.closest("select.rl");
@@ -3057,12 +3122,25 @@ function boot(d){
   }, true);
   $("pcard").addEventListener("click", e => {
     if(e.target === $("pcard") || e.target.closest("[data-card-close]")){ closeCard(); return; }
+    const rs = e.target.closest("[data-range-set]"), rd = e.target.closest("[data-range-del]");
+    if(rs || rd){
+      const id = CARD, y = $("pcard").scrollTop;
+      if(rs){ const f = rs.closest(".pcrange"); setCall(id, f.querySelector(".rgs").value, +f.querySelector(".rga").value, +f.querySelector(".rgb").value); }
+      else { const [a0, b0] = rd.dataset.rangeDel.split("-").map(Number); setCall(id, "", a0, b0); }
+      renderAll(); playerCard(id); $("pcard").scrollTop = y; return;
+    }
     const a = e.target.closest("[data-card-act]"); if(!a) return;
     if(a.dataset.cardAct === "nogo"){ toggleNogo(CARD); playerCard(CARD); return; }
     const id = CARD; closeCard();
     (a.dataset.cardAct === "shop" ? window.shopMine : window.dealsFor)(id);
   });
   document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("pcard").hidden) closeCard(); });
+  $("pcard").addEventListener("change", e => {
+    const f = e.target.closest(".pcrange"); if(!f) return;
+    const a = f.querySelector(".rga"), b = f.querySelector(".rgb");
+    if(e.target === a && +b.value < +a.value) b.value = a.value;
+    if(e.target === b && +b.value < +a.value) a.value = b.value;
+  });
   // targets
   pickSeg("tgmode", "m", v => { S.tgMode = v; renderTargets(); });
   $("facts").addEventListener("click", e => { if(e.target.closest("#howb")){ S.how = !S.how; renderTargets(); } });
