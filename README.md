@@ -200,6 +200,26 @@ suggested package (`NOGO`, `trade.nogo` in localStorage). The ruled-out players 
 above the Targets table, each a tap to put back. In the builder he can still be picked by
 hand and carries a *ruled out* tag.
 
+### The lineup, week by week (Roster tab)
+
+Under the rank tiles: who starts in each slot (QB, RB, RB, WR, WR, TE, FLEX, K, DEF) in every
+week left, with the projection and the opponent, a total for the week and my fantasy opponent
+in the heading. It follows the same rules as the lineup maths (`lineupWeek`): the best
+available at each position that week, the best leftover back, receiver or tight end in the
+flex, and my starter / bench / handcuff calls applied.
+
+- A bye or a week out takes a player off the board; whoever steps in is **shaded** as filling
+  in, and the regular starters who aren't in it are listed under *Sitting* with the reason.
+- A starter who projects **under the waiver level** at his position that week is in red: a
+  free agent projects better. A slot nobody on the roster can fill reads *Waiver pickup*.
+- From 900 px up it is one grid of all the weeks. Below that it is one week at a time, picked
+  from a row of week buttons that carry each week's total.
+- Picking another team in the roster menu shows that team's lineup instead, and banked trades
+  are counted, so it is the lineup as it would stand.
+- The total is the sum of the players shown. The rank tiles can read a point or two higher in
+  a week where the waiver level beats one of my starters, because the lineup maths takes the
+  better of the two.
+
 ### The builder
 
 - It uses the whole window on a desktop.

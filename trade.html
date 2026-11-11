@@ -394,6 +394,55 @@ td .chip{font-size:11px;padding:1px 7px}
 .vlab{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:4px}
 .vlab b{color:var(--txt)}
 .dfoot{margin-top:14px;display:flex;justify-content:flex-end;gap:8px}
+/* the lineup, week by week */
+.lwk{flex:none}
+.lwk .sect-h{margin-top:14px}
+.lwk .sect-h .lnk2{margin-left:auto}
+.lwkey{font-style:normal;background:var(--warn2);color:var(--warn);border-radius:3px;padding:0 4px}
+.lwlow{font-style:normal;color:var(--bad);font-weight:700}
+.lwbox{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lwtab{width:100%;table-layout:fixed;border-collapse:collapse}
+.lwtab th,.lwtab td{padding:5px 6px;border-bottom:1px solid var(--line2);border-left:1px solid var(--line2);text-align:left;vertical-align:middle;overflow:hidden}
+.lwtab th:first-child,.lwtab td:first-child{border-left:0}
+.lwtab thead th{background:var(--panel2);font-size:12px;line-height:1.25}
+.lwtab thead th b{display:block;font-weight:800}
+.lwtab thead th i{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lwtab th.po b{color:#1958a0}
+.lwtab .sl{width:60px;font-size:10.5px;font-weight:800;letter-spacing:.4px;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.lwtab tfoot td{border-bottom:0;font-size:12.5px;font-variant-numeric:tabular-nums}
+.lwtab tfoot tr.tot td{background:var(--panel2);border-bottom:1px solid var(--line2);font-size:13.5px}
+.lwtab tr.sit td{font-size:11px;color:var(--soft);vertical-align:top;line-height:1.35}
+.lwtab tr.sit td span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lwtab tr.sit td i,.lwsit i{font-style:normal;color:var(--bad);font-weight:700;font-size:10px;text-transform:uppercase}
+.lwc{display:flex;align-items:center;gap:6px;min-width:0;border-radius:6px;padding:2px 3px}
+.lwc .av{width:28px;height:28px;flex:0 0 28px;border-radius:7px}
+.lwc .lwt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.lwc .lwn{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lwc .lwn[data-pid]:hover{color:var(--blue);text-decoration:underline}
+.lwc .lwm{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.lwc .lwm b{color:var(--soft);font-weight:700}
+.lwc .lwm .low{color:var(--bad)}
+.lwc.fill{background:var(--warn2)}
+.lwc.empty{flex-direction:column;align-items:flex-start;gap:0;background:var(--bad2);padding:4px 6px}
+.lwc.empty .lwn{color:var(--bad)}
+/* one week at a time, on a phone or a narrow window */
+.lwpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(38px,1fr));gap:4px;margin-bottom:8px}
+.lwpick button{font:inherit;border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:5px 0 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.15;min-height:40px}
+.lwpick button b{font-size:13.5px}
+.lwpick button i{font-style:normal;font-size:10px;color:var(--dim);font-variant-numeric:tabular-nums}
+.lwpick button.po b{color:#1958a0}
+.lwpick button.on{background:var(--blue);border-color:var(--blue)}
+.lwpick button.on b,.lwpick button.on i{color:#fff}
+.lwone{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lwoh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 11px;background:var(--panel2);border-bottom:1px solid var(--line2);font-size:13px}
+.lwoh span{color:var(--soft);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lwr{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--line2)}
+.lwr .sl{flex:0 0 38px;font-size:10.5px;font-weight:800;letter-spacing:.4px;color:var(--dim)}
+.lwr .lwc{flex:1}
+.lwr .lwc .av{width:36px;height:36px;flex-basis:36px;border-radius:8px}
+.lwr .lwc .lwn{font-size:14px}
+.lwr .lwc .lwm{font-size:12px}
+.lwsit{padding:8px 11px;font-size:12px;color:var(--soft)}
 /* banked trades */
 .bankbar{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 20px;background:#fff7e0;border-bottom:1px solid #ecd9a0;font-size:12.5px;color:#5c4a12}
 .lnk2{font:inherit;font-size:12.5px;font-weight:700;color:var(--blue);background:none;border:0;padding:4px 2px;cursor:pointer;text-decoration:underline}
@@ -727,6 +776,7 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
 
 <section class="view" id="v-roster" hidden>
   <div class="tiles" id="tiles"></div>
+  <div class="lwk" id="lwk"></div>
   <div class="tools">
     <select id="scope"></select>
     <select id="msort" hidden></select>
@@ -2129,7 +2179,69 @@ function renderTable(list){
   }
 }
 
+/* ---- the lineup, week by week ------------------------------------------------------------
+   Who starts in each slot in every week left, by the same rules the lineup maths uses: the
+   best available at each position that week, then the best of the leftover backs, receivers
+   and tight ends in the flex, with my starter / bench / handcuff calls applied to my own team.
+   A bye or a week out takes a player off the board. A slot nobody rostered can fill is shown
+   as a waiver pickup at that position's waiver level, which is what the maths counts there. */
+function lineupWeek(ids, wi, mine){
+  const key = p => { let v = mine ? p.km[wi] : p.ko[wi]; if(v < 0) v = cuffKey(p, wi, ids); return v; };
+  const by = {QB:[],RB:[],WR:[],TE:[],K:[],DST:[]};
+  for(const id of ids){ const p = P[id], k = by[p.pos] ? key(p) : 0; if(k >= 2000) by[p.pos].push({p, k}); }      // 2000+ = playing, and not a bench call
+  for(const pos of Object.keys(by)) by[pos].sort((a, b) => b.k - a.k);
+  const rows = [], spill = [];
+  for(const pos of SKILL){
+    for(let i = 0; i < spots(pos); i++) rows.push({slot:pos, pos, p:by[pos][i] ? by[pos][i].p : null});
+    if(pos !== "QB") spill.push(...by[pos].slice(spots(pos)));
+  }
+  spill.sort((a, b) => b.k - a.k);
+  for(let i = 0; i < spots("FLEX"); i++) rows.push({slot:"FLEX", pos:"WR", p:spill[i] ? spill[i].p : null});
+  for(const [pos, lab] of [["K", "K"], ["DST", "DEF"]]) for(let i = 0; i < spots(pos); i++) rows.push({slot:lab, pos, p:by[pos][i] ? by[pos][i].p : null});
+  for(const r of rows) r.pts = r.p ? r.p.eff[wi] : (REPL[r.pos] || 0);
+  return rows;
+}
+function renderLineupWeeks(){
+  const el = $("lwk");
+  if(!D.weeks.length){ el.innerHTML = ""; return; }
+  const tid = /^\d+$/.test(S.scope) ? +S.scope : ME, mine = tid === ME, t = TEAMS[tid], ids = t.players;
+  const weeks = D.weeks.map((w, wi) => ({w, wi, rows:lineupWeek(ids, wi, mine)}));
+  // the regular starters, on season rates: anyone else in a slot is filling in
+  const usual = new Set(lineupOf(ids, mine).rows.filter(r => r.p).map(r => r.p.id));
+  for(const pos of ["K", "DST"]){ const a = ids.map(id => P[id]).filter(p => p.pos === pos).sort((a, b) => b.adj - a.adj); a.slice(0, spots(pos)).forEach(p => usual.add(p.id)); }
+  const oppOf = w => { if(mine && D.opps && D.opps[w]) return D.opps[w]; const g = ((D.sched || {})[w] || []).find(g => g.includes(tid)); return g ? (g[0] === tid ? g[1] : g[0]) : null; };
+  const head = x => { const o = oppOf(x.w); return `<b>Wk ${x.w}</b><i>${o ? "vs " + esc(tName(o)) : x.w >= 15 ? "playoffs" : ""}</i>`; };
+  const total = x => x.rows.reduce((s, r) => s + r.pts, 0);
+  const sitting = x => { const inn = new Set(x.rows.filter(r => r.p).map(r => r.p.id));
+    return [...usual].filter(id => !inn.has(id)).map(id => { const p = P[id], g = p.wk[x.wi]; return {p, why:g.o === "BYE" ? "bye" : p.eff[x.wi] === 0 ? "out" : "sits"}; }); };
+  const cell = (r, x, big) => {
+    if(!r.p) return `<div class="lwc empty"><span class="lwn">Waiver pickup</span><span class="lwm">no ${r.slot === "FLEX" ? "flex" : r.slot} available · ${f1(r.pts)}</span></div>`;
+    const p = r.p, g = p.wk[x.wi], fill = !usual.has(p.id);
+    // a starter the waiver wire out-projects this week is worth knowing about
+    const wire = SKILL.includes(p.pos) && r.slot !== "FLEX" ? REPL[p.pos] || 0 : 0, low = wire && r.pts < wire - 0.05;
+    return `<div class="lwc${fill ? " fill" : ""}"${fill ? ' title="Filling in: not one of the regular starters"' : ""}>${img(p)}<span class="lwt"><span class="lwn" data-pid="${p.id}">${esc(big ? p.n : short(p))}</span><span class="lwm"><b${low ? ` class="low" title="Under the ${p.pos} waiver level this week (${f1(wire)}): a free agent projects better"` : ""}>${f1(r.pts)}</b> · ${r.slot === "FLEX" ? p.pos + " · " : ""}${g.o}${fill && big ? " · filling in" : ""}${low && big ? ` · <span class="low">wire ${f1(wire)}</span>` : ""}</span></span></div>`;
+  };
+  const who = mine ? "My lineup" : esc(t.name) + "'s lineup";
+  const hd = `<div class="sect-h">${who}, week by week <span>who starts in each slot, byes and injuries counted · <em class="lwkey">shaded</em> = filling in for a regular starter · <em class="lwlow">red</em> = under the waiver level that week</span><button class="lnk2" id="lwhide">${S.lwHide ? "Show" : "Hide"}</button></div>`;
+  if(S.lwHide){ el.innerHTML = hd; return; }
+  const slots = weeks[0].rows.map(r => r.slot);
+  if(innerWidth < 900){
+    // one week at a time: eight columns don't fit a phone (the grid can't overflow, its columns are fixed, but under 900px a name no longer fits one)
+    if(!(S.lwk >= 0 && S.lwk < weeks.length)) S.lwk = 0;
+    const x = weeks[S.lwk], sit = sitting(x), o = oppOf(x.w);
+    el.innerHTML = hd + `<div class="lwpick">${weeks.map((y, i) => `<button data-lw="${i}" class="${i === S.lwk ? "on" : ""}${y.w >= 15 ? " po" : ""}"><b>${y.w}</b><i>${f1(total(y)).replace(/\.\d$/, "")}</i></button>`).join("")}</div>
+      <div class="lwone"><div class="lwoh"><b>Week ${x.w}${o ? " · vs " + esc(TEAMS[o].name) : x.w >= 15 ? " · playoffs" : ""}</b><span>${f1(total(x))} projected</span></div>
+        ${x.rows.map(r => `<div class="lwr"><span class="sl">${r.slot}</span>${cell(r, x, true)}</div>`).join("")}
+        ${sit.length ? `<div class="lwsit">Not in it: ${sit.map(s => `${esc(short(s.p))} <i>${s.why}</i>`).join(" · ")}</div>` : ""}</div>`;
+    return;
+  }
+  el.innerHTML = hd + `<div class="lwbox"><table class="lwtab"><thead><tr><th class="sl"></th>${weeks.map(x => `<th class="${x.w >= 15 ? "po" : ""}">${head(x)}</th>`).join("")}</tr></thead>
+    <tbody>${slots.map((s, i) => `<tr><td class="sl">${s}</td>${weeks.map(x => `<td>${cell(x.rows[i], x)}</td>`).join("")}</tr>`).join("")}</tbody>
+    <tfoot><tr class="tot"><td class="sl">Total</td>${weeks.map(x => `<td><b>${f1(total(x))}</b></td>`).join("")}</tr>
+      <tr class="sit"><td class="sl">Sitting</td>${weeks.map(x => { const s = sitting(x); return `<td>${s.map(v => `<span>${esc(short(v.p))} <i>${v.why}</i></span>`).join("") || '<span class="quiet">–</span>'}</td>`; }).join("")}</tr></tfoot></table></div>`;
+}
 function renderRoster(){
+  renderLineupWeeks();
   const list = tableRows();
   $("rhint").innerHTML = S.scope === "me"
     ? "The two tags say how good each of my players will be: for the rest of the regular season, and for the playoff weeks."
@@ -2960,7 +3072,7 @@ function boot(d){
   let wasTight = innerWidth < NARROW, wasCompact = CQ.matches;
   const reflow = () => { const t = innerWidth < NARROW; if(MQ.matches === wasPhone && t === wasTight && CQ.matches === wasCompact) return; wasPhone = MQ.matches; wasTight = t; wasCompact = CQ.matches; renderTargets(); renderRoster(); renderWaivers(); };
   MQ.addEventListener("change", reflow);
-  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if(!CQ.matches) refit(S.view, true); }, 180); });
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if(!CQ.matches) refit(S.view, true); else if(S.view === "roster") renderLineupWeeks(); }, 180); });
   window.addEventListener("resize", reflow);
   $("tgscroll").onclick = e => {
     const x = e.target.closest("[data-no]"); if(x){ toggleNogo(x.dataset.no); return; }
@@ -3008,6 +3120,10 @@ function boot(d){
     renderRoster(); $("rscroll").scrollTop = 0;
   };
   $("ovclr").onclick = () => { OV = {}; saveOV(); renderAll(); };
+  $("lwk").addEventListener("click", e => {
+    if(e.target.closest("#lwhide")){ S.lwHide = !S.lwHide; renderLineupWeeks(); return; }
+    const b = e.target.closest("[data-lw]"); if(b){ S.lwk = +b.dataset.lw; renderLineupWeeks(); }
+  });
   // packages
   const pkf = (k, v) => { S[k] = v; S.pkLimit = 40; renderPackages(); };
   $("pkFor").onclick = () => { S.pkFor = null; S.pkGive = []; S.pkWill = "maybe"; S.pkLimit = 40; S.pkSort = "gain"; $("pkSort").value = "gain"; renderPackages(); };
