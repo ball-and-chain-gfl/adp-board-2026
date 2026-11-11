@@ -106,6 +106,30 @@ column is blank for positions it doesn't apply to (`REL` in `trade.html`).
 - **Waivers** — every free agent worth a bid, with the bid, what he adds to my lineup and who to
   drop for him; *Show every free agent* lists the rest.
 
+### Layout rules (the 11/10 UX pass)
+
+Every screen was rendered full-length in headless Edge at 320, 360, 375, 830, 900, 1024, 1180
+and 1366 px and read for what a first glance gives you. What came out of it:
+
+- **Answers before explanations.** Targets used to put three paragraphs (replacement level,
+  price and timing, standings) between the need tiles and the top targets: most of a phone
+  screen. They are now one line of facts (record and top-six odds, the trade deadline, the
+  waiver wire a game) and the paragraphs open under *How to read this*.
+- **Colour is for a call to act.** A neutral value is quiet grey text (*fair*, *any time*, a
+  dash for a zero gain), not a chip; top-target cards leave it out. A team's goal reads as
+  part of its record ("4-5 · in the race").
+- **Say it once.** On my roster the two tags already carry the per-game number, so the ROS
+  and PO columns are gone there, and the position chip is dropped inside a one-position
+  table. The status and lineup pickers are plain text until I set one.
+- **Label every number.** The figure beside a player on a package card is headed
+  *proj / game*.
+- **The action first.** *Packages to get him* / *Shop him* sits under the name in the player
+  card, not below the stats.
+- **Nothing scrolls sideways, at any width.** A phone row has two numbers; below 1100 px a
+  table keeps its key columns and opens the rest under the row (`CQ`); below 1260 px the
+  Targets table drops ROS, PO and the arrow (`NARROW`); a bye tag and an owner tag together
+  push the position rank out of the line. The *Read* column lives with *Stats*.
+
 ### My lineup calls (starter / bench / handcuff)
 
 The **Lineup** menu beside each of my players (Roster tab, my roster) overrides the automatic
