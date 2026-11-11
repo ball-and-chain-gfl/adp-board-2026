@@ -204,8 +204,8 @@ trade is then built and judged on the rosters as they would stand, so trades sta
 
 A player I know I can't get can be **ruled out**: the ✕ at the end of his row on Targets,
 *rule out* on a top-target card, or *Rule him out* in his card. He leaves the targets and every
-suggested package (`NOGO`, `trade.nogo` in localStorage). The ruled-out players are listed
-above the Targets table, each a tap to put back. In the builder he can still be picked by
+suggested package (`NOGO`, `trade.nogo` in localStorage). To put him back, open his card (from his
+team's roster, or the builder) and tap *Ruled out · undo*. In the builder he can still be picked by
 hand and carries a *ruled out* tag.
 
 ### The lineup, week by week (Roster tab)

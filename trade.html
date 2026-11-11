@@ -461,11 +461,6 @@ td .chip{font-size:11px;padding:1px 7px}
 .bk button:hover{color:var(--bad);border-color:var(--bad)}
 /* ruled-out players */
 .nogo{font-size:10px;font-weight:800;color:#6b6f74;background:#eceef0;border-radius:3px;padding:0 5px;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px}
-.nogoline{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 8px;font-size:12.5px}
-.nogoline .lab{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--dim)}
-.nochip{font:inherit;font-size:12px;font-weight:600;color:var(--soft);background:#eceef0;border:0;border-radius:999px;padding:4px 10px;cursor:pointer}
-.nochip i{font-style:normal;color:#9a9ea3;margin-left:2px}
-.nochip:hover{background:#e0e3e6}
 .rxb{font:inherit;font-size:12px;font-weight:700;color:#a3a7ac;background:none;border:1px solid transparent;border-radius:5px;width:26px;height:26px;padding:0;cursor:pointer;white-space:nowrap}
 .rxb .t{display:none}
 .rxb:hover{color:var(--bad);border-color:var(--bad)}
@@ -703,7 +698,6 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
   .bankbar{padding:6px 12px;gap:0 10px}
   .lnk2{padding:8px 2px}
   .bk button{width:36px;height:36px}
-  .nochip{padding:7px 12px}
   .top1 .ft .rx{display:inline;padding:6px 0}
   .fact{white-space:normal;border-radius:8px;flex:1 1 100%}
   .howb{margin-left:0;padding:6px 0}
@@ -776,7 +770,6 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
     <div class="seg" id="tgcols"><button data-c="basic" class="on">Basic</button><button data-c="stats">Stats</button></div>
     <span class="count" id="tgcount"></span>
   </div>
-  <div class="nogoline" id="nogoline" hidden></div>
   <div class="scroll" id="tgscroll"></div>
 </section>
 
@@ -1753,9 +1746,6 @@ function renderTargets(){
     f.push(`<span class="fact">Waiver wire a game: ${SKILL.map(pos => `${pos} <b>${f1(REPL[pos])}</b>`).join(" · ")}</span>`);
     $("facts").innerHTML = f.join("") + `<button class="howb" id="howb" aria-expanded="${S.how ? "true" : "false"}">${S.how ? "Hide the explanation" : "How to read this"} <span>${S.how ? "▴" : "▾"}</span></button>`;
     $("how").hidden = !S.how; }
-  { const no = Object.keys(NOGO).map(id => P[id]).filter(p => p && p.t && p.t !== ME);
-    $("nogoline").hidden = !no.length;
-    $("nogoline").innerHTML = no.length ? `<span class="lab">Ruled out</span>${no.map(p => `<button class="nochip" data-no="${p.id}" title="Put him back">${esc(short(p))} <i>×</i></button>`).join("")}<button class="lnk2" id="nogoclr">put all back</button>` : ""; }
   const mode = S.tgMode;
   let list = (mode === "buy" ? BUYS : mode === "sell" ? SELLS : DEPTHS).slice();
   if(S.tgPos !== "ALL") list = list.filter(x => x.p.pos === S.tgPos);
@@ -3109,10 +3099,6 @@ function boot(d){
   $("tops").onclick = e => {
     const x = e.target.closest("[data-no]"); if(x){ toggleNogo(x.dataset.no); return; }
     const b = e.target.closest(".top1"); if(b) dealsFor(b.dataset.id); };
-  $("nogoline").onclick = e => {
-    const x = e.target.closest("[data-no]"); if(x){ toggleNogo(x.dataset.no); return; }
-    if(e.target.closest("#nogoclr")){ NOGO = {}; saveNogo(); renderAll(); }
-  };
   // banked trades: undo one, undo all, or go and look at them
   document.addEventListener("click", e => {
     const u = e.target.closest("[data-unbank]");
