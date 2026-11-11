@@ -298,6 +298,25 @@ Two different numbers run the two sides of every deal.
 On 11/10 this took realistic two-team deals from 18 to 170, because several of my players have
 outscored their projections and the league pays for that.
 
+### What each team is playing for
+
+Every team plays weeks 15–17: the top six for the title, the bottom six to stay out of last
+place. So nobody sells; what changes with the standings is *which weeks a team cares about*.
+
+- **The odds.** The regular-season games left (`sched` in the payload, from `mMatchupScore`)
+  are played 4,000 times: each team scores its projected lineup that week give or take 24
+  points, record ties go to points for. Seeded, so the numbers don't change between loads.
+- **The goal**, from the chance of a top-six finish (`playoffTeams`):
+  - *In the race* (between 10% and 90%): wins now matter most. A point in weeks 10–14 counts
+    1.5, a playoff point 1. It will give up more in the playoffs to win now.
+  - *Safely in* (90% or more): weeks 15–17 matter most (0.75 / 1.75).
+  - *Out of the top six* (10% or less): also weeks 15–17 (0.5 / 1.75), because it is playing
+    to avoid last. It will give ground in weeks 10–14, not in the playoffs.
+- **Where it is used.** Each other team's side of a deal is scored with its own weights and its
+  own tolerances; my side, the target grades and the package ranking use mine (the fixed
+  "playoffs count 1.5×" is gone). Targets states the picture in one line, and a package card
+  carries the team's goal next to its record.
+
 ### How a trade is judged
 
 Not two price tags — two rosters.

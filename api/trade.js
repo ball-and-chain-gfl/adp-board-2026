@@ -656,9 +656,10 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
 
     // ---- my fantasy schedule: who I play in each remaining regular-season week
     const regWeeks = (((settings.settings || {}).scheduleSettings || {}).matchupPeriodCount) || 14;
-    const opps = {};
+    const opps = {}, lgSched = {};   // lgSched: every regular-season game left, for the standings odds
     for (const m of (matchups && matchups.schedule) || []) {
       const w = m.matchupPeriodId, hm = (m.home || {}).teamId, aw = (m.away || {}).teamId;
+      if (w >= firstWeek && w <= regWeeks && hm && aw) (lgSched[w] = lgSched[w] || []).push([hm, aw]);
       if (w < firstWeek || w > regWeeks || (hm !== MY_TEAM && aw !== MY_TEAM)) continue;
       const o = hm === MY_TEAM ? aw : hm;
       if (o) opps[w] = o;
@@ -782,6 +783,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       scoring: { rec: recPts != null ? recPts : null, int: intPts != null ? intPts : null },
+      sched: lgSched, playoffTeams: (((settings.settings || {}).scheduleSettings || {}).playoffTeamCount) || 6,
       opps, kd: kdModel, vegasWeeks: [...new Set(Object.values(vegas).flatMap(m => Object.keys(m).map(Number)))].sort((a, b) => a - b), proj: { src: espnN ? "espn" : "model", players: espnN, weeks: espnProj.filter(Boolean).length },
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
       // first and last kickoff of each week ahead: which weeks are over before the trade deadline

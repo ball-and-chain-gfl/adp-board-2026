@@ -566,6 +566,8 @@ td > .wks .wkc{min-width:50px}
 .mk.g{background:var(--good2);color:var(--good)}.mk.r{background:var(--bad2);color:var(--bad)}.mk.n{background:#eceef0;color:#6b6f74}
 .win.now{background:var(--blue2);color:var(--blue)}.win.wait{background:var(--warn2);color:var(--warn)}.win.any{background:#eceef0;color:#6b6f74}
 .tmr{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.goal{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap;background:#eceef0;color:#565a5f}
+.goal.race{background:var(--warn2);color:var(--warn)}.goal.out{background:var(--blue2);color:var(--blue)}
 .whyc{font-size:12px;color:var(--soft);white-space:normal;display:block;text-align:left;min-width:190px;max-width:420px;line-height:1.35}
 .pchow.pctm{background:var(--warn2)}
 .pcn b .mkc{display:block;font-size:15px;line-height:26px}.pcn b .mkc.up{color:var(--good)}.pcn b .mkc.down{color:var(--bad)}
@@ -605,6 +607,7 @@ td > .wks .wkc{min-width:50px}
   <div class="tiles" id="ntiles"></div>
   <div class="hint2" id="replline"></div>
   <div class="hint2" id="mkline"></div>
+  <div class="hint2" id="stline"></div>
   <div class="sect-h">Top targets <span id="topsub"></span></div>
   <div class="tops" id="tops"></div>
   <div class="sect-h">Everyone who helps <span id="tgsub"></span></div>
@@ -827,11 +830,61 @@ function worth(ids, floor = true, mine = false, seen = false){
 // season-level ordering with my calls applied: starters first, bench calls last
 const rk = (p, mine, seen) => (mine ? TIER(roleOf(p.id)) : 2000) + (seen ? p.padj : p.adj);
 const swap = (ids, out, inn) => ids.filter(id => !out.has(id)).concat([...inn]);
-function delta(before, after){
+/* What a team is playing for decides which weeks count. Every team plays weeks 15-17: the top
+   six for the title, the bottom six to stay out of last place. So:
+     race   not safely in the top six yet: the regular-season weeks left count most
+     safe   in: weeks 15-17 count most, the rest is seeding
+     out    can't reach the top six: weeks 15-17 count most (it is playing to avoid last), and
+            it does NOT sell - it just stops caring much about weeks 10-14
+   wr / wp weigh a point in a regular-season week and a playoff week; tr / tp are how much it
+   will give up a week in each to say [likely, worth asking]. */
+const GOALS = {
+  race:{k:"race", wr:1.5,  wp:1,    tr:[-0.5, -0.75], tp:[-1.5, -2],    lab:"in the race",    say:"needs wins now"},
+  safe:{k:"safe", wr:0.75, wp:1.75, tr:[-1, -1.5],    tp:[-0.5, -0.75], lab:"safely in",      say:"building for weeks 15–17"},
+  out: {k:"out",  wr:0.5,  wp:1.75, tr:[-1.5, -2.5],  tp:[-0.5, -0.75], lab:"out of the top six", say:"playing weeks 15–17 to stay out of last"},
+  mid: {k:"mid",  wr:1,    wp:1.5,  tr:[-0.5, -0.75], tp:[-0.5, -0.75], lab:"",               say:""},
+};
+let GOAL = {}, ODDS = {}, MYW = GOALS.mid;
+const goalOf = tid => GOAL[tid] || GOALS.mid;
+const DEN = g => ((g || MYW).wr * REG.length + (g || MYW).wp * PO.length) || 1;
+// a lineup change: points a week in each stretch, and one score weighted by the team's goal (mine unless told)
+function delta(before, after, g){
+  g = g || MYW;
   return { reg: REG.length ? (after.reg - before.reg) / REG.length : 0,
            po: PO.length ? (after.po - before.po) / PO.length : 0,
-           score: (after.reg - before.reg) + 1.5 * (after.po - before.po) };
+           score: g.wr * (after.reg - before.reg) + g.wp * (after.po - before.po) };
 }
+/* Where everyone finishes: the regular-season games left, played 4,000 times. A team scores its
+   projected lineup that week give or take 24 points (a normal fantasy week); ties in record
+   go to points for. Seeded, so the odds don't flicker between loads. */
+function buildStandings(){
+  GOAL = {}; ODDS = {}; MYW = GOALS.mid;
+  const N = D.playoffTeams || 6, games = [];
+  for(const wi of REG) for(const g of (D.sched || {})[D.weeks[wi]] || []) games.push([g[0], g[1], wi]);
+  if(!D.sched) return;
+  const proj = {}; for(const t of D.teams) proj[t.id] = D.weeks.map((w, i) => lineup(t.players, i, true, t.id === ME));
+  let seed = 20261110; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const norm = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+  const SIMS = games.length ? 4000 : 1, cnt = {};
+  for(const t of D.teams) cnt[t.id] = {inn:0, bye:0, last:0, w:0};
+  for(let s = 0; s < SIMS; s++){
+    const st = {}; for(const t of D.teams) st[t.id] = {id:t.id, w:t.w, pf:t.pf};
+    for(const [a, b, wi] of games){
+      if(!st[a] || !st[b]) continue;
+      const x = proj[a][wi] + 24 * norm(), y = proj[b][wi] + 24 * norm();
+      st[a].pf += x; st[b].pf += y; (x >= y ? st[a] : st[b]).w++;
+    }
+    const order = Object.values(st).sort((p, q) => q.w - p.w || q.pf - p.pf);
+    order.forEach((r, i) => { const c = cnt[r.id]; c.w += r.w; if(i < N) c.inn++; if(i < 2) c.bye++; if(i >= order.length - 2) c.last++; });
+  }
+  for(const t of D.teams){
+    const c = cnt[t.id], o = (ODDS[t.id] = {inn:c.inn / SIMS, bye:c.bye / SIMS, last:c.last / SIMS, w:c.w / SIMS});
+    GOAL[t.id] = !REG.length ? GOALS.mid : o.inn >= 0.9 ? GOALS.safe : o.inn <= 0.1 ? GOALS.out : GOALS.race;
+  }
+  MYW = goalOf(ME);
+}
+const oddsPct = x => (x >= 0.995 ? ">99" : x <= 0.005 ? "<1" : Math.round(x * 100)) + "%";
+const goalTag = tid => { const g = goalOf(tid), o = ODDS[tid]; return g.lab && o ? `<span class="goal ${g.k}" title="${oddsPct(o.inn)} to finish in the top six. ${g.say[0].toUpperCase() + g.say.slice(1)}.">${g.lab}</span>` : ""; };
 // where every team's starters rank at each position; `over` swaps in hypothetical rosters
 function posRanks(over){
   const out = {};
@@ -960,6 +1013,7 @@ function recompute(){
     RANK[pos] = a.filter(p => p.t).map(p => p.id);
   }
   FLOOR = SKILL.map(pos => 2000 + (REPL[pos] || 0));
+  buildStandings();
   WKN = D.weeks.map((w, i) => { const a = Object.values(P).filter(p => SKILL.includes(p.pos) && p.t && p.base >= 6 && p.af >= 0.9 && p.eff[i] > 0).map(p => p.eff[i] / p.base).sort((x,y) => x - y);
     return a.length >= 20 ? a[a.length >> 1] : 1; });
   for(const p of Object.values(P)) p.v = val(p);
@@ -1085,7 +1139,7 @@ function mkCell(p){
    DEPTHS  free agents, for the bench - or a straight upgrade when one would start
    SELLS   my own players the league prices above what they project: sell on what they've done */
 function buildTargets(){
-  const mine = TEAMS[ME].players, denom = (REG.length + 1.5 * PO.length) || 1, bare = worth(mine, false, true);
+  const mine = TEAMS[ME].players, denom = DEN(), bare = worth(mine, false, true);
   BUYS = []; SELLS = []; DEPTHS = [];
   for(const p of Object.values(P)){
     if(!SKILL.includes(p.pos) || p.g == null) continue;
@@ -1408,7 +1462,7 @@ function renderTiles(el, clickable){
 
 /* ---- targets ---------------------------------------------------------------------------------
    Top targets: the biggest upgrades to my lineup for the rest of the season and the playoffs
-   (the grade weighs playoff weeks 1.5x) that some team would actually deal for - a package with
+   (the grade weighs the weeks by where I stand) that some team would actually deal for - a package with
    a likely or worth-asking answer. Then everyone who helps, in a table. Tapping a player opens
    the packages that would get him. */
 const gettable = id => BESTWILL[id] === "likely" || BESTWILL[id] === "maybe";
@@ -1453,6 +1507,13 @@ function renderTargets(){
     const dl = D.deadline ? new Date(D.deadline).toLocaleDateString("en-US", {weekday:"short", month:"short", day:"numeric"}) : "";
     $("mkline").innerHTML = `<b>Price and timing.</b> The league prices a player on what he has scored; my lineup runs on what he is projected to do. <b>Buy low</b> is a player who projects for more than he has scored, <b>sell high</b> is one of mine the league pays more for than he projects. <b>When</b> reads his next games: wait out a tough one and his price dips, move before a soft one.` +
       (dl ? ` Trade deadline ${dl}${openW.length ? `, so week${openW.length > 1 ? "s" : ""} ${wkList(openW)} can still move a price` : ""}.` : ""); }
+  { const o = ODDS[ME], me = TEAMS[ME], g = goalOf(ME), ab = t => esc(t.abbrev || t.name);
+    const grp = k => D.teams.filter(t => t.id !== ME && goalOf(t.id).k === k).sort((a, b) => ODDS[b.id].inn - ODDS[a.id].inn).map(t => `${ab(t)} ${oddsPct(ODDS[t.id].inn)}`).join(", ");
+    const race = grp("race"), safe = grp("safe"), out = grp("out");
+    $("stline").innerHTML = !o || !g.lab ? "" :
+      `<b>Standings.</b> I'm ${me.w}-${me.l} and <b>${oddsPct(o.inn)}</b> to finish in the top six${o.bye >= 0.05 ? ` (${oddsPct(o.bye)} for a week-15 bye)` : ""}, so ${g.k === "race" ? "the regular-season weeks left count most for me" : "weeks 15–17 count most for me"}. Every team is judged on what it is playing for. ` +
+      (race ? `<b>In the race</b>, wins now matter most: ${race}. ` : "") + (safe ? `<b>Safely in</b>, building for weeks 15–17: ${safe}. ` : "") +
+      (out ? `<b>Out of the top six</b>, playing weeks 15–17 to stay out of last, so they don't sell: ${out}.` : ""); }
   const mode = S.tgMode;
   let list = (mode === "buy" ? BUYS : mode === "sell" ? SELLS : DEPTHS).slice();
   if(S.tgPos !== "ALL") list = list.filter(x => x.p.pos === S.tgPos);
@@ -1470,7 +1531,7 @@ function renderTargets(){
   const P_ = x => x.p, fits = x => (x.role === "F" ? "My flex" : x.role === "S" ? "My " + x.p.pos + (spots(x.p.pos) > 1 ? x.slot : "") : "Bench");
   const cols = [{k:"name", h:"Player", l:true, v:x => x.p.n, html:x => plyX(x.p, x.p.t && x.p.t !== ME ? ownTag(x.p) : "")}];
   if(mode === "buy") cols.push(
-    {k:"grade", h:"Grade", t:"Half what he adds to my lineup (playoffs count 1.5x); the rest is how cheap he is next to what he will do, his upside, workload and playoff schedule", c:true, v:x => x.grade, html:x => gradeCell(x.grade)},
+    {k:"grade", h:"Grade", t:"Half what he adds to my lineup, the weeks weighed by where I stand (see Standings); the rest is how cheap he is next to what he will do, his upside, workload and playoff schedule", c:true, v:x => x.grade, html:x => gradeCell(x.grade)},
     {k:"fits", h:"Replaces", t:"The starter in my lineup he would take the place of, and that player's projection a game", v:x => x.fit,
       html:x => (x.over ? `<span class="fitc">${x.p.base > x.over.base ? "" : "shares w/ "}${esc(short(x.over))}</span> <span class="dimn">${f1(x.over.base)}</span>` : `<span class="fitc">${fits(x)}</span>`)});
   if(mode === "depth") cols.push({k:"fits", h:"Fits", v:x => x.fit, html:x => `<span class="fitc">${x.role !== "B" ? "Starts for me" : "Bench depth"}</span>`, c:true});
@@ -1519,7 +1580,7 @@ const curPK = () => (S.pkGive.length ? GIVEPK : S.pkFor && P[S.pkFor] ? FORPK : 
    more than twice what I'm sending. */
 function findForGive(mg){
   const out = [], others = D.teams.filter(t => t.id !== ME), mV = sumV(mg), mine = TEAMS[ME].players, mTop = maxV(mg), straight = new Set();
-  const floor = -0.5 * ((REG.length + 1.5 * PO.length) || 1);
+  const floor = -0.5 * DEN();
   for(const t of others) for(const tg of sets(tradeable(t))){
     if(sumV(tg) > 2.2 * mV) continue;
     const j = judgeDeal([{from:ME, to:t.id, ids:mg}, {from:t.id, to:ME, ids:tg}], false);
@@ -1606,7 +1667,7 @@ function renderPackages(){
     const why = pkChips(pk).slice(0, 4).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join("");
     return `<div class="pkc" data-i="${i}">
       <div class="pkc-h"><div class="pkc-t"><div class="tn">${title}</div>
-          <div class="sub2"><span class="will ${pk.will}">${WORD[pk.will]}</span>${pk.three ? `<span class="will three">3-team</span>` : `<span class="rec">${lead.w}-${lead.l}</span>`}</div></div>
+          <div class="sub2"><span class="will ${pk.will}">${WORD[pk.will]}</span>${pk.three ? `<span class="will three">3-team</span>` : `<span class="rec">${lead.w}-${lead.l}</span>${goalTag(lead.id)}`}</div></div>
         <div class="pkc-g">${REG.length ? `<div><b class="${cls(pk.me.reg)}">${sgn(pk.me.reg)}</b><span>per wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(pk.me.po)}">${sgn(pk.me.po)}</b><span>playoffs</span></div>` : ""}</div></div>
       ${body}
       <div class="pkc-f">${why ? `<div class="chips">${why}</div>` : ""}<div class="them">Their lineups: ${them}</div></div>
@@ -1618,7 +1679,7 @@ function renderPackages(){
    Free agents, mine for comparison, and (on request) everyone's. Ranked by projected points a
    week for the rest of the regular season. */
 function renderKD(pos){
-  const F = D.faab, left = F.left || {}, denom = (REG.length + 1.5 * PO.length) || 1, m = (D.kd || {})[pos] || {};
+  const F = D.faab, left = F.left || {}, denom = DEN(), m = (D.kd || {})[pos] || {};
   const mineIds = TEAMS[ME].players.filter(id => P[id].pos === pos), best = mineIds.map(id => P[id]).sort((a,b) => b.ros - a.ros)[0];
   let rows = WAIV.filter(x => x.p.pos === pos).map(x => ({p:x.p, x}));
   for(const id of mineIds) rows.push({p:P[id], mine:true});
@@ -1694,7 +1755,7 @@ function renderWaivers(){
   const top = WAIV.length ? Math.max(1, ...WAIV.map(x => x.bid)) : 1;
   // colour by how much of my budget it is, not by how it compares with a thin week's best
   const lvl = x => (!x.bid ? "d" : x.bid >= 0.1 * (left[ME] || 1) ? "a" : x.bid >= 0.03 * (left[ME] || 1) ? "b" : "c");
-  const denom = (REG.length + 1.5 * PO.length) || 1;
+  const denom = DEN();
   const P_ = x => x.p;
   const cols = [
     {k:"name", h:"Player", l:true, v:x => x.p.n, html:x => plyX(x.p, x.p.xp ? `<span class="xpb" title="Named in ${esc(x.p.xp.join(" and "))}'s waiver show this week; projected on his recent role">EXPERT</span>` : "")},
@@ -1904,7 +1965,7 @@ function sideJudge0(tid, out, inn){
   for(const id of inn){ const p = P[id]; if(p.okp) d[p.pos]++; }
   const holes = SKILL.filter(pos => d[pos] < d0[pos] && d[pos] < spots(pos));
   const after = swap(t.players, new Set(out), new Set(inn));
-  const them = delta(W0S[tid], worth(after, true, false, true));
+  const g = goalOf(tid), them = delta(W0S[tid], worth(after, true, false, true), g);
   const ra = rolesOf(after, false, true);
   const inV = inn.reduce((s,id) => s + val(P[id]) * useOf(ra[id], P[id].pos), 0);
   const outV = out.reduce((s,id) => s + val(P[id]) * (KEEP[ROLE0[id]] || 0.75), 0);
@@ -1920,14 +1981,15 @@ function sideJudge0(tid, out, inn){
   // a backup QB or TE is a roster spot wasted: nobody takes one they'd never play
   const dead = inn.filter(id => ra[id] === "B" && spots(P[id].pos) <= 1);
   const lateral = new Set(out.concat(inn).map(id => P[id].pos)).size === 1;
-  const wk = them.score / ((REG.length + 1.5 * PO.length) || 1);
+  const wk = them.score / DEN(g);
   const need = lateral ? [2.5, 1.5] : [0.75, 0.35];
   let will = "long";
   if(!holes.length && starterBack && fairTop && starts && !dead.length){
-    if(ratio >= 1.08 && wk >= need[0] && them.reg >= -0.5 && them.po >= -0.5) will = "likely";
-    else if(ratio >= 0.88 && wk >= need[1] && them.reg >= -0.75 && them.po >= -0.75) will = "maybe";
+    // which weeks it will give ground in depends on what it is playing for
+    if(ratio >= 1.08 && wk >= need[0] && them.reg >= g.tr[0] && them.po >= g.tp[0]) will = "likely";
+    else if(ratio >= 0.88 && wk >= need[1] && them.reg >= g.tr[1] && them.po >= g.tp[1]) will = "maybe";
   }
-  return {id:tid, out, inn, after, d, holes, them, ra, inV, outV, ratio, starterBack, fairTop, starts, dead, lateral, wk, need, will};
+  return {id:tid, out, inn, after, d, holes, them, ra, g, inV, outV, ratio, starterBack, fairTop, starts, dead, lateral, wk, need, will};
 }
 /* A deal is a list of legs, {from, to, ids}. Two teams: me -> them, them -> me. Three teams is
    a rotation: me -> C, C -> B, B -> me. Every other team is judged on its own roster; the deal's
