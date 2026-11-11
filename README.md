@@ -39,7 +39,15 @@ photo at full height on the left, fading into the card. Lineup gains are coloure
 reads by number. Both pages use Inter (Google Fonts) with tabular figures. The
 page uses a light theme in the style of a fantasy-sports site (white panels on light grey, a dark
 top bar, one blue for actions, green = good for me, red = bad for me, amber = maybe), and shows
-each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name.
+each fantasy team's own ESPN logo (`logo` from `mTeam`) next to its name. A logo a manager
+uploaded to ESPN sits on a host that answers 401 unless you are signed in to the league, so the
+API hands those out through the dashboard's logo proxy (`?type=logo`, cached a month), which
+holds the login; public images are linked directly (`logoUrl` in `api/trade.js`).
+
+**+/wk and +PO are signed.** Adding a player can never make a lineup worse, so the lineup gain
+alone stops at zero. When a player adds nothing, the number shown is how far he sits behind the
+starter he would have to beat, so a downgrade reads as a minus (`signed` in `trade.html`). It
+applies on Targets (table, top cards, free agents) and Waivers, kickers and defenses included.
 
 - **Targets** — what opens first:
   - *Where I need help*: my lineup's rank at each position, weakest first. Tap a position to

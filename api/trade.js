@@ -34,6 +34,15 @@ const MY_TEAM = 10;          // The Bryan Football Team
 const SEASON = 2026;
 const LAST_WEEK = 17;        // league playoffs are weeks 15-17
 const GFL = "https://gfl-dashboard.vercel.app/api/espn";
+// A team logo uploaded to ESPN sits on a host that answers 401 unless you are signed in to the
+// league, so a browser can't load it. Those go through the dashboard's logo proxy (it holds the
+// login and caches each one for a month); public images are used as they are.
+const logoUrl = u => {
+  if (!/^https:\/\//.test(u || "")) return null;
+  let host = "";
+  try { host = new URL(u).hostname.toLowerCase(); } catch { return null; }
+  return host === "espn.com" || host.endsWith(".espn.com") ? GFL + "?type=logo&url=" + encodeURIComponent(u) : u;
+};
 const ESPN_SCHED = `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${SEASON}?view=proTeamSchedules_wl`;
 const SLEEPER = "https://api.sleeper.app";
 const ESPN_INJ_FEED = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries";
@@ -627,7 +636,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       }
       teams.push({
         id: t.id, name: ti.name || ((ti.location || "") + " " + (ti.nickname || "")).trim() || "Team " + t.id,
-        abbrev: ti.abbrev || "", logo: /^https:\/\//.test(ti.logo || "") ? ti.logo : null,
+        abbrev: ti.abbrev || "", logo: logoUrl(ti.logo),
         w: ov.wins || 0, l: ov.losses || 0, pf: r1(ov.pointsFor), players: ids,
       });
     }

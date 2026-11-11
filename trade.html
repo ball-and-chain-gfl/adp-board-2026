@@ -1569,6 +1569,11 @@ const statCols = (pos, P_) => statKeys(pos).map((k, i) => ({k:"s_" + k, h:COLS[k
   html:r => statCell(P_(r), k),
   style:r => { const p = P_(r); return COLS[k].tint && relevant(p, k) ? tint(p, k) : ""; }}));
 const plyX = (p, extra, nopos) => `<div class="ply plb">${img(p)}${who(p, extra, nopos)}</div>`;
+/* What a player does to my lineup, as one signed number. Adding a player can never make a
+   lineup worse, so the lineup gain alone stops at zero. When he adds nothing, the number is how
+   far he sits behind the starter he would have to beat (his per-game projection against that
+   starter's), so a downgrade reads as a minus. */
+const signed = (p, d, k) => (d[k] > 0.05 || !p.lens ? d[k] : Math.min(0, p.lens[k]));
 const gainCell = v => (Math.abs(v) < 0.05 ? `<span class="quiet">–</span>` : `<span class="pt ${v >= 2 ? "up2" : v >= PT ? "up1" : v <= -PT ? "down" : "even"}">${sgn(v)}</span>`);
 const readCell = p => sigChips(p).slice(0, 2).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join(" ");
 const gradeCell = (g, kind) => `<span class="gr ${kind || (g >= 70 ? "a" : g >= 50 ? "b" : g >= 35 ? "c" : "d")}">${g}</span>`;
@@ -1703,7 +1708,7 @@ function renderTops(){
     return `<button class="top1" data-id="${p.id}">
       <div class="hd">${img(p)}<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div>
         <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${byeBadge(p)}${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
-      <div class="nums">${REG.length ? `<div><b class="${cls(x.d.reg)}">${sgn(x.d.reg)}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(x.d.po)}">${sgn(x.d.po)}</b><span>playoffs</span></div>` : ""}</div>
+      <div class="nums">${REG.length ? `<div><b class="${cls(signed(p, x.d, "reg"))}">${sgn(signed(p, x.d, "reg"))}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(signed(p, x.d, "po"))}">${sgn(signed(p, x.d, "po"))}</b><span>playoffs</span></div>` : ""}</div>
       ${x.over ? (p.base > x.over.base ? `<div class="rp">replaces <b>${esc(short(x.over))}</b> ${f1(x.over.base)} → <b>${f1(p.base)}</b> a game</div>` : `<div class="rp">shares weeks with <b>${esc(short(x.over))}</b></div>`) : ""}
       ${mkCell(p, true) + winCell(p, true) ? `<div class="tmr">${mkCell(p, true)}${winCell(p, true)}</div>` : ""}
       <div class="ft">${w ? `<span class="will ${w}">${WORD[w]}</span>` : `<span class="dimn">checking deals…</span>`}<span class="rx" data-no="${p.id}" role="button" title="I can't get him: leave him out">rule out</span><span>Packages →</span></div>
@@ -1779,8 +1784,8 @@ function renderTargets(){
     {k:"proj", h:"Projects", t:"ESPN's projection a game from here: what I'd actually be giving up", v:x => x.p.base, html:x => f1(x.p.base)},
     {k:"why", h:"Timing", nosort:true, html:x => `<span class="whyc">${esc(windowOf(x.p, "sell").why)}</span>`});
   if(mode !== "sell"){
-    if(REG.length) cols.push({k:"reg", h:"+/wk", t:"What he adds to my lineup a week, weeks " + wkSpan(REG), sep:true, v:x => x.d.reg, html:x => gainCell(x.d.reg)});
-    if(PO.length) cols.push({k:"pog", h:"+PO", t:"What he adds a week in the playoffs, weeks " + wkSpan(PO), po:true, v:x => x.d.po, html:x => gainCell(x.d.po)});
+    if(REG.length) cols.push({k:"reg", h:"+/wk", t:"What he adds to my lineup a week, weeks " + wkSpan(REG) + ". A minus is how far he is behind the starter he would have to beat", sep:true, v:x => signed(x.p, x.d, "reg"), html:x => gainCell(signed(x.p, x.d, "reg"))});
+    if(PO.length) cols.push({k:"pog", h:"+PO", t:"What he adds a week in the playoffs, weeks " + wkSpan(PO) + ". A minus is how far he is behind the starter he would have to beat", po:true, v:x => signed(x.p, x.d, "po"), html:x => gainCell(signed(x.p, x.d, "po"))});
   }
   if(mode === "buy") cols.push(
     {k:"mk", h:"Price", t:"The league prices a player on what he has done. Buy low = he projects for more than he has scored; priced high = the reverse. The number is the gap in points a game", sep:true, v:x => -x.p.mk, html:x => mkCell(x.p)},
@@ -1934,7 +1939,8 @@ function renderKD(pos){
   for(const id of mineIds) rows.push({p:P[id], mine:true});
   if(S.wvAll) for(const p of Object.values(P)) if(p.pos === pos && p.t && p.t !== ME) rows.push({p});
   if(S.wvQ){ const q = S.wvQ.toLowerCase(); rows = rows.filter(r => (r.p.n + " " + r.p.tm).toLowerCase().includes(q)); }
-  const dv = (r, k) => (r.mine ? null : r.x ? r.x.d[k] : best ? r.p[k === "reg" ? "ros" : "po"] - best[k === "reg" ? "ros" : "po"] : null);
+  const gapK = (r, k) => (best ? r.p[k === "reg" ? "ros" : "po"] - best[k === "reg" ? "ros" : "po"] : null);
+  const dv = (r, k) => (r.mine ? null : r.x && (r.x.d[k] > 0.05 || !best) ? r.x.d[k] : r.x ? Math.min(0, gapK(r, k)) : gapK(r, k));
   const vg = (D.vegasWeeks || []).length ? ` Betting lines are used for week${D.vegasWeeks.length > 1 ? "s" : ""} ${D.vegasWeeks.join(" and ")}; later weeks use each team's scoring this season.` : "";
   $("wvhint").innerHTML = ((D.proj || {}).src === "espn" ? "Projections are ESPN's, week by week. " : "") + (pos === "DST"
     ? "The two columns Hayden Winks charts for defenses: <b>projected sack rate</b> (67% the opponents' sack rate allowed + 33% this defense's, last 8 games) and the <b>points opponents are expected to score</b>. <i>Strong</i> = high sack rate and low points, averaged over the remaining schedule."
@@ -2016,8 +2022,8 @@ function renderWaivers(){
     {k:"users", h:"Rivals", t:"Other teams he'd be a long-term starter for", v:x => x.users, html:x => String(x.users)},
     {k:"fits", h:"Fits", sep:true, v:x => x.g, html:x => `<span class="fitc">${x.role === "B" ? "Bench" : x.role === "F" ? "My flex" : "Starts"}</span>`, c:true},
   ];
-  if(REG.length) cols.push({k:"reg", h:"+/wk", t:"What he adds to my lineup a week, weeks " + wkSpan(REG), v:x => x.d.reg, html:x => gainCell(x.d.reg)});
-  if(PO.length) cols.push({k:"pog", h:"+PO", t:"What he adds a week in the playoffs", po:true, v:x => x.d.po, html:x => gainCell(x.d.po)});
+  if(REG.length) cols.push({k:"reg", h:"+/wk", t:"What he adds to my lineup a week, weeks " + wkSpan(REG) + ". A minus is how far he is behind the starter he would have to beat", v:x => signed(x.p, x.d, "reg"), html:x => gainCell(signed(x.p, x.d, "reg"))});
+  if(PO.length) cols.push({k:"pog", h:"+PO", t:"What he adds a week in the playoffs. A minus is how far he is behind the starter he would have to beat", po:true, v:x => signed(x.p, x.d, "po"), html:x => gainCell(signed(x.p, x.d, "po"))});
   if(REG.length) cols.push({k:"ros", h:"ROS", t:COLS.ros.t, sep:true, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
   if(PO.length) cols.push({k:"po", h:"PO", t:COLS.po.t, po:true, v:x => x.p.po, html:x => `<b>${f1(x.p.po)}</b>`});
   if(S.wvCols === "stats" || CQ.matches) cols.push(...statCols(S.wvPos, P_));
