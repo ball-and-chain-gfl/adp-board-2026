@@ -468,8 +468,18 @@ td .chip{font-size:11px;padding:1px 7px}
   select.st,select.rl{padding:6px 6px;font-size:13px;max-width:130px}
   /* packages */
   .pkwrap{display:flex;flex-direction:column;gap:10px;overflow:visible}
-  .pkside{display:none;max-height:none}
+  .pkwrap{flex:none;height:auto;min-height:0}
+  .pkside{display:none;max-height:none;overflow:visible;align-self:stretch;flex:none}
+  .pkside .opt{min-height:40px}
   .pkwrap.filt .pkside{display:flex}
+  .pkwrap.filt #pkDone{display:block;position:sticky;bottom:8px;padding:12px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  .pkwrap.filt #pkFilt{background:var(--blue2);border-color:var(--blue);color:var(--blue)}
+  /* things a thumb has to hit */
+  .tools .seg button{min-height:36px}
+  .howb{min-height:36px}
+  .lnk{padding:6px 8px;margin:-6px -8px}
+  .mclose{width:40px;height:40px}
+  .dsum ~ .dempty,.deal .dempty{display:none}
   #pkFilt{display:inline-block}
   .pkmain{overflow:visible}
   .pkl{grid-template-columns:minmax(0,1fr);gap:10px}
@@ -525,7 +535,7 @@ td.c > .olw{margin-left:auto;margin-right:auto;text-align:center}
 .pg{display:inline-flex;flex-direction:column;align-items:center;min-width:38px;padding:2px 4px 3px;border-radius:5px;font-size:11px;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pg em{font-style:normal;font-size:9px;font-weight:700;opacity:.75}
 .pg.t1{background:var(--good);color:#fff}.pg.t2{background:var(--good2);color:var(--good)}.pg.t3{background:var(--warn2);color:var(--warn)}.pg.t4,.pg.off{background:#eceef0;color:#6b6f74}
-.seeall{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--blue);letter-spacing:0;cursor:pointer;white-space:nowrap}
+.seeall{margin:-10px 0 -10px auto;padding:10px 0 10px 14px;font-size:11.5px;font-weight:700;color:var(--blue);letter-spacing:0;cursor:pointer;white-space:nowrap}
 .seeall:hover{text-decoration:underline}
 .tile .v{display:flex;align-items:baseline;gap:4px}
 .dest{font-size:10px;font-weight:800;color:var(--blue);background:var(--blue2);border-radius:3px;padding:0 5px;white-space:nowrap}
@@ -575,6 +585,7 @@ td > .wks .wkc{min-width:50px}
 .how .hint2{color:var(--soft)}
 .quiet{font-size:12px;color:#9a9ea3;font-weight:600}
 .goalt{font-size:11.5px;color:var(--dim);font-weight:700}
+#pkDone{display:none}
 .leg .lh .lhn{margin-left:auto;font-weight:700;letter-spacing:.3px;color:#9a9ea3;text-transform:none;font-size:10.5px}
 .top1 .nums span{white-space:nowrap}
 .pcact{margin-top:12px}
@@ -595,7 +606,7 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
   #v-roster .tools #scope{order:-2}
   #v-roster .tools #q{order:-1;flex:1 1 40%;min-width:0}
   .xb{width:34px;height:34px}
-  .olw{white-space:nowrap}
+  .olw.nw{white-space:nowrap}
   .whyc{min-width:0;max-width:none}
   th,td{padding:7px 4px}
   td.num .pt{padding:3px 6px}
@@ -610,7 +621,7 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
 }
 /* the narrowest phones: let the tag line wrap again and keep the expand button small */
 @media (max-width:374px){
-  .olw{white-space:normal}
+  .olw.nw{white-space:normal}
   .xb{width:28px;height:30px}
   .xc{width:30px;padding-right:2px!important}
   th,td{padding-left:3px;padding-right:3px}
@@ -697,6 +708,7 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
       <div class="fl"><div class="lab">Deal type</div><div class="opts" id="pkKindO"></div></div>
       <div class="fl"><div class="lab">Trading with</div><div class="opts" id="pkTeamO"></div></div>
       <div class="fl"><div class="lab">Player or team</div><input type="search" id="pkQ" placeholder="Search"></div>
+      <button class="b go" id="pkDone"></button>
     </aside>
     <div class="pkmain">
       <div class="pkhead"><button class="b" id="pkFilt">Filters &amp; my players</button><span class="count" id="pkCount"></span><div class="chips" id="pkActive"></div></div>
@@ -1335,8 +1347,21 @@ const WIDE = new Set(["read", "drop", "rival", "top", "fits", "deal", "next", "w
 const detailHtml = (cols, r) => `<div class="dg">${cols.map(c => { const v = c.html(r); const st = c.style ? c.style(r) : "";
   return v === "" || v == null ? "" : `<div class="dc${WIDE.has(c.k) ? " w" : ""}"${st ? ` style="${st}"` : ""}><span>${c.h}</span><div>${v}</div></div>`; }).join("")}</div>`;
 const XB = `<td class="c xc"><button class="xb" aria-label="More">▾</button></td>`;
-function gridHtml(cols, rows, sk, dir, rowAttr, mainKeys){
-  const phone = CQ.matches && !!mainKeys;
+/* Put a row table in its box so that it FITS. On a phone or a narrow window the table keeps
+   its main columns. On a wide one it starts with every column, and if that is wider than the
+   box (the Stats views are thirty columns) columns come off the right-hand end, one at a
+   time, into the panel that opens under each row, until nothing scrolls sideways. */
+function fitGrid(el, cols, rows, sk, dir, rowAttr, mainKeys){
+  el.innerHTML = gridHtml(cols, rows, sk, dir, rowAttr, mainKeys);
+  if(CQ.matches || !el.clientWidth || el.scrollWidth <= el.clientWidth + 1) return;
+  const keys = cols.filter(c => !c.l && c.k !== "act").map(c => c.k);
+  for(let k = Math.min(keys.length - 1, Math.floor(keys.length * el.clientWidth / el.scrollWidth) + 1); k >= 1; k--){
+    el.innerHTML = gridHtml(cols, rows, sk, dir, rowAttr, keys.slice(0, k), true);
+    if(el.scrollWidth <= el.clientWidth + 1) break;
+  }
+}
+function gridHtml(cols, rows, sk, dir, rowAttr, mainKeys, force){
+  const phone = (CQ.matches || force) && !!mainKeys;
   const main = phone ? cols.filter(c => c.l || mainKeys.includes(c.k)) : cols;
   const rest = phone ? cols.filter(c => !main.includes(c) && c.k !== "act") : [];
   const th = c => `<th class="${c.l ? "l" : ""}${c.nosort || !c.v ? "" : " sort"}${sk === c.k ? " on" : ""}${c.sep && !phone ? " sep" : ""}${c.c ? " c" : ""}${c.po ? " po" : ""}" data-k="${c.k}"${c.t ? ` title="${esc(c.t)}"` : ""}>${c.h}${sk === c.k ? `<span class="ar">${dir < 0 ? "▾" : "▴"}</span>` : ""}</th>`;
@@ -1458,7 +1483,7 @@ function ptagAvg(p, k, mini){
   if(outW > idx.length / 2) return mini ? "" : `<span class="pt out">Out</span><span class="olw">${outW} of ${plural(idx.length, "week")}</span>`;
   if(p.t === ME){
     const N = STARTN[p.pos], t = r <= Math.ceil(N / 3) ? ["t1", "Elite"] : r <= N ? ["t2", "Starter"] : r <= Math.round(N * 1.5) ? ["t3", "Fringe"] : ["t4", "Bench"];
-    return mini ? "" : `<span class="pt ${t[0]}">${t[1]}</span><span class="olw">${p.pos}${r} · ${f1(p[a])}${MQ.matches ? "" : " a game"}</span>`;
+    return mini ? "" : `<span class="pt ${t[0]}">${t[1]}</span><span class="olw nw">${p.pos}${r} · ${f1(p[a])}${MQ.matches ? "" : " a game"}</span>`;
   }
   const v = p.lens[k], o = p.lens.over[k];
   const c = v >= 2 ? "up2" : v >= PT ? "up1" : v <= -PT ? "down" : "even";
@@ -1482,7 +1507,9 @@ function renderTiles(el, clickable){
     <div class="strip">${Array.from({length:n}, (_, i) => `<i${i + 1 === rank ? ' class="me"' : ""}></i>`).join("")}</div>
     <div class="tps">${s}</div><div class="s2">${s2}</div>${clickable && pos ? `<div class="s3">${cnt ? plural(cnt, "upgrade") + " →" : "no upgrade out there"}</div>` : ""}</${tag}>`;
   };
-  const tp = p => `<div class="tp">${img(p)}<span class="tpn" data-pid="${p.id}">${esc(short(p))}</span><b>${f1(p.adj)}</b></div>`;
+  // on Targets the whole tile is one button (filter to this position), so a name inside it must not open a card:
+  // a thumb lands on the name. On Roster the tile does nothing itself, so names stay tappable.
+  const tp = p => { const s = `<div class="tp">${img(p)}<span class="tpn" data-pid="${p.id}">${esc(short(p))}</span><b>${f1(p.adj)}</b></div>`; return clickable ? s.replace(/ data-pid="[^"]*"/g, "") : s; };
   // the lineup as it stands today, no waiver help
   const all = D.teams.map(t => ({id:t.id, w:worth(t.players, false, t.id === ME)}));
   const place = key => all.slice().sort((a,b) => b.w[key] - a.w[key]).findIndex(x => x.id === ME) + 1;
@@ -1612,9 +1639,13 @@ function renderTargets(){
   // the read is a second opinion: it sits with the stats (and in a phone row's panel), not in the basic table
   if(S.tgCols === "stats" || CQ.matches) cols.push({k:"read", h:"Read", t:"What his workload, touchdown luck, role and schedule say", sep:true, nosort:true, html:x => readCell(x.p)});
   if(mode !== "depth" && !tight) cols.push({k:"act", h:"", nosort:true, c:true, html:() => `<span class="go-r">›</span>`});
+  if(S.tgCols === "stats" && !CQ.matches){
+    const sk0 = new Set(statCols(S.tgPos, P_).map(c => c.k)), lead = new Set(["name", "grade", "reg", "pog"]);
+    cols.sort((a, b) => (lead.has(a.k) ? 0 : sk0.has(a.k) ? 1 : 2) - (lead.has(b.k) ? 0 : sk0.has(b.k) ? 1 : 2));     // stable: each group keeps its order
+  }
   const sk = S.tgSort[mode] || {k:mode === "sell" ? "grade" : "grade", dir:-1};
   if(!cols.some(c => c.k === sk.k)) sk.k = "grade";
-  $("tgscroll").innerHTML = gridHtml(cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir,
+  fitGrid($("tgscroll"), cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir,
     mode === "depth" ? null : x => ` class="click" data-id="${x.p.id}" data-a="${mode === "sell" ? "shop" : "deal"}"`,
     // a phone row has room for two numbers; a tablet-width row also keeps the grade, the timing and the answer
     mode === "sell" ? ["grade", "win"] : MQ.matches ? ["reg", "pog"] : ["grade", "reg", "pog", "win", "deal"]);
@@ -1678,7 +1709,7 @@ function askLine(p){
   return `<b>What ${ab} would need for ${esc(short(p))}:</b> about ${f1(0.88 * keep)} in trade value (he is worth ${f1(keep)} to them), led by one piece worth at least ${f1(top)}` +
     (big.length ? `. Of mine that is ${big.map(q => esc(short(q)) + " " + f1(q.v)).join(", ")}` : `. None of my tradeable players is, so a third team's player would have to lead the deal`) +
     (hole ? `. Losing him leaves ${ab} short at ${p.pos}, so a startable ${p.pos} has to come back` : "") +
-    `. My pieces: ${mine.slice(0, 7).map(q => esc(short(q)) + " " + f1(q.v)).join(" · ")}.`;
+    (big.length ? "." : `. My pieces: ${mine.slice(0, 7).map(q => esc(short(q)) + " " + f1(q.v)).join(" · ")}.`);
 }
 function renderPkSide(base){
   const opt = (k, v, label, n, extra) => `<button class="opt${String(S[k]) === v ? " on" : ""}" data-f="${k}" data-v="${v}">${extra || ""}<span class="tn">${label}</span><span class="n">${n}</span></button>`;
@@ -1707,6 +1738,7 @@ function renderPackages(){
   const by = {gain:x => x.pk.rank, raw:x => x.pk.me.score + (x.pk.h2hB || 0), po:x => x.pk.me.po, reg:x => x.pk.me.reg, will:x => tier(x) + x.pk.me.score}[S.pkSort] || (x => x.pk.rank);
   list.sort((a,b) => by(b) - by(a));
   const total = list.length;
+  $("pkDone").textContent = `Show ${plural(total, "package")}`;
   $("pkCount").textContent = `${plural(total, "package")}${S.pkGive.length ? ` for ${S.pkGive.map(id => short(P[id])).join(" + ")}` : forP ? ` for ${forP.n}` : ""}`;
   const act = [S.pkWill && PKF.pkWill.opts.find(o => o[0] === S.pkWill)[1], S.pkKind && PKF.pkKind.opts.find(o => o[0] === S.pkKind)[1], S.pkPos && "Getting a " + S.pkPos, S.pkMe && "Including deals that cost me", S.pkTeam && TEAMS[+S.pkTeam].name].filter(Boolean);
   $("pkActive").innerHTML = act.map(a => `<span class="chip b">${esc(a)}</span>`).join("");
@@ -1783,7 +1815,7 @@ function renderKD(pos){
       html:r => `<div class="wks">${D.weeks.slice(0, pos === "DST" ? D.weeks.length : 4).map((w, i) => wkChip(r.p, i, true)).join("")}</div>`},
   ];
   const sk = S.kdSortK;
-  $("wvscroll").innerHTML = gridHtml(cols, sortRows(rows, cols, sk.k, sk.dir), sk.k, sk.dir, r => (r.mine ? ' class="me"' : ""), ["ros", "po"]);
+  fitGrid($("wvscroll"), cols, sortRows(rows, cols, sk.k, sk.dir), sk.k, sk.dir, r => (r.mine ? ' class="me"' : ""), ["ros", "po"]);
 }
 
 /* ---- waivers --------------------------------------------------------------------------------*/
@@ -1833,8 +1865,12 @@ function renderWaivers(){
     html:x => { if(!x.drop || !x.bid) return ""; const dd = x.drop.d.score / denom;
       return `${esc(short(P[x.drop.id]))} <span class="${Math.abs(dd) < 0.05 ? "dimn" : cls(dd)}">${Math.abs(dd) < 0.05 ? "0.0" : sgn(dd)}</span>`; }});
   { const i = cols.findIndex(c => c.k === "term"); cols.splice(2, 0, cols.splice(i, 1)[0]); }   // how long he helps sits right by the bid
+  if(S.wvCols === "stats" && !CQ.matches){
+    const sk0 = new Set(statCols(S.wvPos, P_).map(c => c.k)), lead = new Set(["name", "bid", "term"]);
+    cols.sort((a, b) => (lead.has(a.k) ? 0 : sk0.has(a.k) ? 1 : 2) - (lead.has(b.k) ? 0 : sk0.has(b.k) ? 1 : 2));
+  }
   const sk = S.wvSortK;
-  $("wvscroll").innerHTML = gridHtml(cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir, null, ["bid", "term"]);
+  fitGrid($("wvscroll"), cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir, null, ["bid", "term"]);
 }
 
 
@@ -1895,8 +1931,8 @@ function colKeys(pos = S.pos){
   const lead = ["st", ...(S.scope === "me" ? ["role"] : [])], tail = dup ? [] : [...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : [])];
   const tags = SKILL.includes(pos) || pos === "ALL" ? [...(REG.length ? ["oreg"] : []), ...(PO.length ? ["opo"] : [])] : [];
   if(S.cols === "basic") return [...tags, ...lead, "ppg", ...(D.weeks.length ? ["w0"] : []), ...tail];
-  if(S.cols === "stats") return [...tags, ...lead, "ppg", "log", ...(SKILL.includes(pos) || pos === "ALL" ? statKeys(pos) : [])];
-  return [...tags, ...lead, ...D.weeks.map((w, i) => "w" + i), ...tail, "fsos", ...(REG.length ? ["sos"] : []), ...(PO.length ? ["psos"] : [])];
+  if(S.cols === "stats") return [...tags, "ppg", "log", ...(SKILL.includes(pos) || pos === "ALL" ? statKeys(pos) : [])];
+  return [...tags, ...D.weeks.map((w, i) => "w" + i), ...tail, "fsos", ...(REG.length ? ["sos"] : []), ...(PO.length ? ["psos"] : [])];
 }
 function tableRows(){
   let ids;
@@ -1955,6 +1991,12 @@ function renderTable(list){
       <div class="dc w"><span>Schedule</span><div class="wks">${D.weeks.map((w, i) => wkChip(p, i, true)).join("")}</div></div>
       ${read ? `<div class="dc w"><span>Read</span><div>${read}</div></div>` : ""}</div>`;
   };
+  // a full-width table; with `cut` it keeps that many columns and the rest go under the row
+  const wide = (ps, keys, nopos, cut) => {
+    const ks = cut ? keys.slice(0, cut) : keys;
+    return `<table><thead><tr>${th(COLS.name, "l")}${ks.map(k => th(COLS[k])).join("")}${cut ? '<th class="xc"></th>' : ""}</tr></thead><tbody>${ps.map(p => !cut ? row(p, ks, nopos)
+      : row(p, ks, nopos).replace(/<\/tr>$/, XB + "</tr>") + `<tr class="dt" hidden><td colspan="${ks.length + 2}">${detail(p)}</td></tr>`).join("")}</tbody></table>`;
+  };
   const html = GROUPS.map(([lab, poss]) => {
     const ps = list.filter(p => poss.includes(p.pos));
     if(!ps.length) return "";
@@ -1966,10 +2008,21 @@ function renderTable(list){
           row(p, keys, poss.length === 1).replace(/<\/tr>$/, XB + "</tr>") + `<tr class="dt" hidden><td colspan="${keys.length + 2}">${detail(p)}</td></tr>`).join("")}</tbody></table></div></div>`;
     }
     const keys = colKeys(poss.length === 1 ? poss[0] : "K");
-    return `<div class="ptab"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
-      <div class="scroll"><table><thead><tr>${th(COLS.name, "l")}${keys.map(k => th(COLS[k])).join("")}</tr></thead><tbody>${ps.map(p => row(p, keys, poss.length === 1)).join("")}</tbody></table></div></div>`;
+    return `<div class="ptab" data-g="${lab}"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
+      <div class="scroll">${wide(ps, keys, poss.length === 1, 0)}</div></div>`;
   }).join("");
   $("rscroll").innerHTML = html || `<div class="chip">Nobody matches</div>`;
+  if(phone) return;
+  // a table too wide for the page loses columns off the right into the panel under each row
+  for(const [lab, poss] of GROUPS){
+    const box = document.querySelector(`#rscroll .ptab[data-g="${lab}"] .scroll`);
+    if(!box || !box.clientWidth || box.scrollWidth <= box.clientWidth + 1) continue;
+    const ps = list.filter(p => poss.includes(p.pos)), keys = colKeys(poss.length === 1 ? poss[0] : "K");
+    for(let k = Math.min(keys.length - 1, Math.floor(keys.length * box.clientWidth / box.scrollWidth) + 1); k >= 1; k--){
+      box.innerHTML = wide(ps, keys, poss.length === 1, k);
+      if(box.scrollWidth <= box.clientWidth + 1) break;
+    }
+  }
 }
 
 function renderRoster(){
@@ -2677,9 +2730,15 @@ function boardCard(kind){
   $("pcard").hidden = false; $("pcard").scrollTop = 0;
 }
 
+const overflows = v => [...$("v-" + v).querySelectorAll(".scroll")].some(e => e.scrollWidth > e.clientWidth + 1);
+function refit(v, always){
+  if(!D || (!always && !overflows(v))) return;
+  if(v === "targets") renderTargets(); else if(v === "roster") renderRoster(); else if(v === "waivers") renderWaivers();
+}
 function show(v){
   S.view = v;
   for(const k of VIEWS) $("v-" + k).hidden = k !== v;
+  refit(v);
   document.querySelectorAll("#sub button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
   try { history.replaceState(null, "", "#" + v); } catch(e){}
 }
@@ -2767,7 +2826,8 @@ function boot(d){
   onSort($("tgscroll"), () => S.tgSort[S.tgMode] || {k:"grade", dir:-1}, v => (S.tgSort[S.tgMode] = v), renderTargets);
   pickSeg("tgget", "g", v => { S.tgGet = !!v; renderTargets(); });
   // tap a target: every package that would get him, whatever the answer
-  const dealsFor = id => { S.pkGive = []; GIVEPK = []; S.pkFor = id; S.pkQ = ""; $("pkQ").value = ""; S.pkWill = ""; S.pkTeam = ""; S.pkPos = ""; S.pkKind = ""; S.pkLimit = 40;
+  // every answer is listed, the likeliest first: the first card should be one I could actually send
+  const dealsFor = id => { S.pkGive = []; GIVEPK = []; S.pkFor = id; S.pkQ = ""; $("pkQ").value = ""; S.pkWill = ""; S.pkTeam = ""; S.pkPos = ""; S.pkKind = ""; S.pkLimit = 40; S.pkSort = "will"; $("pkSort").value = "will";
     FORPK = findPackages(id); show("packages"); renderPackages(); $("v-packages").scrollTop = 0; };
   const shop = id => window.shopMine(id);
   window.dealsFor = dealsFor;
@@ -2781,6 +2841,7 @@ function boot(d){
   let wasTight = innerWidth < NARROW, wasCompact = CQ.matches;
   const reflow = () => { const t = innerWidth < NARROW; if(MQ.matches === wasPhone && t === wasTight && CQ.matches === wasCompact) return; wasPhone = MQ.matches; wasTight = t; wasCompact = CQ.matches; renderTargets(); renderRoster(); renderWaivers(); };
   MQ.addEventListener("change", reflow);
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if(!CQ.matches) refit(S.view, true); }, 180); });
   window.addEventListener("resize", reflow);
   $("tgscroll").onclick = e => {
     if(e.target.closest("th, .xb, tr.dt")) return;
@@ -2815,7 +2876,7 @@ function boot(d){
   $("ovclr").onclick = () => { OV = {}; saveOV(); renderAll(); };
   // packages
   const pkf = (k, v) => { S[k] = v; S.pkLimit = 40; renderPackages(); };
-  $("pkFor").onclick = () => { S.pkFor = null; S.pkGive = []; S.pkWill = "maybe"; S.pkLimit = 40; renderPackages(); };
+  $("pkFor").onclick = () => { S.pkFor = null; S.pkGive = []; S.pkWill = "maybe"; S.pkLimit = 40; S.pkSort = "gain"; $("pkSort").value = "gain"; renderPackages(); };
   $("pkside").addEventListener("click", e => { const o = e.target.closest(".opt[data-f]"); if(o) pkf(o.dataset.f, o.dataset.v); });
   // picking my own players to move: search again for exactly that group
   const setGive = ids => {
@@ -2833,6 +2894,7 @@ function boot(d){
   $("pkSort").onchange = e => pkf("pkSort", e.target.value);
   $("pkQ").oninput = e => pkf("pkQ", e.target.value.trim());
   $("pkFilt").onclick = () => $("pkwrap").classList.toggle("filt");
+  $("pkDone").onclick = () => { $("pkwrap").classList.remove("filt"); $("v-packages").scrollTop = 0; };
   $("pkl").onclick = e => {
     if(e.target.closest("#pkmore")){ S.pkLimit += 40; renderPackages(); return; }
     const c = e.target.closest(".pkc"); if(!c) return;

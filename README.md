@@ -130,6 +130,31 @@ and 1366 px and read for what a first glance gives you. What came out of it:
   Targets table drops ROS, PO and the arrow (`NARROW`); a bye tag and an owner tag together
   push the position rank out of the line. The *Read* column lives with *Stats*.
 
+**The click-through (11/10, after the render pass).** Reading screenshots missed whatever only
+shows once you use the thing, so every control was then driven with real mouse events in
+headless Edge at 375, 1024 and 1366 px (about 85 steps a size: tiles, filters, sorting, expand
+arrows, the pop-up, the package filters and picker, both builder modes, roster views, status
+calls, waivers, kickers, defenses), checking after each step for script errors, anything wider
+than the screen, and whether the thing tapped was actually what a finger would hit. Found and
+fixed:
+
+- **The Stats and Schedule views, Kickers and Defenses scrolled sideways on desktop** (Targets
+  Stats by 1,500 px). Every table now goes through `fitGrid`: it starts with all its columns
+  and, if that is wider than its box, columns come off the right-hand end into the panel under
+  each row until it fits. Tables are refitted when their tab opens and on resize. In Stats mode
+  the stat columns come first; the Roster's Stats and Schedule views leave the status and
+  lineup pickers to Basic.
+- **A need tile on Targets opened a player's card instead of filtering**, because the name sits
+  where a thumb lands. Names inside those tiles no longer open cards (on Roster they still do).
+  *see all* was 13 px tall; it is 33 now.
+- **The phone's filter drawer** opened as a narrow box that scrolled inside itself. It is full
+  width, part of the page, and ends in a sticky *Show N packages* button.
+- **Packages for a target** opened on the biggest long shot. They now list the likeliest
+  answers first, and the "what it would take" line no longer repeats my pieces.
+- **Another team's roster on a phone** was wider than the screen.
+- Thumb targets on a phone: filter buttons 36 px, drawer options 40 px, the close button 40 px,
+  the *clear* link padded. The builder no longer says "Pick players on both sides" twice.
+
 ### My lineup calls (starter / bench / handcuff)
 
 The **Lineup** menu beside each of my players (Roster tab, my roster) overrides the automatic
