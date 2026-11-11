@@ -423,6 +423,12 @@ td .chip{font-size:11px;padding:1px 7px}
 .lwc .lwm b{color:var(--soft);font-weight:700}
 .lwc .lwm .low{color:var(--bad)}
 .lwc.fill{background:var(--warn2)}
+.lwc.bn .lwn{font-weight:600;color:var(--soft)}
+.lwc.bn .av{opacity:.85}
+.lwtab tbody tr.tot td{background:var(--panel2);font-size:13.5px;font-variant-numeric:tabular-nums}
+.lwtab .bnrows td{border-bottom-color:transparent;padding-top:3px;padding-bottom:3px}
+.lwtab .bnrows tr:last-child td{border-bottom:1px solid var(--line2)}
+.lwbh{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);background:var(--panel2);padding:6px 11px;border-bottom:1px solid var(--line2)}
 .lwc.empty{flex-direction:column;align-items:flex-start;gap:0;background:var(--bad2);padding:4px 6px}
 .lwc.empty .lwn{color:var(--bad)}
 /* one week at a time, on a phone or a narrow window */
@@ -2213,7 +2219,7 @@ function renderLineupWeeks(){
   const head = x => { const o = oppOf(x.w); return `<b>Wk ${x.w}</b><i>${o ? "vs " + esc(tName(o)) : x.w >= 15 ? "playoffs" : ""}</i>`; };
   const total = x => x.rows.reduce((s, r) => s + r.pts, 0);
   const sitting = x => { const inn = new Set(x.rows.filter(r => r.p).map(r => r.p.id));
-    return [...usual].filter(id => !inn.has(id)).map(id => { const p = P[id], g = p.wk[x.wi]; return {p, why:g.o === "BYE" ? "bye" : p.eff[x.wi] === 0 ? "out" : "sits"}; }); };
+    return [...usual].filter(id => !inn.has(id) && !(P[id].eff[x.wi] > 0)).map(id => { const p = P[id], g = p.wk[x.wi]; return {p, why:g.o === "BYE" ? "bye" : "out"}; }); };
   const cell = (r, x, big) => {
     if(!r.p) return `<div class="lwc empty"><span class="lwn">Waiver pickup</span><span class="lwm">no ${r.slot === "FLEX" ? "flex" : r.slot} available · ${f1(r.pts)}</span></div>`;
     const p = r.p, g = p.wk[x.wi], fill = !usual.has(p.id);
@@ -2221,8 +2227,20 @@ function renderLineupWeeks(){
     const wire = SKILL.includes(p.pos) && r.slot !== "FLEX" ? REPL[p.pos] || 0 : 0, low = wire && r.pts < wire - 0.05;
     return `<div class="lwc${fill ? " fill" : ""}"${fill ? ' title="Filling in: not one of the regular starters"' : ""}>${img(p)}<span class="lwt"><span class="lwn" data-pid="${p.id}">${esc(big ? p.n : short(p))}</span><span class="lwm"><b${low ? ` class="low" title="Under the ${p.pos} waiver level this week (${f1(wire)}): a free agent projects better"` : ""}>${f1(r.pts)}</b> · ${r.slot === "FLEX" ? p.pos + " · " : ""}${g.o}${fill && big ? " · filling in" : ""}${low && big ? ` · <span class="low">wire ${f1(wire)}</span>` : ""}</span></span></div>`;
   };
+  /* The bench that week, startable players only: playing (no bye, not out), not in the lineup,
+     and worth a start - he projects at or above the waiver level at his position, or he is a
+     regular starter who lost his slot that week, or he is the other kicker or defense. A bench
+     player who projects under the wire isn't an option anyone would use, so he is left off. */
+  for(const x of weeks){
+    const inn = new Set(x.rows.filter(r => r.p).map(r => r.p.id));
+    x.bench = ids.map(id => P[id]).filter(p => !inn.has(p.id) && p.eff[x.wi] > 0 && PI[p.pos] != null &&
+      (!SKILL.includes(p.pos) || usual.has(p.id) || p.eff[x.wi] >= (REPL[p.pos] || 0) - 0.05)).sort((a, b) => b.eff[x.wi] - a.eff[x.wi]);
+  }
+  const nb = Math.max(0, ...weeks.map(x => x.bench.length));
+  const bcell = (p, x, big) => { if(!p) return ""; const g = p.wk[x.wi], call = mine && (roleOf(p.id) || {}).r === "B";
+    return `<div class="lwc bn"${call ? ' title="My call: bench. He only starts if I change it"' : ""}>${img(p)}<span class="lwt"><span class="lwn" data-pid="${p.id}">${esc(big ? p.n : short(p))}</span><span class="lwm"><b>${f1(p.eff[x.wi])}</b> · ${p.pos === "DST" ? "DEF" : p.pos} · ${g.o}${call ? (big ? " · my bench call" : " · call") : ""}</span></span></div>`; };
   const who = mine ? "My lineup" : esc(t.name) + "'s lineup";
-  const hd = `<div class="sect-h">${who}, week by week <span>who starts in each slot, byes and injuries counted · <em class="lwkey">shaded</em> = filling in for a regular starter · <em class="lwlow">red</em> = under the waiver level that week</span><button class="lnk2" id="lwhide">${S.lwHide ? "Show" : "Hide"}</button></div>`;
+  const hd = `<div class="sect-h">${who}, week by week <span>who starts in each slot, byes and injuries counted, and the bench players who could start · <em class="lwkey">shaded</em> = filling in for a regular starter · <em class="lwlow">red</em> = under the waiver level that week</span><button class="lnk2" id="lwhide">${S.lwHide ? "Show" : "Hide"}</button></div>`;
   if(S.lwHide){ el.innerHTML = hd; return; }
   const slots = weeks[0].rows.map(r => r.slot);
   if(innerWidth < 900){
@@ -2232,13 +2250,15 @@ function renderLineupWeeks(){
     el.innerHTML = hd + `<div class="lwpick">${weeks.map((y, i) => `<button data-lw="${i}" class="${i === S.lwk ? "on" : ""}${y.w >= 15 ? " po" : ""}"><b>${y.w}</b><i>${f1(total(y)).replace(/\.\d$/, "")}</i></button>`).join("")}</div>
       <div class="lwone"><div class="lwoh"><b>Week ${x.w}${o ? " · vs " + esc(TEAMS[o].name) : x.w >= 15 ? " · playoffs" : ""}</b><span>${f1(total(x))} projected</span></div>
         ${x.rows.map(r => `<div class="lwr"><span class="sl">${r.slot}</span>${cell(r, x, true)}</div>`).join("")}
-        ${sit.length ? `<div class="lwsit">Not in it: ${sit.map(s => `${esc(short(s.p))} <i>${s.why}</i>`).join(" · ")}</div>` : ""}</div>`;
+        <div class="lwbh">Bench · could start${x.bench.length ? "" : ": nobody"}</div>${x.bench.map(p => `<div class="lwr"><span class="sl">BN</span>${bcell(p, x, true)}</div>`).join("")}
+        ${sit.length ? `<div class="lwsit">Out: ${sit.map(s => `${esc(short(s.p))} <i>${s.why}</i>`).join(" · ")}</div>` : ""}</div>`;
     return;
   }
   el.innerHTML = hd + `<div class="lwbox"><table class="lwtab"><thead><tr><th class="sl"></th>${weeks.map(x => `<th class="${x.w >= 15 ? "po" : ""}">${head(x)}</th>`).join("")}</tr></thead>
-    <tbody>${slots.map((s, i) => `<tr><td class="sl">${s}</td>${weeks.map(x => `<td>${cell(x.rows[i], x)}</td>`).join("")}</tr>`).join("")}</tbody>
-    <tfoot><tr class="tot"><td class="sl">Total</td>${weeks.map(x => `<td><b>${f1(total(x))}</b></td>`).join("")}</tr>
-      <tr class="sit"><td class="sl">Sitting</td>${weeks.map(x => { const s = sitting(x); return `<td>${s.map(v => `<span>${esc(short(v.p))} <i>${v.why}</i></span>`).join("") || '<span class="quiet">–</span>'}</td>`; }).join("")}</tr></tfoot></table></div>`;
+    <tbody>${slots.map((s, i) => `<tr><td class="sl">${s}</td>${weeks.map(x => `<td>${cell(x.rows[i], x)}</td>`).join("")}</tr>`).join("")}
+      <tr class="tot"><td class="sl">Total</td>${weeks.map(x => `<td><b>${f1(total(x))}</b></td>`).join("")}</tr></tbody>
+    <tbody class="bnrows">${nb ? Array.from({length:nb}, (_, i) => `<tr><td class="sl">${i ? "" : "Bench"}</td>${weeks.map(x => `<td>${bcell(x.bench[i], x)}</td>`).join("")}</tr>`).join("") : `<tr><td class="sl">Bench</td><td colspan="${weeks.length}"><span class="quiet">nobody on the bench projects as a start</span></td></tr>`}</tbody>
+    <tfoot><tr class="sit"><td class="sl">Out</td>${weeks.map(x => { const s = sitting(x); return `<td>${s.map(v => `<span>${esc(short(v.p))} <i>${v.why}</i></span>`).join("") || '<span class="quiet">–</span>'}</td>`; }).join("")}</tr></tfoot></table></div>`;
 }
 function renderRoster(){
   renderLineupWeeks();

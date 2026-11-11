@@ -209,7 +209,12 @@ available at each position that week, the best leftover back, receiver or tight 
 flex, and my starter / bench / handcuff calls applied.
 
 - A bye or a week out takes a player off the board; whoever steps in is **shaded** as filling
-  in, and the regular starters who aren't in it are listed under *Sitting* with the reason.
+  in, and the regular starters on bye or out are listed under *Out* with the reason.
+- **The bench, startable players only**, sits under each week's total: anyone not in the
+  lineup who plays that week and projects at or above the waiver level at his position, a
+  regular starter who lost his slot that week, and the other kicker or defense. A bench
+  player under the waiver level isn't an option anyone would use, so he is left off. One I
+  have called bench (a handcuff) is marked as my call.
 - A starter who projects **under the waiver level** at his position that week is in red: a
   free agent projects better. A slot nobody on the roster can fill reads *Waiver pickup*.
 - From 900 px up it is one grid of all the weeks. Below that it is one week at a time, picked
