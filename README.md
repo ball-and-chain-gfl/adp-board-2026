@@ -177,6 +177,38 @@ bye week helps them every week but the one that matters to me. Incoming players 
 still ahead are flagged too. The *My lineup* filter hides any deal that doesn't leave me better
 off once that swing is counted; "Any, even if it costs me" shows them.
 
+### Banking trades, and stacking the next on top
+
+A trade I've settled on can be **banked** from the builder (*Bank this trade*, beside *Clear*
+once both sides have players). A banked trade is applied to every roster in the tool: the
+builder's lists, the Roster tab, the targets, the package search, the standings odds. The next
+trade is then built and judged on the rosters as they would stand, so trades stack.
+
+- Banked trades are listed at the top of the builder, in order, each with an × to undo it. A
+  bar across every tab says how many are applied and what they do to my lineup against today's
+  real roster, with *Undo all*.
+- They are kept on this device (`trade.bank` in localStorage) and replayed over ESPN's rosters
+  on every load (`applyBank`). One that no longer makes sense is dropped: a player has since
+  moved in real life, or an earlier banked trade it depended on was undone.
+- Nothing is sent to ESPN. This is a what-if.
+
+### Ruling players out
+
+A player I know I can't get can be **ruled out**: the ✕ at the end of his row on Targets,
+*rule out* on a top-target card, or *Rule him out* in his card. He leaves the targets and every
+suggested package (`NOGO`, `trade.nogo` in localStorage). The ruled-out players are listed
+above the Targets table, each a tap to put back. In the builder he can still be picked by
+hand and carries a *ruled out* tag.
+
+### The builder
+
+- It uses the whole window on a desktop.
+- A picked player's row is tinted, his name turns blue and his photo gets a ring and a tick.
+  There are no checkboxes.
+- *Lineup after the trade* shows the whole roster with photos: the starters slot by slot (the
+  player who came in beside the one who went out), then kicker and defense, then every bench
+  player, with anyone arriving in the trade marked *new* and anyone leaving named underneath.
+
 ### Three-team trades
 
 Two shapes, both judged with the same rules as a 2-team deal, each team on its own roster,
