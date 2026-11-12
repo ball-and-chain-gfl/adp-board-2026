@@ -699,6 +699,7 @@ td > .wks .wkc{min-width:50px}
 .how .hint2{color:var(--soft)}
 .quiet{font-size:12px;color:#9a9ea3;font-weight:600}
 .goalt{font-size:11.5px;color:var(--dim);font-weight:700}
+#tgscroll > .chip,#wvscroll > .chip{white-space:normal;display:block;max-width:calc(100% - 24px)}
 #pkDone{display:none}
 .leg .lh .lhn{margin-left:auto;font-weight:700;letter-spacing:.3px;color:#9a9ea3;text-transform:none;font-size:10.5px}
 .top1 .nums span{white-space:nowrap}
@@ -785,7 +786,7 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
   <div class="tools">
     <div class="seg" id="tgmode"><button data-m="buy" class="on">Trade targets</button><button data-m="depth">Free agents</button><button data-m="sell">Sell-highs</button></div>
     <div class="seg" id="tgpos">
-      <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button>
+      <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button><button data-p="K">K</button><button data-p="DST">DEF</button>
     </div>
     <select id="tgsrc"></select>
     <div class="seg" id="tgget"><button data-g="" class="on">Everyone</button><button data-g="1">Gettable</button></div>
@@ -1170,8 +1171,8 @@ function rolesOf(ids, mine, seen){
     });
   }
   spill.sort((a,b) => rk(b, mine, seen) - rk(a, mine, seen)).slice(0, spots("FLEX")).forEach(p => (out[p.id] = "F"));
-  ids.map(id => P[id]).filter(p => p.pos === "DST").sort((a,b) => rk(b, mine, seen) - rk(a, mine, seen))
-    .forEach((p, i) => (out[p.id] = i < spots("DST") && !(mine && (roleOf(p.id) || {}).r === "B") ? "S" : "B"));
+  for(const pos of ["K", "DST"]) ids.map(id => P[id]).filter(p => p.pos === pos).sort((a,b) => rk(b, mine, seen) - rk(a, mine, seen))
+    .forEach((p, i) => (out[p.id] = i < spots(pos) && !(mine && (roleOf(p.id) || {}).r === "B") ? "S" : "B"));
   return out;
 }
 /* Trade value is points over what the waiver wire gives you at the SAME position, so scarcity
@@ -1263,7 +1264,7 @@ function recompute(){
     a.forEach((p, i) => (p.ok = i < N && p.adj > 0));
     a.slice().sort((x,y) => y.padj - x.padj).forEach((p, i) => (p.okp = i < N && p.padj > 0));   // startable as the league sees it
     START[pos] = (a[Math.min(a.length, N) - 1] || {adj:0}).adj;
-    if(pos === "DST"){ const fa = a.filter(p => !p.t).slice(1, 4); REPL.DST = fa.length ? fa.reduce((s,p) => s + p.adj, 0) / fa.length : START.DST * 0.75; }
+    if(pos === "DST" || pos === "K"){ const fa = a.filter(p => !p.t).slice(1, 4); REPL[pos] = fa.length ? fa.reduce((s,p) => s + p.adj, 0) / fa.length : START[pos] * 0.75; }
     if(!SKILL.includes(pos)) continue;
     const fa = a.filter(p => !p.t).slice(1, 4);                            // 2nd-4th best free agents: the best one goes fast
     REPL[pos] = fa.length ? fa.reduce((s,p) => s + p.adj, 0) / fa.length : START[pos] * 0.75;
@@ -1399,13 +1400,14 @@ function mkCell(p, bare){
            ranked by how much. Upside is part of the grade, no longer a gate
    DEPTHS  free agents, for the bench - or a straight upgrade when one would start
    SELLS   my own players the league prices above what they project: sell on what they've done */
+const kdPos = p => p.pos === "K" || p.pos === "DST";
 function buildTargets(){
   const mine = TEAMS[ME].players, denom = DEN(), bare = worth(mine, false, true);
   BUYS = []; SELLS = []; DEPTHS = [];
   for(const p of Object.values(P)){
-    if(!SKILL.includes(p.pos) || p.g == null) continue;
+    if(!(SKILL.includes(p.pos) || p.pos === "K" || p.pos === "DST") || p.g == null) continue;
     if(p.t === ME){
-      if(p.okp && p.mk >= MK && p.af >= 0.75) SELLS.push({p, grade:Math.round(99 * Math.min(1, p.mk / 4))});
+      if(SKILL.includes(p.pos) && p.okp && p.mk >= MK && p.af >= 0.75) SELLS.push({p, grade:Math.round(99 * Math.min(1, p.mk / 4))});
       continue;
     }
     if(NOGO[p.id] && p.t) continue;               // ruled out: I've said I can't get him
@@ -1419,7 +1421,7 @@ function buildTargets(){
       continue;
     }
     const d = delta(W0[ME], worth(after, true, true)), fit = d.score / denom;
-    if(fit < 0.25) continue;                       // a quarter-point a week or more, byes and injuries counted
+    if(fit < 0.25 && !kdPos(p)) continue;        // a kicker or defense is listed either way, so the K and DEF filters can compare them all                       // a quarter-point a week or more, byes and injuries counted
     const E = p.sg ? p.sg.E : 0, po = p.sg ? p.sg.po : null;
     const soft = po == null ? 0.5 : Math.max(0, Math.min(1, (po - 8) / 16));
     // half the upgrade; then how cheap he is next to what he will do, his upside, workload, playoff schedule
@@ -1682,9 +1684,14 @@ function buildLens(){
     for(const p of all) p.wrk = {};
     for(const i of PO) all.slice().sort((a,b) => b.eff[i] - a.eff[i]).forEach((p, n) => (p.wrk[i] = n + 1));
   }
+  for(const pos of ["K", "DST"]){
+    const a = mine.map(id => P[id]).filter(p => p.pos === pos && !((roleOf(p.id) || {}).r === "B")), n = spots(pos) || 1;
+    const low = k => { const s = a.slice().sort((x, y) => y[k] - x[k]).slice(0, n); return s.length ? s[s.length - 1] : null; };
+    BAR[pos] = {reg:low("ros"), po:low("po")};
+  }
   for(const p of Object.values(P)){
     p.lens = null;
-    if(!SKILL.includes(p.pos) || p.t === ME) continue;
+    if(!(SKILL.includes(p.pos) || p.pos === "K" || p.pos === "DST") || p.t === ME) continue;
     const d = delta(W0[ME], worth(mine.concat([p.id]), true, true)), bar = BAR[p.pos];
     const gap = (k, a) => (bar[k] ? Math.min(0, p[a] - bar[k][a]) : 0);
     p.lens = {d, reg:d.reg > 0.05 ? d.reg : gap("reg", "ros"), po:d.po > 0.05 ? d.po : gap("po", "po"), over:bar};
@@ -1765,7 +1772,7 @@ function renderTiles(el, clickable){
    the packages that would get him. */
 const gettable = id => BESTWILL[id] === "likely" || BESTWILL[id] === "maybe";
 function renderTops(){
-  let list = BUYS.slice().sort((a,b) => b.grade - a.grade);
+  let list = BUYS.filter(x => !kdPos(x.p)).sort((a,b) => b.grade - a.grade);
   const checking = !!SEARCHING;
   if(!checking) list = list.filter(x => gettable(x.p.id));
   if(S.tgPos !== "ALL") list = list.filter(x => x.p.pos === S.tgPos);
@@ -1825,6 +1832,7 @@ function renderTargets(){
   const mode = S.tgMode;
   let list = (mode === "buy" ? BUYS : mode === "sell" ? SELLS : DEPTHS).slice();
   if(S.tgPos !== "ALL") list = list.filter(x => x.p.pos === S.tgPos);
+  if(mode === "buy" && S.tgPos === "ALL") list = list.filter(x => !kdPos(x.p) || x.fit >= 0.25);   // in All, only the ones that help
   if(mode === "buy" && S.tgSrc) list = list.filter(x => x.p.t === +S.tgSrc);
   if(mode === "buy" && S.tgGet) list = list.filter(x => gettable(x.p.id));
   if(mode === "depth") list = list.filter(x => x.fit > 0.05 || S.tgPos !== "ALL");
@@ -1857,7 +1865,7 @@ function renderTargets(){
     {k:"mk", h:"Price", t:"The league prices a player on what he has done. Buy low = he projects for more than he has scored; priced high = the reverse. The number is the gap in points a game", sep:true, v:x => -x.p.mk, html:x => mkCell(x.p)},
     {k:"win", h:"When", t:"The best moment to ask, from the games he has next: wait out a tough one, move before a soft one", c:true, v:x => winRank(x.p), html:x => winCell(x.p)});
   if(mode === "buy") cols.push({k:"deal", h:"Deal", t:"The best answer any package for him gets", c:true,
-    v:x => (BESTWILL[x.p.id] ? 3 - WORST[BESTWILL[x.p.id]] : 0), html:x => (BESTWILL[x.p.id] ? `<span class="will ${BESTWILL[x.p.id]}">${WORD[BESTWILL[x.p.id]]}</span>` : SEARCHING ? `<span class="dimn">…</span>` : `<span class="dimn">none</span>`)});
+    v:x => (BESTWILL[x.p.id] ? 3 - WORST[BESTWILL[x.p.id]] : 0), html:x => (kdPos(x.p) ? `<span class="quiet" title="Kickers and defenses aren't in packages: tap to build a deal">builder</span>` : BESTWILL[x.p.id] ? `<span class="will ${BESTWILL[x.p.id]}">${WORD[BESTWILL[x.p.id]]}</span>` : SEARCHING ? `<span class="dimn">…</span>` : `<span class="dimn">none</span>`)});
   if(mode !== "sell") cols.push({k:"por", h:"+Repl", t:"Points over replacement: his projection a game above the waiver wire at his position. This is what his trade value is built on", sep:true, v:x => x.p.base - (REPL[x.p.pos] || 0), html:x => `<b>${sgn(x.p.base - (REPL[x.p.pos] || 0))}</b>`});
   // a desktop window too narrow for every column keeps the ones a decision is made on
   const tight = !CQ.matches && mode === "buy" && innerWidth < NARROW;
@@ -1877,7 +1885,7 @@ function renderTargets(){
   const sk = S.tgSort[mode] || {k:mode === "sell" ? "grade" : "grade", dir:-1};
   if(!cols.some(c => c.k === sk.k)) sk.k = "grade";
   fitGrid($("tgscroll"), cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir,
-    mode === "depth" ? null : x => ` class="click" data-id="${x.p.id}" data-a="${mode === "sell" ? "shop" : "deal"}"`,
+    mode === "depth" ? null : x => ` class="click" data-id="${x.p.id}" data-a="${mode === "sell" ? "shop" : kdPos(x.p) ? "build" : "deal"}"`,
     // a phone row has room for two numbers; a tablet-width row also keeps the grade, the timing and the answer
     mode === "sell" ? ["grade", "win"] : MQ.matches ? ["reg", "pog"] : ["grade", "reg", "pog", "win", "deal"]);
 }
@@ -2632,9 +2640,9 @@ function pkChips(pk){
 /* ---- builder ---------------------------------------------------------------------------*/
 function listHtml(team, sel, dest){
   const mine = team.id === ME;
-  // backs, receivers, tight ends, quarterbacks - and defenses, which can be traded by hand here but never
+  // backs, receivers, tight ends, quarterbacks - and kickers and defenses, which can be traded by hand here but never
   // turn up in a suggested package (tradeable() keeps the search to the skill positions)
-  const ps = team.players.map(id => P[id]).filter(p => SKILL.includes(p.pos) || p.pos === "DST").sort((a,b) => ORDER[a.pos] - ORDER[b.pos] || rk(b, mine) - rk(a, mine));
+  const ps = team.players.map(id => P[id]).filter(p => SKILL.includes(p.pos) || p.pos === "K" || p.pos === "DST").sort((a,b) => ORDER[a.pos] - ORDER[b.pos] || rk(b, mine) - rk(a, mine));
   let out = "", last = "";
   for(const p of ps){
     if(p.pos !== last){ out += `<div class="grp">${p.pos === "DST" ? "DEF" : p.pos}</div>`; last = p.pos; }
@@ -3031,7 +3039,8 @@ function playerCard(id){
     <div class="pcns">${num(f1(p.seen), "League sees", "a game: season and last three")}${num(f1(p.base), "Projects", "a game from here")}${num(`<span class="mkc ${hi ? (mine ? "up" : "down") : lo ? (mine ? "down" : "up") : ""}">${call}</span>`, hi || lo ? sgn(p.mk) + " a game" : "within " + MK, "price against projection")}</div>
     <div class="pchow pctm"><b>${head}</b> ${esc(w.why)} ${said}</div>`;
   }
-  const act = p.t && p.t !== ME && skill ? `<button class="b go" data-card-act="deal">Packages to get him</button><button class="b${NOGO[p.id] ? " on" : ""}" data-card-act="nogo" title="I know I can't get him: leave him out of targets and packages">${NOGO[p.id] ? "Ruled out · undo" : "Rule him out"}</button>`
+  const act = p.t && p.t !== ME && kdPos(p) ? `<button class="b go" data-card-act="build">Build a deal for him</button>`
+    : p.t && p.t !== ME && skill ? `<button class="b go" data-card-act="deal">Packages to get him</button><button class="b${NOGO[p.id] ? " on" : ""}" data-card-act="nogo" title="I know I can't get him: leave him out of targets and packages">${NOGO[p.id] ? "Ruled out · undo" : "Rule him out"}</button>`
     : p.t === ME && skill ? `<button class="b go" data-card-act="shop">Shop him</button>` : "";
   $("pcard").innerHTML = `<div class="mbox" role="dialog" aria-label="${esc(p.n)}">
     <button class="mclose" data-card-close aria-label="Close">×</button>
@@ -3193,6 +3202,7 @@ function boot(d){
     const a = e.target.closest("[data-card-act]"); if(!a) return;
     if(a.dataset.cardAct === "nogo"){ toggleNogo(CARD); playerCard(CARD); return; }
     const id = CARD; closeCard();
+    if(a.dataset.cardAct === "build"){ open2(P[id].t, [], [id]); return; }
     (a.dataset.cardAct === "shop" ? window.shopMine : window.dealsFor)(id);
   });
   document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("pcard").hidden) closeCard(); });
@@ -3233,6 +3243,7 @@ function boot(d){
     const x = e.target.closest("[data-no]"); if(x){ toggleNogo(x.dataset.no); return; }
     if(e.target.closest("th, .xb, tr.dt")) return;
     const r = e.target.closest("tr.click"); if(!r) return;
+    if(r.dataset.a === "build"){ open2(P[r.dataset.id].t, [], [r.dataset.id]); return; }
     (r.dataset.a === "shop" ? shop : dealsFor)(r.dataset.id);
   };
   $("tops").onclick = e => {

@@ -245,11 +245,17 @@ flex, and my starter / bench / handcuff calls applied.
 - **How a change is shown.** A player in the lineup before and after stays put (with *from
   FLEX* if he only changed slot); whoever came into the lineup is paired with whoever left it,
   same position first, so each row's number is the real swing and the rows add up.
-- **Defenses can be traded by hand.** Each roster list ends with a DEF group, and a defense is
-  judged like anyone else: its value is points over the defenses on the waiver wire
-  (`REPL.DST`, 2nd–4th best free agent), and it starts or sits for the team that gets it. They
-  are **never in a suggested package**: the package search and the *I want to trade* picker
-  keep to QB, RB, WR and TE (`tradeable`).
+- **Kickers and defenses can be traded by hand.** Each roster list ends with K and DEF groups,
+  and they are judged like anyone else: value is points over the kickers or defenses on the
+  waiver wire (`REPL.K`, `REPL.DST`, 2nd–4th best free agent), and they start or sit for the
+  team that gets them. They are **never in a suggested package**: the package search and the
+  *I want to trade* picker keep to QB, RB, WR and TE (`tradeable`).
+- **On Targets** the position filter has **K** and **DEF**. Picked, it lists every kicker or
+  defense on another roster against mine, with the same +/wk and +PO (a minus where he's no
+  better), and the Free agents view does the same for the waiver wire. Under *All*, only the
+  ones that help by a quarter-point a week appear. Their *Deal* column reads *builder*: tapping
+  the row (or *Build a deal for him* in his card) opens the builder with him on the get side.
+  They are not top targets, since those are deals a team would make from the package search.
 - A picked player's row is tinted, his name turns blue and his photo gets a ring and a tick.
   There are no checkboxes.
 - *Lineup after the trade* shows the whole roster with photos: the starters slot by slot (the
