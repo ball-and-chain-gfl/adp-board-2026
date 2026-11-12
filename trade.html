@@ -728,6 +728,8 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
   .olw.nw{white-space:nowrap}
   .hw{letter-spacing:0}.hw i{padding:0 2px}.hw b{padding:0 3px}
   #rscroll .meta .hw{order:9}
+  #rscroll .pg{min-width:30px;padding-left:1px;padding-right:1px}
+  #rscroll th,#rscroll td{padding-left:3px;padding-right:3px}
   .whyc{min-width:0;max-width:none}
   th,td{padding:7px 4px}
   td.num .pt{padding:3px 6px}
@@ -2171,6 +2173,7 @@ function buildCols(){
     up:   {k:"up", h:"Upside", t:"What his workload, touchdown luck, role trend and schedule say he should gain or lose per game", v:p => (p.sg ? p.sg.E : null), f:x => sgn(x), cl:x => cls(Math.abs(x) >= 0.8 ? x : 0)},
     ros:  {k:"ros", h:"ROS", t:"Projected points a game, weeks " + wkSpan(REG) + ". His bye is not counted in the average: see the BYE tag by his name", v:p => p.ros, f:f1, bold:true, sep:true},
     po:   {k:"po", h:"PO", t:"Projected points a game, weeks " + wkSpan(PO), v:p => p.po, f:f1, bold:true, hd:"po"},
+    kpo:  {k:"kpo", h:"Playoffs", t:"Each playoff week, his rank among kickers or defenses that week; his rank and average over weeks " + wkSpan(PO) + " underneath", v:p => p.po, html:p => poCell(p), c:true, hd:"po"},
     fsos: {k:"fsos", h:"Faced", t:"Average rank of the defences he has already played, against his position (32 = softest)", v:p => (p.fsos != null ? p.fsos : null), f:x => x.toFixed(0), sep:true},
     sos:  {k:"sos", h:"Ahead", t:"Average rank of the defences left in weeks " + wkSpan(REG) + " (32 = softest)", v:p => avgRk(p, REG), f:x => x.toFixed(0)},
     psos: {k:"psos", h:"PO ahead", t:"Average rank of the defences in weeks " + wkSpan(PO) + " (32 = softest)", v:p => avgRk(p, PO), f:x => x.toFixed(0), hd:"po"},
@@ -2262,12 +2265,12 @@ function renderTable(list){
     if(!ps.length) return "";
     if(phone){
       const skill = SKILL.includes(poss[0]);
-      const keys = skill ? [...(REG.length ? ["oreg"] : []), ...(PO.length ? ["opo"] : [])] : ["ppg", ...(REG.length ? ["ros"] : []), ...(PO.length ? ["po"] : [])];
+      const keys = skill ? [...(REG.length ? ["oreg"] : []), ...(PO.length ? ["opo"] : [])] : [...(REG.length ? ["ros"] : []), ...(PO.length ? ["kpo"] : [])];
       return `<div class="ptab"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
         <div class="scroll"><table><thead><tr>${th(COLS.name, "l")}${keys.map(k => th(COLS[k])).join("")}<th class="xc"></th></tr></thead><tbody>${ps.map(p =>
           row(p, keys, poss.length === 1).replace(/<\/tr>$/, XB + "</tr>") + `<tr class="dt" hidden><td colspan="${keys.length + 2}">${detail(p)}</td></tr>`).join("")}</tbody></table></div></div>`;
     }
-    const keys = colKeys(poss.length === 1 ? poss[0] : "K");
+    const keys = colKeys(poss.length === 1 ? poss[0] : "K").map(k => (k === "po" && !SKILL.includes(poss[0]) && PO.length > 1 ? "kpo" : k));
     return `<div class="ptab" data-g="${lab}"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
       <div class="scroll">${wide(ps, keys, poss.length === 1, 0)}</div></div>`;
   }).join("");
