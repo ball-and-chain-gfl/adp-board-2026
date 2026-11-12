@@ -90,6 +90,25 @@ const norm = s => String(s || "").toLowerCase().replace(/[.'’]/g, "").replace(
 const r1 = x => (x == null || !isFinite(x) ? null : Math.round(x * 10) / 10);
 const r3 = x => (x == null || !isFinite(x) ? null : Math.round(x * 1000) / 1000);
 
+/* ---- Hayden Winks' weekly rankings. Yahoo's rankings article is a FantasyPros widget for his
+   expert id (7666); the same partner endpoint answers with his list alone when it is filtered to
+   him. Full PPR: the FLEX list for backs, receivers and tight ends (their FLEX rank, with his
+   rank at the position alongside), and his QB, K and DEF lists for everyone else (scoring makes
+   no difference to those). Optional: a failure just leaves the ranks off. */
+const WINKS = 7666, FP = "https://partners.fantasypros.com/api/v1/consensus-rankings.php";
+async function winksLists(week) {
+  const one = pos => fetch(`${FP}?sport=NFL&position=${pos}&filters=${WINKS}&scoring=PPR&week=${week}&type=weekly`,
+      { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" }, signal: AbortSignal.timeout(8000) })
+    .then(r => (r.ok ? r.json() : null)).catch(() => null);
+  const out = {};
+  await Promise.all(["FLX", "QB", "K", "DST"].map(async pos => {
+    const d = await one(pos);
+    // his list alone, for this week: anything else (the consensus, or the draft list) is not his
+    out[pos] = d && +d.week === week && +d.total_experts === 1 && Array.isArray(d.players) && d.players.length ? d : null;
+  }));
+  return out;
+}
+
 async function getJSON(url) {
   const r = await fetch(url, { headers: { "User-Agent": "adp-board/1.0", Accept: "application/json" } });
   if (!r.ok) throw new Error(url.split("?")[0].split("/").slice(2, 4).join("/") + " returned " + r.status);
@@ -191,6 +210,9 @@ export default async function handler(req, res) {
       if (weekDates[w] && weekDates[w].every(d => d > now)) { firstWeek = w; break; }
     const weeks = [];
     for (let w = firstWeek; w <= LAST_WEEK; w++) weeks.push(w);
+    let rankWeek = LAST_WEEK;
+    for (let w = 1; w <= LAST_WEEK; w++)
+      if (weekDates[w] && Math.max(...weekDates[w]) + 5 * 3600e3 > now) { rankWeek = w; break; }
 
     // ---- expected return dates, by ESPN id where the feed links one and by name otherwise
     const retById = {}, retByName = {};
@@ -213,7 +235,7 @@ export default async function handler(req, res) {
 
     // ---- Sleeper weekly stats, every week played so far
     const played = Math.max(1, Math.min(18, Math.min(+state.week || 1, firstWeek)));
-    const [weekly, txWeeks, espnNames, espnProj] = await Promise.all([
+    const [weekly, txWeeks, espnNames, espnProj, hwLists] = await Promise.all([
       Promise.all(Array.from({ length: played }, (_, i) =>
         getRetry(`${SLEEPER}/stats/nfl/${SEASON}/${i + 1}?season_type=regular&${SKILL_Q}`).catch(() => null))),
       // the league's transactions, a week at a time: every waiver bid, won or lost. Optional.
@@ -222,6 +244,7 @@ export default async function handler(req, res) {
       fetch(ESPN_PLAYERS, { headers: { "X-Fantasy-Filter": '{"filterActive":{"value":true}}', Accept: "application/json" }, signal: AbortSignal.timeout(8000) })
         .then(r => (r.ok ? r.json() : [])).catch(() => []),
       Promise.all(weeks.map(w => espnWeek(w).catch(() => espnWeek(w)).catch(() => null))),   // one retry each
+      winksLists(rankWeek).catch(() => ({})),
     ]);
     /* Vegas implied points: over/under split by the spread. ESPN's scoreboard carries lines for
        the current week and the next; later weeks have none yet. vegas[TEAM][week] = points. */
@@ -788,6 +811,25 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       espnN++;
     }
 
+    /* Winks' rank this week, on every player he ranked: hw = {f: FLEX rank, p: "RB12"} for a back,
+       receiver or tight end; {p: "QB7"} for the rest. Matched on name and position, a defense on
+       its team. */
+    let hwN = 0;
+    {
+      const idx = {}, dst = {};
+      for (const [list, d] of Object.entries(hwLists || {})) for (const x of (d && d.players) || []) {
+        const pos = x.player_position_id, tm = fix(x.player_team_id);
+        const rec = list === "FLX" ? { f: +x.rank_ecr, p: x.pos_rank } : { p: (pos === "DST" ? "DEF" : pos) + x.rank_ecr };
+        if (pos === "DST") dst[tm] = rec; else idx[norm(x.player_name) + "|" + pos] = rec;
+      }
+      for (const pl of Object.values(players)) {
+        const r = pl.pos === "DST" ? dst[pl.tm] : idx[norm(pl.n) + "|" + pl.pos];
+        if (r) { pl.hw = r; hwN++; }
+      }
+    }
+    const winks = { week: rankWeek, players: hwN, lists: Object.fromEntries(Object.entries(hwLists || {}).map(([k, d]) => [k, d ? d.players.length : 0])),
+      updated: Object.fromEntries(Object.entries(hwLists || {}).filter(([, d]) => d).map(([k, d]) => [k, d.last_updated])) };
+
     res.status(200).json({
       pulled: new Date().toISOString(), season: SEASON, me: MY_TEAM,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
@@ -798,7 +840,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       // first and last kickoff of each week ahead: which weeks are over before the trade deadline
       weekTimes: Object.fromEntries(weeks.filter(w => weekDates[w]).map(w => [w, [Math.min(...weekDates[w]), Math.max(...weekDates[w])]])),
       model: Object.fromEntries(SKILL.map(p => [p, coef[p].map(r3)])), tdModel: Object.fromEntries(Object.entries(tdc).map(([p, c]) => [p, c.map(r3)])),
-      teams, players, faab, experts,
+      teams, players, faab, experts, winks,
     });
   } catch (e) {
     res.setHeader("Cache-Control", "no-store");

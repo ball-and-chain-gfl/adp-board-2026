@@ -299,6 +299,21 @@ he is worth to me; when that rival can outbid my ceiling the card says so. Budge
 ESPN (`acquisitionBudgetSpent` per team). The drop suggestion is the player whose loss costs my
 lineup least once the pickup is in. Kickers and defences aren't in the free-agent pool.
 
+### Hayden Winks' weekly rank on every player
+
+Every player Winks ranked this week carries a purple **HW** tag: his full-PPR **FLEX** rank for
+a back, receiver or tight end, and his position rank (QB, K, DEF) for everyone else. Hover it
+for his position rank as well (FLEX 3, RB2). A player he didn't rank (on bye, out, or outside
+his list) has no tag. It shows on the Roster tables, Targets, Packages, the builder, Waivers
+and the player card.
+
+Where it comes from: Yahoo's weekly "Fantasy Football Rankings from Hayden Winks" article is a
+FantasyPros widget for his expert id (7666), so `api/trade.js` asks the same partner endpoint
+(`partners.fantasypros.com/api/v1/consensus-rankings.php`, filtered to him alone) for the FLEX
+list in PPR and his QB, K and DST lists. It is the week in progress, or the next week once the
+last game is over (`winks.week` in the payload). Matched on name and position, a defense on its
+team. Until he publishes a new week, the tags are simply absent. Four small calls a refresh.
+
 ### Expert notes (Norris, Winks)
 
 `api/trade.js` reads the two analysts' Yahoo author pages on every refresh (so at most 30 min

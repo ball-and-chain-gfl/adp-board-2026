@@ -77,6 +77,9 @@ button.b.sm{padding:5px 10px;font-size:12px}
 .TE{background:#fcefdc;color:#94520a}.K,.DST{background:#eceef0;color:#555a60}
 .inj{font-size:10px;font-weight:800;color:#fff;background:var(--bad);border-radius:3px;padding:0 5px;white-space:nowrap}
 .inj.Q{background:#c98200}
+.hw{display:inline-flex;align-items:stretch;border-radius:3px;overflow:hidden;white-space:nowrap;font-size:10px;font-weight:800;line-height:15px;letter-spacing:.2px;vertical-align:middle}
+.hw i{font-style:normal;background:#4b2e83;color:#fff;padding:0 3px}
+.hw b{background:#ede7f7;color:#4b2e83;padding:0 5px;font-weight:800}
 .byeb{font-size:10px;font-weight:800;color:#6b4a00;background:var(--warn2);border-radius:3px;padding:0 5px;white-space:nowrap}
 .inj.man{background:var(--blue)}
 .num{font-variant-numeric:tabular-nums}
@@ -713,6 +716,8 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
   #v-roster .tools #q{order:-1;flex:1 1 40%;min-width:0}
   .xb{width:34px;height:34px}
   .olw.nw{white-space:nowrap}
+  .hw{letter-spacing:0}.hw i{padding:0 2px}.hw b{padding:0 3px}
+  #rscroll .meta .hw{order:9}
   .whyc{min-width:0;max-width:none}
   th,td{padding:7px 4px}
   td.num .pt{padding:3px 6px}
@@ -1414,6 +1419,15 @@ function buildTargets(){
 }
 
 
+/* Hayden Winks' full-PPR rank for this week (from the API): his FLEX rank for a back, receiver or
+   tight end, his position rank for everyone else. Nothing when he didn't rank him (on bye, out,
+   or outside his list). */
+const hwTag = p => {
+  const r = p.hw, w = (D.winks || {}).week;
+  if(!r || !w) return "";
+  const txt = r.f ? "FLEX " + r.f : r.p.replace(/(\d+)$/, " $1");
+  return `<span class="hw" title="Hayden Winks, week ${w} full PPR: ${r.f ? "FLEX " + r.f + ", " + r.p : r.p}"><i>HW</i><b>${txt}</b></span>`;
+};
 const byeBadge = p => { const b = (p.wk || []).find(w => w.o === "BYE"); return b ? `<span class="byeb" title="Bye week ${b.w}. Not counted in his per-game numbers">BYE ${b.w}</span>` : ""; };
 function injBadge(p){ return injBadge0(p) + byeBadge(p); }
 function injBadge0(p){
@@ -1432,7 +1446,7 @@ function roleBadge(p){
 }
 function who(p, extra, nopos){
   return `<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div>
-    <div class="meta">${nopos ? "" : `<span class="pos ${p.pos}">${p.pos}</span>`}<span>${p.tm}${p.prk ? `<span class="prk"> &middot; ${p.pos}${p.prk}</span>` : ""}</span>${injBadge(p)}${roleBadge(p)}${extra || ""}</div></div>`;
+    <div class="meta">${nopos ? "" : `<span class="pos ${p.pos}">${p.pos}</span>`}${hwTag(p)}<span>${p.tm}${p.prk ? `<span class="prk"> &middot; ${p.pos}${p.prk}</span>` : ""}</span>${injBadge(p)}${roleBadge(p)}${extra || ""}</div></div>`;
 }
 // my lineup call for one of my players: automatic, always start, bench, or handcuff to a teammate
 function roleSel(p){
@@ -1750,7 +1764,7 @@ function renderTops(){
     const p = x.p, w = BESTWILL[p.id];
     return `<button class="top1" data-id="${p.id}">
       <div class="hd">${img(p)}<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div>
-        <div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${byeBadge(p)}${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
+        <div class="meta"><span class="pos ${p.pos}">${p.pos}</span>${hwTag(p)}<span>${p.tm}${p.prk ? " · " + p.pos + p.prk : ""}</span>${byeBadge(p)}${ownTag(p)}</div></div>${gradeCell(x.grade)}</div>
       <div class="nums">${REG.length ? `<div><b class="${cls(signed(p, x.d, "reg"))}">${sgn(signed(p, x.d, "reg"))}</b><span>pts / wk</span></div>` : ""}${PO.length ? `<div><b class="${cls(signed(p, x.d, "po"))}">${sgn(signed(p, x.d, "po"))}</b><span>playoffs</span></div>` : ""}</div>
       ${x.over ? (p.base > x.over.base ? `<div class="rp">replaces <b>${esc(short(x.over))}</b> ${f1(x.over.base)} → <b>${f1(p.base)}</b> a game</div>` : `<div class="rp">shares weeks with <b>${esc(short(x.over))}</b></div>`) : ""}
       ${mkCell(p, true) + winCell(p, true) ? `<div class="tmr">${mkCell(p, true)}${winCell(p, true)}</div>` : ""}
@@ -1949,7 +1963,7 @@ function renderPackages(){
   $("pkActive").innerHTML = act.map(a => `<span class="chip b">${esc(a)}</span>`).join("");
   if(!total){ $("pkl").innerHTML = `<div class="chip">${forP ? `Nothing for ${esc(forP.n)} makes my lineup better` : "No deal makes my lineup better"}${act.length ? " with these filters" : ""}</div>`; return; }
   list = list.slice(0, S.pkLimit);
-  const pr = id => { const p = P[id]; return `<div class="pr">${img(p)}<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div><div class="meta"><span class="pos ${p.pos}">${p.pos}</span><span>${p.tm}</span>${injBadge(p)}${roleBadge(p)}</div></div><span class="pts">${f1(p.ros)}</span></div>`; };
+  const pr = id => { const p = P[id]; return `<div class="pr">${img(p)}<div class="who"><div class="nm" data-pid="${p.id}">${esc(p.n)}</div><div class="meta"><span class="pos ${p.pos}">${p.pos}</span>${hwTag(p)}<span>${p.tm}</span>${injBadge(p)}${roleBadge(p)}</div></div><span class="pts">${f1(p.ros)}</span></div>`; };
   const who = id => (id === ME ? "Me" : `${tlogo(id)}${esc(TEAMS[id].abbrev || TEAMS[id].name)}`);
   $("pkl").innerHTML = list.map(({pk, i}) => {
     const lead = TEAMS[pk.teams[0]];
@@ -2309,9 +2323,10 @@ function renderLineupWeeks(){
 function renderRoster(){
   renderLineupWeeks();
   const list = tableRows();
-  $("rhint").innerHTML = S.scope === "me"
+  const hwKey = (D.winks || {}).players ? ` <span class="hw"><i>HW</i><b>FLEX 12</b></span> = Hayden Winks' week ${D.winks.week} full-PPR rank: FLEX for backs, receivers and tight ends, the position for the rest. None means he didn't rank him this week.` : "";
+  $("rhint").innerHTML = (S.scope === "me"
     ? "The two tags say how good each of my players will be: for the rest of the regular season, and for the playoff weeks."
-    : "Every player is measured against my lineup: <b class='pos-n'>▲</b> the points a week he'd add over the starter he'd replace, <b class='neg-n'>▼</b> how far he is behind him. One tag for the rest of the regular season, one for the playoffs.";
+    : "Every player is measured against my lineup: <b class='pos-n'>▲</b> the points a week he'd add over the starter he'd replace, <b class='neg-n'>▼</b> how far he is behind him. One tag for the rest of the regular season, one for the playoffs.") + hwKey;
   renderTable(list);
   $("rcount").textContent = plural(list.length, "player");
   const n = Object.keys(OV).length;
@@ -2610,7 +2625,7 @@ function listHtml(team, sel, dest){
   for(const p of ps){
     if(p.pos !== last){ out += `<div class="grp">${p.pos}</div>`; last = p.pos; }
     out += `<button class="row${sel.has(p.id) ? " sel" : ""}" data-id="${p.id}" aria-pressed="${sel.has(p.id)}">${img(p)}
-      <span class="who"><span class="nm" data-pid="${p.id}">${esc(p.n)}</span><span class="meta"><span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${nogoTag(p)}${dest && dest(p.id) ? `<span class="dest">${esc(dest(p.id))}</span>` : ""}${p.lens ? ptag(p, "reg", true) + ptag(p, "po", true) : ""}</span></span>
+      <span class="who"><span class="nm" data-pid="${p.id}">${esc(p.n)}</span><span class="meta">${hwTag(p)}<span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${nogoTag(p)}${dest && dest(p.id) ? `<span class="dest">${esc(dest(p.id))}</span>` : ""}${p.lens ? ptag(p, "reg", true) + ptag(p, "po", true) : ""}</span></span>
       <span class="n2"><span>${f1(p.ros)}</span><span>${f1(p.po)}</span></span></button>`;
   }
   return out;
@@ -2976,7 +2991,7 @@ function playerCard(id){
     <button class="mclose" data-card-close aria-label="Close">×</button>
     <div class="pct">${img(p, "xl")}
       <div class="pcid"><h2>${esc(p.n)}</h2>
-        <div class="meta"><span class="pos ${p.pos}">${p.pos === "DST" ? "DEF" : p.pos}</span><span>${p.tm}${p.prk ? ` · ${p.pos}${p.prk} in scoring` : ""}</span>${injBadge(p)}${roleBadge(p)}</div>
+        <div class="meta"><span class="pos ${p.pos}">${p.pos === "DST" ? "DEF" : p.pos}</span>${hwTag(p)}<span>${p.tm}${p.prk ? ` · ${p.pos}${p.prk} in scoring` : ""}</span>${injBadge(p)}${roleBadge(p)}</div>
         <div class="own">${owner}</div></div></div>
     ${act ? `<div class="pcact">${act}</div>` : ""}
     ${lens}
