@@ -74,6 +74,9 @@ applies on Targets (table, top cards, free agents) and Waivers, kickers and defe
   (Elite, Starter …): the three games say it. The Targets table's *Playoffs* column is the same
   three games with his rank and average, and when a row is too wide for the window it keeps
   that column and the ✕ and drops *+Repl*, *ROS* and *Price* into the panel first (`pri`).
+  Kickers and defenses get the same three games (K2, DEF8 …, ranked among kickers or defenses
+  each playoff week), on Targets and on every Waivers table: players, kickers and defenses
+  (`poCell`). On a phone the games open under the row on all of them.
   - *My players*: how good he will be — his rank at the position over those weeks. *Elite* is
     the top third of the startable ranks, then *Starter*, *Fringe* (the next half again) and
     *Bench*; *Out* when he misses more than half of them.

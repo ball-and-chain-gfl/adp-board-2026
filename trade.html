@@ -1687,6 +1687,13 @@ function buildLens(){
     for(const i of PO) all.slice().sort((a,b) => b.eff[i] - a.eff[i]).forEach((p, n) => (p.wrk[i] = n + 1));
   }
   for(const pos of ["K", "DST"]){
+    const all = Object.values(P).filter(p => p.pos === pos);
+    all.slice().sort((a,b) => b.ros - a.ros).forEach((p, i) => (p.rr = i + 1));
+    all.slice().sort((a,b) => b.po - a.po).forEach((p, i) => (p.rp = i + 1));
+    for(const p of all) p.wrk = {};
+    for(const i of PO) all.slice().sort((a,b) => b.eff[i] - a.eff[i]).forEach((p, n) => (p.wrk[i] = n + 1));
+  }
+  for(const pos of ["K", "DST"]){
     const a = mine.map(id => P[id]).filter(p => p.pos === pos && !((roleOf(p.id) || {}).r === "B")), n = spots(pos) || 1;
     const low = k => { const s = a.slice().sort((x, y) => y[k] - x[k]).slice(0, n); return s.length ? s[s.length - 1] : null; };
     BAR[pos] = {reg:low("ros"), po:low("po")};
@@ -1706,8 +1713,14 @@ function poGames(p){
     if(w.o === "BYE") return `<span class="pg off" title="Week ${w.w}: bye"><em>${w.w}</em>BYE</span>`;
     if(p.eff[i] === 0) return `<span class="pg off" title="Week ${w.w}: out"><em>${w.w}</em>OUT</span>`;
     const t = r <= Math.ceil(N / 3) ? "t1" : r <= N ? "t2" : r <= Math.round(N * 1.5) ? "t3" : "t4";
-    return `<span class="pg ${t}" title="Week ${w.w} ${w.o}: ${f1(p.eff[i])} projected, ${p.pos}${r} that week"><em>${w.w}</em>${p.pos}${r}</span>`; }).join("")}</div>`;
+    const pl = p.pos === "DST" ? "DEF" : p.pos;
+    return `<span class="pg ${t}" title="Week ${w.w} ${w.o}: ${f1(p.eff[i])} projected, ${pl}${r} that week"><em>${w.w}</em>${pl}${r}</span>`; }).join("")}</div>`;
 }
+/* The playoff column wherever a list of players has one (Targets, Waivers, kickers, defenses):
+   each playoff game on its own - his rank at the position that week - with his rank and average
+   over the three underneath. The same look as the Roster tab. */
+const poCell = p => ((SKILL.includes(p.pos) || p.pos === "K" || p.pos === "DST") && PO.length > 1 && p.rp
+  ? poGames(p) + `<span class="olw nw">${p.pos === "DST" ? "DEF" : p.pos}${p.rp} · ${f1(p.po)}${MQ.matches ? "" : " a game"}</span>` : `<b>${f1(p.po)}</b>`);
 function ptag(p, k, mini){
   // the playoff games one by one, then the average line. On my own players the tier tag (Elite,
   // Starter, Fringe, Bench) is left off here: the three games already say it
@@ -1877,8 +1890,6 @@ function renderTargets(){
   // a desktop window too narrow for every column keeps the ones a decision is made on
   const tight = !CQ.matches && mode === "buy" && innerWidth < NARROW;
   if(REG.length && !tight) cols.push({k:"ros", pri:2, h:"ROS", t:COLS.ros.t, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
-  const poCell = p => (SKILL.includes(p.pos) && PO.length > 1 && p.rp
-    ? poGames(p) + `<span class="olw nw">${p.pos}${p.rp} · ${f1(p.po)}${MQ.matches ? "" : " a game"}</span>` : `<b>${f1(p.po)}</b>`);
   if(PO.length && !tight) cols.push({k:"po", pri:7, h:"Playoffs", t:COLS.po.t, po:true, c:true, v:x => x.p.po, html:x => poCell(x.p)});
   if(S.tgCols === "stats" || CQ.matches) cols.push(...statCols(S.tgPos, P_));
   // the read is a second opinion: it sits with the stats (and in a phone row's panel), not in the basic table
@@ -2044,7 +2055,7 @@ function renderKD(pos){
   const cols = [
     {k:"name", h:pos === "K" ? "Kicker" : "Defense", l:true, v:r => r.p.n, html:r => plyX(r.p, r.mine ? `<span class="rtag S">MINE</span>` : r.p.t ? ownTag(r.p) : `<span class="own fa">FA</span>`)},
     ...(REG.length ? [{k:"ros", h:"Wk " + wkSpan(REG), t:"Projected points a game, rest of the regular season. His bye is not counted", v:r => r.p.ros, html:r => `<b>${f1(r.p.ros)}</b>`}] : []),
-    ...(PO.length ? [{k:"po", h:"Playoffs", t:"Projected points a game, weeks " + wkSpan(PO), po:true, v:r => r.p.po, html:r => `<b>${f1(r.p.po)}</b>`}] : []),
+    ...(PO.length ? [{k:"po", pri:7, h:"Playoffs", t:"Projected points a game, weeks " + wkSpan(PO) + ", and his rank at the position each playoff week", po:true, c:true, v:r => r.p.po, html:r => poCell(r.p)}] : []),
     ...(REG.length ? [{k:"reg", h:"+/wk", t:"For free agents, what my lineup gains with him and mine to pick from each week. For rostered ones, his average against my best", sep:true, v:r => dv(r, "reg"), html:r => (dv(r, "reg") == null ? "" : gainCell(dv(r, "reg")))}] : []),
     ...(PO.length ? [{k:"pog", h:"+PO", po:true, v:r => dv(r, "po"), html:r => (dv(r, "po") == null ? "" : gainCell(dv(r, "po")))}] : []),
     {k:"bid", h:"Bid", c:true, v:r => (r.x ? r.x.bid : null), html:r => (r.x ? `<span class="gr ${r.x.bid >= 0.03 * (left[ME] || 1) ? "b" : r.x.bid ? "c" : "d"}">${r.x.bid ? "$" + r.x.bid : "–"}</span>` : "")},
@@ -2064,7 +2075,7 @@ function renderKD(pos){
       html:r => `<div class="wks">${D.weeks.slice(0, pos === "DST" ? D.weeks.length : 4).map((w, i) => wkChip(r.p, i, true)).join("")}</div>`},
   ];
   const sk = S.kdSortK;
-  fitGrid($("wvscroll"), cols, sortRows(rows, cols, sk.k, sk.dir), sk.k, sk.dir, r => (r.mine ? ' class="me"' : ""), ["ros", "po"]);
+  fitGrid($("wvscroll"), cols, sortRows(rows, cols, sk.k, sk.dir), sk.k, sk.dir, r => (r.mine ? ' class="me"' : ""), ["ros", "bid"]);   // on a phone the playoff games open under the row, as on Targets
 }
 
 /* ---- waivers --------------------------------------------------------------------------------*/
@@ -2107,8 +2118,8 @@ function renderWaivers(){
   ];
   if(REG.length) cols.push({k:"reg", h:"+/wk", t:"What he adds to my lineup a week, weeks " + wkSpan(REG) + ". A minus is how far he is behind the starter he would have to beat", v:x => signed(x.p, x.d, "reg"), html:x => gainCell(signed(x.p, x.d, "reg"))});
   if(PO.length) cols.push({k:"pog", h:"+PO", t:"What he adds a week in the playoffs. A minus is how far he is behind the starter he would have to beat", po:true, v:x => signed(x.p, x.d, "po"), html:x => gainCell(signed(x.p, x.d, "po"))});
-  if(REG.length) cols.push({k:"ros", h:"ROS", t:COLS.ros.t, sep:true, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
-  if(PO.length) cols.push({k:"po", h:"PO", t:COLS.po.t, po:true, v:x => x.p.po, html:x => `<b>${f1(x.p.po)}</b>`});
+  if(REG.length) cols.push({k:"ros", pri:2, h:"ROS", t:COLS.ros.t, sep:true, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
+  if(PO.length) cols.push({k:"po", pri:7, h:"Playoffs", t:COLS.po.t + ", and his rank at the position each playoff week", po:true, c:true, v:x => x.p.po, html:x => poCell(x.p)});
   if(S.wvCols === "stats" || CQ.matches) cols.push(...statCols(S.wvPos, P_));
   cols.push({k:"drop", h:"Drop", t:"The player whose loss costs my lineup least once he is in (never a starter call or a handcuff)", sep:true, nosort:true,
     html:x => { if(!x.drop || !x.bid) return ""; const dd = x.drop.d.score / denom;
