@@ -236,6 +236,11 @@ flex, and my starter / bench / handcuff calls applied.
 ### The builder
 
 - It uses the whole window on a desktop.
+- **Defenses can be traded by hand.** Each roster list ends with a DEF group, and a defense is
+  judged like anyone else: its value is points over the defenses on the waiver wire
+  (`REPL.DST`, 2nd–4th best free agent), and it starts or sits for the team that gets it. They
+  are **never in a suggested package**: the package search and the *I want to trade* picker
+  keep to QB, RB, WR and TE (`tradeable`).
 - A picked player's row is tinted, his name turns blue and his photo gets a ring and a tick.
   There are no checkboxes.
 - *Lineup after the trade* shows the whole roster with photos: the starters slot by slot (the

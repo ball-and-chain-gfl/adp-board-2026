@@ -1161,6 +1161,8 @@ function rolesOf(ids, mine, seen){
     });
   }
   spill.sort((a,b) => rk(b, mine, seen) - rk(a, mine, seen)).slice(0, spots("FLEX")).forEach(p => (out[p.id] = "F"));
+  ids.map(id => P[id]).filter(p => p.pos === "DST").sort((a,b) => rk(b, mine, seen) - rk(a, mine, seen))
+    .forEach((p, i) => (out[p.id] = i < spots("DST") && !(mine && (roleOf(p.id) || {}).r === "B") ? "S" : "B"));
   return out;
 }
 /* Trade value is points over what the waiver wire gives you at the SAME position, so scarcity
@@ -1252,6 +1254,7 @@ function recompute(){
     a.forEach((p, i) => (p.ok = i < N && p.adj > 0));
     a.slice().sort((x,y) => y.padj - x.padj).forEach((p, i) => (p.okp = i < N && p.padj > 0));   // startable as the league sees it
     START[pos] = (a[Math.min(a.length, N) - 1] || {adj:0}).adj;
+    if(pos === "DST"){ const fa = a.filter(p => !p.t).slice(1, 4); REPL.DST = fa.length ? fa.reduce((s,p) => s + p.adj, 0) / fa.length : START.DST * 0.75; }
     if(!SKILL.includes(pos)) continue;
     const fa = a.filter(p => !p.t).slice(1, 4);                            // 2nd-4th best free agents: the best one goes fast
     REPL[pos] = fa.length ? fa.reduce((s,p) => s + p.adj, 0) / fa.length : START[pos] * 0.75;
@@ -2620,10 +2623,12 @@ function pkChips(pk){
 /* ---- builder ---------------------------------------------------------------------------*/
 function listHtml(team, sel, dest){
   const mine = team.id === ME;
-  const ps = team.players.map(id => P[id]).filter(p => SKILL.includes(p.pos)).sort((a,b) => ORDER[a.pos] - ORDER[b.pos] || rk(b, mine) - rk(a, mine));
+  // backs, receivers, tight ends, quarterbacks - and defenses, which can be traded by hand here but never
+  // turn up in a suggested package (tradeable() keeps the search to the skill positions)
+  const ps = team.players.map(id => P[id]).filter(p => SKILL.includes(p.pos) || p.pos === "DST").sort((a,b) => ORDER[a.pos] - ORDER[b.pos] || rk(b, mine) - rk(a, mine));
   let out = "", last = "";
   for(const p of ps){
-    if(p.pos !== last){ out += `<div class="grp">${p.pos}</div>`; last = p.pos; }
+    if(p.pos !== last){ out += `<div class="grp">${p.pos === "DST" ? "DEF" : p.pos}</div>`; last = p.pos; }
     out += `<button class="row${sel.has(p.id) ? " sel" : ""}" data-id="${p.id}" aria-pressed="${sel.has(p.id)}">${img(p)}
       <span class="who"><span class="nm" data-pid="${p.id}">${esc(p.n)}</span><span class="meta">${hwTag(p)}<span>${p.tm}${p.prk ? ` &middot; ${p.pos}${p.prk}` : ""}</span>${injBadge(p)}${roleBadge(p)}${nogoTag(p)}${dest && dest(p.id) ? `<span class="dest">${esc(dest(p.id))}</span>` : ""}${p.lens ? ptag(p, "reg", true) + ptag(p, "po", true) : ""}</span></span>
       <span class="n2"><span>${f1(p.ros)}</span><span>${f1(p.po)}</span></span></button>`;
@@ -2681,7 +2686,7 @@ function renderDeal(){
     for(const x of j.h2h){ const ab = esc(tName(x.t));
       if(x.off.length) line("", `I play ${ab} in week ${x.w}, and ${x.off.map(o => esc(short(P[o.id]))).join(", ")} ${x.off.every(o => o.bye) ? "is on bye" : "is out"} that week`);
       else if(Math.abs(x.dThem) >= 1) line(x.dThem > 0 ? "r" : "", `I play ${ab} in week ${x.w}: this makes their lineup ${sgn(x.dThem)} that week`); }
-    for(const id of j.get){ const b = P[id].wk.find(w => w.o === "BYE"); if(b) line("a", `${esc(short(P[id]))} still has his bye, week ${b.w}`); }
+    for(const id of j.get){ const b = P[id].wk.find(w => w.o === "BYE"); if(b) line("a", `${esc(short(P[id]))} still has ${P[id].pos === "DST" ? "its" : "his"} bye, week ${b.w}`); }
     const over = {[ME]:j.mineAfter}; for(const s of j.sides) over[s.id] = s.after;
     const after = posRanks(over);
     const card = (name, d) => `<div class="dcard"><div class="lab" title="${esc(name)}">${esc(name)}</div>
