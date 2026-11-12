@@ -730,6 +730,8 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
   #rscroll .meta .hw{order:9}
   #rscroll .pg{min-width:30px;padding-left:1px;padding-right:1px}
   #rscroll th,#rscroll td{padding-left:3px;padding-right:3px}
+  #rscroll .xb{width:30px}
+  #rscroll .xc{width:32px}
   .whyc{min-width:0;max-width:none}
   th,td{padding:7px 4px}
   td.num .pt{padding:3px 6px}
@@ -805,7 +807,7 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
     <select id="scope"></select>
     <select id="msort" hidden></select>
     <div class="seg" id="posf">
-      <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button>
+      <button data-p="ALL" class="on">All</button><button data-p="QB">QB</button><button data-p="RB">RB</button><button data-p="WR">WR</button><button data-p="TE">TE</button><button data-p="DST">DEF</button>
     </div>
     <div class="seg" id="olf"><button data-o="" class="on">All</button><button data-o="up">Upgrades</button><button data-o="poup">Playoff upgrades</button><button data-o="down">Downgrades</button></div>
     <div class="seg" id="colsf">
@@ -2205,7 +2207,7 @@ function tableRows(){
   else if(S.scope === "fa") ids = Object.keys(P).filter(id => !P[id].t);
   else ids = TEAMS[S.scope].players;
   let list = ids.map(id => P[id]);
-  if(!isSingle()) list = list.filter(p => SKILL.includes(p.pos));
+  if(!isSingle()) list = list.filter(p => SKILL.includes(p.pos) || p.pos === "DST");
   if(S.ol === "up") list = list.filter(p => p.lens && p.lens.reg >= PT);
   if(S.ol === "poup") list = list.filter(p => p.lens && p.lens.po >= PT);
   if(S.ol === "down") list = list.filter(p => p.lens && p.lens.reg <= -PT && p.lens.po <= -PT);
@@ -2260,9 +2262,10 @@ function renderTable(list){
     return `<table><thead><tr>${th(COLS.name, "l")}${ks.map(k => th(COLS[k])).join("")}${cut ? '<th class="xc"></th>' : ""}</tr></thead><tbody>${ps.map(p => !cut ? row(p, ks, nopos)
       : row(p, ks, nopos).replace(/<\/tr>$/, XB + "</tr>") + `<tr class="dt" hidden><td colspan="${ks.length + 2}">${detail(p)}</td></tr>`).join("")}</tbody></table>`;
   };
-  const html = GROUPS.map(([lab, poss]) => {
+  const html = GROUPS.map(([lab0, poss]) => {
     const ps = list.filter(p => poss.includes(p.pos));
     if(!ps.length) return "";
+    const lab = poss.length > 1 && !ps.some(p => p.pos === "K") ? "DEF" : poss.length > 1 && !ps.some(p => p.pos === "DST") ? "K" : lab0;
     if(phone){
       const skill = SKILL.includes(poss[0]);
       const keys = skill ? [...(REG.length ? ["oreg"] : []), ...(PO.length ? ["opo"] : [])] : [...(REG.length ? ["ros"] : []), ...(PO.length ? ["kpo"] : [])];
@@ -2271,7 +2274,7 @@ function renderTable(list){
           row(p, keys, poss.length === 1).replace(/<\/tr>$/, XB + "</tr>") + `<tr class="dt" hidden><td colspan="${keys.length + 2}">${detail(p)}</td></tr>`).join("")}</tbody></table></div></div>`;
     }
     const keys = colKeys(poss.length === 1 ? poss[0] : "K").map(k => (k === "po" && !SKILL.includes(poss[0]) && PO.length > 1 ? "kpo" : k));
-    return `<div class="ptab" data-g="${lab}"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
+    return `<div class="ptab" data-g="${lab0}"><div class="ptab-h"><span class="pos ${poss[0]}">${lab}</span><span>${plural(ps.length, "player")}</span></div>
       <div class="scroll">${wide(ps, keys, poss.length === 1, 0)}</div></div>`;
   }).join("");
   $("rscroll").innerHTML = html || `<div class="chip">Nobody matches</div>`;

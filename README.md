@@ -64,7 +64,9 @@ applies on Targets (table, top cards, free agents) and Waivers, kickers and defe
   Tapping any target opens Packages filtered to the deals that would get him, every answer shown.
   The table's *Replaces* column and each top-target card name the starter of mine he would take
   the place of.
-- **Roster** — the rank tiles at the top each have a *see all* link: the whole league at that
+- **Roster** — defenses are in every view, the league-wide ones (every rostered player,
+  everyone, free agents) included, with a **DEF** button on the position filter; a table of
+  only defenses is headed DEF. The rank tiles at the top each have a *see all* link: the whole league at that
   spot (every team's starters there and their total) or by lineup, with my row marked. On the
   Targets tab the same link sits on the need tiles.
   **Everyone is read against my lineup**, with two tags a player: one for the rest of the
