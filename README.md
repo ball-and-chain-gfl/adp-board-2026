@@ -236,6 +236,15 @@ flex, and my starter / bench / handcuff calls applied.
 ### The builder
 
 - It uses the whole window on a desktop.
+- **Week by week.** Under *Lineup after the trade* is a row of buttons: *Season* (the lineup on
+  season rates, as before) and one per week left, each carrying what the trade does to that
+  week's lineup (+9.1, +0.7 …). Picking a week shows that week slot by slot, before and after,
+  with the week's projections and opponents, the total before → after, and the whole bench that
+  week (BYE / OUT where he isn't playing). Same rules as the Roster tab's lineup (`lineupWeek`).
+  Works for the other team too, from the *Mine / their* switch.
+- **How a change is shown.** A player in the lineup before and after stays put (with *from
+  FLEX* if he only changed slot); whoever came into the lineup is paired with whoever left it,
+  same position first, so each row's number is the real swing and the rows add up.
 - **Defenses can be traded by hand.** Each roster list ends with a DEF group, and a defense is
   judged like anyone else: its value is points over the defenses on the waiver wire
   (`REPL.DST`, 2nd–4th best free agent), and it starts or sits for the team that gets it. They

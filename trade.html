@@ -495,6 +495,15 @@ td .chip{font-size:11px;padding:1px 7px}
 .sg.r span{color:var(--bad)}
 .pvh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:2px}
 .pvseg button{padding:5px 11px;font-size:12px}
+.pvwk{display:grid;grid-template-columns:repeat(auto-fit,minmax(48px,1fr));gap:4px;margin:8px 0 2px}
+.pvwk button{font:inherit;border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:4px 0 3px;cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.15;min-height:38px}
+.pvwk button b{font-size:11.5px;font-weight:800;white-space:nowrap}
+.pvwk button i{font-style:normal;font-size:11px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+.pvwk button.po b{color:#1958a0}
+.pvwk button.on{background:var(--blue);border-color:var(--blue)}
+.pvwk button.on b,.pvwk button.on i{color:#fff}
+.lr .wout{font-size:10px;font-weight:800;color:var(--bad)}
+.lr .mv{flex:none;font-size:10px;font-weight:700;color:var(--dim);margin-left:6px;white-space:nowrap}
 .pv{margin:2px 0 6px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .lr{display:grid;grid-template-columns:38px minmax(0,1fr) minmax(0,1fr) 44px;gap:6px;align-items:center;padding:5px 9px;border-bottom:1px solid var(--line2);font-size:13px}
 .lr .was,.lr .now{display:flex;align-items:center;gap:6px;min-width:0}
@@ -2703,18 +2712,25 @@ function renderDeal(){
     const cellP = (p, slot) => (p ? `${img(p)}${slot === "FLEX" || slot === "BN" ? `<em class="pos ${p.pos}">${p.pos}</em> ` : ""}<span class="ln" data-pid="${p.id}">${esc(short(p))}</span><i>${f1(p.adj)}</i>` : "empty");
     const grp = L => { const g = {}; for(const r of L.rows) (g[r.slot] = g[r.slot] || []).push(r.p); return g; };
     const G0 = grp(L0), G1 = grp(L1), sum = {};
-    let rows = "";
-    for(const slot of Object.keys(G1)){
-      const a0 = G0[slot] || [], a1 = G1[slot], in0 = new Set(a0.filter(Boolean).map(p => p.id)), in1 = new Set(a1.filter(Boolean).map(p => p.id));
-      const gone = a0.filter(p => !p || !in1.has(p.id));
-      sum[slot] = a1.reduce((s, p) => s + (p ? p.adj : 0), 0) - a0.reduce((s, p) => s + (p ? p.adj : 0), 0);
-      for(const p of a1){
-        const chg = !p || !in0.has(p.id), b = chg ? gone.shift() || null : p;
-        if(!p && !b){ rows += `<div class="lr same"><span class="sl">${slot}</span><span class="now" style="grid-column:span 2">empty</span><b></b></div>`; continue; }
-        const dv = (p ? p.adj : 0) - (b ? b.adj : 0);
-        rows += `<div class="lr ${!chg ? "same" : dv >= 0 ? "up" : "dn"}"><span class="sl">${slot}</span>${chg ? `<span class="was">${cellP(b, slot)}</span>` : ""}<span class="now"${chg ? "" : ' style="grid-column:span 2"'}>${cellP(p, slot)}</span><b class="${cls(dv)}">${Math.abs(dv) > 0.05 ? sgn(dv) : ""}</b></div>`;
+    for(const slot of Object.keys(G1)) sum[slot] = G1[slot].reduce((s, p) => s + (p ? p.adj : 0), 0) - (G0[slot] || []).reduce((s, p) => s + (p ? p.adj : 0), 0);
+    const pairHtml = (R0, R1, v, cell) => {
+      const in0 = new Map(R0.filter(r => r.p).map(r => [r.p.id, r])), ids1 = new Set(R1.filter(r => r.p).map(r => r.p.id));
+      const out = R0.filter(r => !r.p || !ids1.has(r.p.id));                  // left the lineup, or an empty slot before
+      let html = "";
+      for(const r of R1){
+        const was = r.p && in0.get(r.p.id);
+        if(was){ html += `<div class="lr same"><span class="sl">${r.slot}</span><span class="now" style="grid-column:span 2">${cell(r, r.slot)}${was.slot !== r.slot ? `<span class="mv">from ${was.slot}</span>` : ""}</span><b></b></div>`; continue; }
+        let k = out.findIndex(x => x.p && r.p && x.p.pos === r.p.pos);
+        if(k < 0) k = out.findIndex(x => x.slot === r.slot);
+        if(k < 0) k = 0;
+        const b = out.splice(k, 1)[0] || null;
+        if(!r.p && (!b || !b.p)){ html += `<div class="lr same"><span class="sl">${r.slot}</span><span class="now" style="grid-column:span 2">${cell(r, r.slot)}</span><b></b></div>`; continue; }
+        const dv = v(r) - (b ? v(b) : 0);
+        html += `<div class="lr ${dv >= 0 ? "up" : "dn"}"><span class="sl">${r.slot}</span><span class="was">${cell(b, r.slot)}</span><span class="now">${cell(r, r.slot)}</span><b class="${cls(dv)}">${Math.abs(dv) > 0.05 ? sgn(dv) : ""}</b></div>`;
       }
-    }
+      return html;
+    };
+    let rows = pairHtml(L0.rows, L1.rows, r => (r && r.p ? r.p.adj : 0), (r, slot) => cellP(r && r.p, slot));
     /* The rest of the roster: kicker and defense, then everyone on the bench, best first. A
        player who arrives in the trade is marked; the ones who leave are named underneath. */
     const before = new Set(TEAMS[pid].players), afterIds = over[pid];
@@ -2723,12 +2739,36 @@ function renderDeal(){
     for(const [pos, lab] of [["K", "K"], ["DST", "DEF"]]){ const a = kd(pos), n = spots(pos); a.forEach((p, i) => (i < n ? starters.push([lab, p]) : extra.push(p))); }
     const benchAll = L1.bench.concat(extra).sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || b.adj - a.adj);
     const rline = (slot, p) => `<div class="lr ${before.has(p.id) ? "same" : "up"}${slot === "BN" ? " bn" : ""}"><span class="sl">${slot}</span><span class="now" style="grid-column:span 2">${cellP(p, slot)}</span><b>${before.has(p.id) ? "" : '<span class="newp">new</span>'}</b></div>`;
-    const rest = starters.map(([lab, p]) => rline(lab, p)).join("") + (benchAll.length ? `<div class="lrh">Bench · ${plural(benchAll.length, "player")}</div>` + benchAll.map(p => rline("BN", p)).join("") : "");
+    let rest = starters.map(([lab, p]) => rline(lab, p)).join("") + (benchAll.length ? `<div class="lrh">Bench · ${plural(benchAll.length, "player")}</div>` + benchAll.map(p => rline("BN", p)).join("") : "");
     const left = [...before].filter(id => !afterIds.includes(id)).map(id => P[id]);
-    const diff = ["QB","RB","WR","TE","FLEX"].map(k => {
+    let diff = ["QB","RB","WR","TE","FLEX"].map(k => {
       const a = k === "FLEX" ? null : BASE[pid][k], b = k === "FLEX" ? null : after[pid][k], dv = sum[k] || 0;
       return `<span class="rk ${dv > 0.05 ? "up" : dv < -0.05 ? "dn" : ""}">${k}${a != null ? ` ${ord(a)}${a !== b ? `<i>→</i>${ord(b)}` : ""}` : ""}${Math.abs(dv) > 0.05 ? ` <span class="${cls(dv)}">${sgn(dv)}</span>` : ""}</span>`;
     }).join("");
+    /* Week by week. The season lineup above is who starts on season rates; a week can look quite
+       different (byes, injuries, matchups). Each week button carries what the trade does to that
+       week's lineup; picking one shows that week slot by slot, before and after, with the week's
+       projections, and the bench as it stands that week. Same rules as the Roster tab's lineup. */
+    const wkTot = (ids, wi) => lineupWeek(ids, wi, pvMine).reduce((s, r) => s + r.pts, 0);
+    const wkD = D.weeks.map((w, wi) => wkTot(over[pid], wi) - wkTot(TEAMS[pid].players, wi));
+    if(!(S.pvWk >= 0 && S.pvWk < D.weeks.length)) S.pvWk = null;
+    const wkBtns = `<div class="pvwk"><button data-pvw=""${S.pvWk == null ? ' class="on"' : ""}><b>Season</b><i>rates</i></button>${D.weeks.map((w, wi) =>
+      `<button data-pvw="${wi}" class="${S.pvWk === wi ? "on" : ""}${w >= 15 ? " po" : ""}"><b>Wk ${w}</b><i class="${Math.abs(wkD[wi]) < 0.05 ? "" : cls(wkD[wi])}">${Math.abs(wkD[wi]) < 0.05 ? "±0" : sgn(wkD[wi])}</i></button>`).join("")}</div>`;
+    if(S.pvWk != null){
+      const wi = S.pvWk, w = D.weeks[wi], R0 = lineupWeek(TEAMS[pid].players, wi, pvMine), R1 = lineupWeek(over[pid], wi, pvMine);
+      const cellW = (r, slot) => (r && r.p ? `${img(r.p)}${slot === "FLEX" ? `<em class="pos ${r.p.pos}">${r.p.pos}</em> ` : ""}<span class="ln" data-pid="${r.p.id}">${esc(short(r.p))}</span><i>${f1(r.pts)} · ${r.p.wk[wi].o}</i>`
+        : `<span class="ln">waiver pickup</span><i>${f1(r ? r.pts : 0)}</i>`);
+      rows = pairHtml(R0, R1, r => (r ? r.pts : 0), cellW);
+      // the bench that week: everyone not in the lineup, with his week (or why he isn't playing)
+      const inn = new Set(R1.filter(r => r.p).map(r => r.p.id));
+      const bn = afterIds.filter(id => !inn.has(id)).map(id => P[id]).sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || b.eff[wi] - a.eff[wi]);
+      const bline = p => { const g = p.wk[wi], why = g.o === "BYE" ? "BYE" : p.eff[wi] === 0 ? "OUT" : "";
+        return `<div class="lr ${before.has(p.id) ? "same" : "up"} bn"><span class="sl">BN</span><span class="now" style="grid-column:span 2">${img(p)}<em class="pos ${p.pos}">${p.pos === "DST" ? "DEF" : p.pos}</em> <span class="ln" data-pid="${p.id}">${esc(short(p))}</span><i>${why ? `<span class="wout">${why}</span>` : f1(p.eff[wi]) + " · " + g.o}</i></span><b>${before.has(p.id) ? "" : '<span class="newp">new</span>'}</b></div>`; };
+      rest = bn.length ? `<div class="lrh">Bench, week ${w} · ${plural(bn.length, "player")}</div>` + bn.map(bline).join("") : "";
+      const t0 = R0.reduce((s, r) => s + r.pts, 0), t1 = R1.reduce((s, r) => s + r.pts, 0), dv = t1 - t0;
+      const o = pvMine && D.opps && D.opps[w];
+      diff = `<span class="rk ${dv > 0.05 ? "up" : dv < -0.05 ? "dn" : ""}">Week ${w}${o ? " vs " + esc(tName(o)) : w >= 15 ? " · playoffs" : ""}: ${f1(t0)}<i>→</i>${f1(t1)}${Math.abs(dv) > 0.05 ? ` <span class="${cls(dv)}">${sgn(dv)}</span>` : ""}</span>`;
+    }
     const pvBtns = pvTeams.map(id => `<button data-pv="${id === ME ? "me" : id}"${id === pid ? ' class="on"' : ""}>${esc(id === ME ? "Mine" : tName(id))}</button>`).join("");
     const vbars = j.sides.map(s => `<div class="lab" style="margin-top:14px">What it is worth to ${esc(tName(s.id))} &middot; ${WORD[s.will]}</div>
       <div class="vbar"><i style="width:${(s.inV / ((s.inV + s.outV) || 1) * 100).toFixed(0)}%"></i></div>
@@ -2737,6 +2777,7 @@ function renderDeal(){
       <div class="sig">${fl.join("")}</div>
       <div class="pvh"><div class="lab">Lineup after the trade</div>
         <div class="seg pvseg">${pvBtns}</div></div>
+      ${wkBtns}
       <div class="ranks">${diff}</div>
       <div class="pv">${rows}${rest}</div>
       ${left.length ? `<div class="bench">Leaves: ${left.map(p => esc(short(p))).join(", ")}</div>` : ""}
@@ -3281,6 +3322,8 @@ function boot(d){
     renderBuilder();
   };
   $("deal").onclick = e => {
+    const pw = e.target.closest("button[data-pvw]");
+    if(pw){ S.pvWk = pw.dataset.pvw === "" ? null : +pw.dataset.pvw; const y = $("deal").scrollTop; renderBuilder(); $("deal").scrollTop = y; return; }
     const pv = e.target.closest("button[data-pv]");
     if(pv){ S.pvSide = pv.dataset.pv; renderBuilder(); return; }
     if(e.target.closest("#dsum")){ S.dealOpen = !S.dealOpen; renderBuilder(); return; }
