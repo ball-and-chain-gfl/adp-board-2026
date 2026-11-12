@@ -70,7 +70,10 @@ applies on Targets (table, top cards, free agents) and Waivers, kickers and defe
   **Everyone is read against my lineup**, with two tags a player: one for the rest of the
   regular season, one for the playoff weeks. The playoff tag shows each playoff game on its
   own first — his rank at the position that week, coloured by tier, or BYE/OUT — with the
-  three-week average underneath.
+  three-week average underneath. On my own players the playoff column carries no tier tag
+  (Elite, Starter …): the three games say it. The Targets table's *Playoffs* column is the same
+  three games with his rank and average, and when a row is too wide for the window it keeps
+  that column and the ✕ and drops *+Repl*, *ROS* and *Price* into the panel first (`pri`).
   - *My players*: how good he will be — his rank at the position over those weeks. *Elite* is
     the top third of the startable ranks, then *Starter*, *Fringe* (the next half again) and
     *Bench*; *Out* when he misses more than half of them.

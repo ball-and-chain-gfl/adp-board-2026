@@ -1579,9 +1579,11 @@ const XB = `<td class="c xc"><button class="xb" aria-label="More">▾</button></
 function fitGrid(el, cols, rows, sk, dir, rowAttr, mainKeys){
   el.innerHTML = gridHtml(cols, rows, sk, dir, rowAttr, mainKeys);
   if(CQ.matches || !el.clientWidth || el.scrollWidth <= el.clientWidth + 1) return;
-  const keys = cols.filter(c => !c.l && c.k !== "act").map(c => c.k);
-  for(let k = Math.min(keys.length - 1, Math.floor(keys.length * el.clientWidth / el.scrollWidth) + 1); k >= 1; k--){
-    el.innerHTML = gridHtml(cols, rows, sk, dir, rowAttr, keys.slice(0, k), true);
+  const keys = cols.filter(c => !c.l && c.k !== "act").map(c => c.k), pri = k => { const c = cols.find(x => x.k === k); return c.pri == null ? 5 : c.pri; };
+  const order = keys.slice().sort((a, b) => pri(a) - pri(b) || keys.indexOf(b) - keys.indexOf(a));
+  for(let n = Math.max(1, keys.length - Math.floor(keys.length * el.clientWidth / el.scrollWidth) - 1); n < keys.length; n++){
+    const gone = new Set(order.slice(0, n));
+    el.innerHTML = gridHtml(cols, rows, sk, dir, rowAttr, keys.filter(k => !gone.has(k)), true);
     if(el.scrollWidth <= el.clientWidth + 1) break;
   }
 }
@@ -1707,7 +1709,12 @@ function poGames(p){
     return `<span class="pg ${t}" title="Week ${w.w} ${w.o}: ${f1(p.eff[i])} projected, ${p.pos}${r} that week"><em>${w.w}</em>${p.pos}${r}</span>`; }).join("")}</div>`;
 }
 function ptag(p, k, mini){
-  if(!mini && k === "po" && SKILL.includes(p.pos) && PO.length > 1) return poGames(p) + ptagAvg(p, k, mini);
+  // the playoff games one by one, then the average line. On my own players the tier tag (Elite,
+  // Starter, Fringe, Bench) is left off here: the three games already say it
+  if(!mini && k === "po" && SKILL.includes(p.pos) && PO.length > 1){
+    const avg = ptagAvg(p, k, mini);
+    return poGames(p) + (p.t === ME ? avg.replace(/<span class="pt t\d">[^<]*<\/span>/, "") : avg);
+  }
   return ptagAvg(p, k, mini);
 }
 function ptagAvg(p, k, mini){
@@ -1848,7 +1855,7 @@ function renderTargets(){
   const cols = [{k:"name", h:"Player", l:true, v:x => x.p.n, html:x => plyX(x.p, x.p.t && x.p.t !== ME ? ownTag(x.p) : "")}];
   if(mode === "buy") cols.push(
     {k:"grade", h:"Grade", t:"Half what he adds to my lineup, the weeks weighed by where I stand (see Standings); the rest is how cheap he is next to what he will do, his upside, workload and playoff schedule", c:true, v:x => x.grade, html:x => gradeCell(x.grade)},
-    {k:"fits", h:"Replaces", t:"The starter in my lineup he would take the place of, and that player's projection a game", v:x => x.fit,
+    {k:"fits", pri:4, h:"Replaces", t:"The starter in my lineup he would take the place of, and that player's projection a game", v:x => x.fit,
       html:x => (x.over ? `<span class="fitc">${x.p.base > x.over.base ? "" : "shares w/ "}${esc(short(x.over))}</span> <span class="dimn">${f1(x.over.base)}</span>` : `<span class="fitc">${fits(x)}</span>`)});
   if(mode === "depth") cols.push({k:"fits", h:"Fits", v:x => x.fit, html:x => `<span class="fitc">${x.role !== "B" ? "Starts for me" : "Bench depth"}</span>`, c:true});
   if(mode === "sell") cols.push(
@@ -1862,20 +1869,22 @@ function renderTargets(){
     if(PO.length) cols.push({k:"pog", h:"+PO", t:"What he adds a week in the playoffs, weeks " + wkSpan(PO) + ". A minus is how far he is behind the starter he would have to beat", po:true, v:x => signed(x.p, x.d, "po"), html:x => gainCell(signed(x.p, x.d, "po"))});
   }
   if(mode === "buy") cols.push(
-    {k:"mk", h:"Price", t:"The league prices a player on what he has done. Buy low = he projects for more than he has scored; priced high = the reverse. The number is the gap in points a game", sep:true, v:x => -x.p.mk, html:x => mkCell(x.p)},
+    {k:"mk", pri:3, h:"Price", t:"The league prices a player on what he has done. Buy low = he projects for more than he has scored; priced high = the reverse. The number is the gap in points a game", sep:true, v:x => -x.p.mk, html:x => mkCell(x.p)},
     {k:"win", h:"When", t:"The best moment to ask, from the games he has next: wait out a tough one, move before a soft one", c:true, v:x => winRank(x.p), html:x => winCell(x.p)});
-  if(mode === "buy") cols.push({k:"deal", h:"Deal", t:"The best answer any package for him gets", c:true,
+  if(mode === "buy") cols.push({k:"deal", pri:6, h:"Deal", t:"The best answer any package for him gets", c:true,
     v:x => (BESTWILL[x.p.id] ? 3 - WORST[BESTWILL[x.p.id]] : 0), html:x => (kdPos(x.p) ? `<span class="quiet" title="Kickers and defenses aren't in packages: tap to build a deal">builder</span>` : BESTWILL[x.p.id] ? `<span class="will ${BESTWILL[x.p.id]}">${WORD[BESTWILL[x.p.id]]}</span>` : SEARCHING ? `<span class="dimn">…</span>` : `<span class="dimn">none</span>`)});
-  if(mode !== "sell") cols.push({k:"por", h:"+Repl", t:"Points over replacement: his projection a game above the waiver wire at his position. This is what his trade value is built on", sep:true, v:x => x.p.base - (REPL[x.p.pos] || 0), html:x => `<b>${sgn(x.p.base - (REPL[x.p.pos] || 0))}</b>`});
+  if(mode !== "sell") cols.push({k:"por", pri:1, h:"+Repl", t:"Points over replacement: his projection a game above the waiver wire at his position. This is what his trade value is built on", sep:true, v:x => x.p.base - (REPL[x.p.pos] || 0), html:x => `<b>${sgn(x.p.base - (REPL[x.p.pos] || 0))}</b>`});
   // a desktop window too narrow for every column keeps the ones a decision is made on
   const tight = !CQ.matches && mode === "buy" && innerWidth < NARROW;
-  if(REG.length && !tight) cols.push({k:"ros", h:"ROS", t:COLS.ros.t, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
-  if(PO.length && !tight) cols.push({k:"po", h:"PO", t:COLS.po.t, po:true, v:x => x.p.po, html:x => `<b>${f1(x.p.po)}</b>`});
+  if(REG.length && !tight) cols.push({k:"ros", pri:2, h:"ROS", t:COLS.ros.t, v:x => x.p.ros, html:x => `<b>${f1(x.p.ros)}</b>`});
+  const poCell = p => (SKILL.includes(p.pos) && PO.length > 1 && p.rp
+    ? poGames(p) + `<span class="olw nw">${p.pos}${p.rp} · ${f1(p.po)}${MQ.matches ? "" : " a game"}</span>` : `<b>${f1(p.po)}</b>`);
+  if(PO.length && !tight) cols.push({k:"po", pri:7, h:"Playoffs", t:COLS.po.t, po:true, c:true, v:x => x.p.po, html:x => poCell(x.p)});
   if(S.tgCols === "stats" || CQ.matches) cols.push(...statCols(S.tgPos, P_));
   // the read is a second opinion: it sits with the stats (and in a phone row's panel), not in the basic table
   if(S.tgCols === "stats" || CQ.matches) cols.push({k:"read", h:"Read", t:"What his workload, touchdown luck, role and schedule say", sep:true, nosort:true, html:x => readCell(x.p)});
   // the last cell of a target row: a small x to rule him out (the row itself opens his packages)
-  if(mode === "buy") cols.push({k:"no", h:"", ph:"Can't get him", t:"Rule him out: I know I can't trade for him. He leaves the targets and every suggested package", nosort:true, c:true,
+  if(mode === "buy") cols.push({k:"no", pri:9, h:"", ph:"Can't get him", t:"Rule him out: I know I can't trade for him. He leaves the targets and every suggested package", nosort:true, c:true,
     html:x => `<button class="rxb" data-no="${x.p.id}" title="Rule him out: I can't get him" aria-label="Rule out ${esc(x.p.n)}"><span class="x">✕</span><span class="t">Rule out</span></button>`});
   if(mode === "sell" && !tight) cols.push({k:"act", h:"", nosort:true, c:true, html:() => `<span class="go-r">›</span>`});
   if(S.tgCols === "stats" && !CQ.matches){
