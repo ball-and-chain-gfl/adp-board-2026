@@ -880,6 +880,7 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
     </div>
     <div class="seg" id="wvterm"><button data-t="" class="on">Any term</button><button data-t="long">Long-term</button><button data-t="short">Short-term</button><button data-t="fill">Fill-ins</button></div>
     <div class="seg" id="wvcols"><button data-c="basic" class="on">Basic</button><button data-c="stats">Stats</button></div>
+    <select id="wvsort" aria-label="Sort"><option value="bid">Sort: bid</option><option value="hw">Sort: Hayden Winks</option><option value="rk">Sort: rank</option><option value="term">Sort: startable</option><option value="ros">Sort: rest of season</option></select>
     <input type="search" id="wvq" placeholder="Search player or team">
     <button class="b" id="wvall"></button>
     <span class="count" id="wvcount"></span>
@@ -1459,6 +1460,9 @@ const hwTag = p => {
   const txt = r.f ? "FLEX " + r.f : r.p.replace(/(\d+)$/, " $1");
   return `<span class="hw" title="Hayden Winks, week ${w} full PPR: ${r.f ? "FLEX " + r.f + ", " + r.p : r.p}"><i>HW</i><b>${txt}</b></span>`;
 };
+const hwNum = p => (!p.hw ? null : p.hw.f || +String(p.hw.p).replace(/\D/g, "") || null);
+const hwCol = get => ({k:"hw", pri:6, h:"Winks", t:"Hayden Winks' full-PPR rank this week: FLEX for backs, receivers and tight ends, the position for the rest. Sorted best first; blank means he didn't rank him",
+  c:true, v:r => { const n = hwNum(get(r)); return n == null ? null : -n; }, html:r => hwTag(get(r)) || '<span class="quiet">–</span>'});
 const byeBadge = p => { const b = (p.wk || []).find(w => w.o === "BYE"); return b ? `<span class="byeb" title="Bye week ${b.w}. Not counted in his per-game numbers">BYE ${b.w}</span>` : ""; };
 function injBadge(p){ return injBadge0(p) + byeBadge(p); }
 function injBadge0(p){
@@ -2080,6 +2084,7 @@ function renderKD(pos){
     ...(PO.length ? [{k:"po", pri:7, h:"Playoffs", t:"Projected points a game, weeks " + wkSpan(PO) + ", and his rank at the position each playoff week", po:true, c:true, v:r => r.p.po, html:r => poCell(r.p)}] : []),
     ...(REG.length ? [{k:"reg", h:"+/wk", t:"For free agents, what my lineup gains with him and mine to pick from each week. For rostered ones, his average against my best", sep:true, v:r => dv(r, "reg"), html:r => (dv(r, "reg") == null ? "" : gainCell(dv(r, "reg")))}] : []),
     ...(PO.length ? [{k:"pog", h:"+PO", po:true, v:r => dv(r, "po"), html:r => (dv(r, "po") == null ? "" : gainCell(dv(r, "po")))}] : []),
+    hwCol(r => r.p),
     {k:"bid", h:"Bid", c:true, v:r => (r.x ? r.x.bid : null), html:r => (r.x ? `<span class="gr ${r.x.bid >= 0.03 * (left[ME] || 1) ? "b" : r.x.bid ? "c" : "d"}">${r.x.bid ? "$" + r.x.bid : "–"}</span>` : "")},
     {k:"term", h:"Helps for", c:true, v:r => (r.x ? ({long:3, short:2, fill:1, none:0})[r.x.term.k] * 100 + r.x.term.use : null), html:r => (r.x ? termPill(r.x) : "")},
     {k:"setup", h:"Setup", t:pos === "K" ? "Winks' kicker chart: implied team points against field-goal attempts a game. Smash = both above the middle kicker; Fade = both below" : "Winks' defense chart: opponents' expected points against projected sack rate. Strong = high sack rate and low points; Weak = the reverse", c:true, sep:true, v:setup, html:setupTag},
@@ -2097,10 +2102,17 @@ function renderKD(pos){
       html:r => `<div class="wks">${D.weeks.slice(0, pos === "DST" ? D.weeks.length : 4).map((w, i) => wkChip(r.p, i, true)).join("")}</div>`},
   ];
   const sk = S.kdSortK;
+  syncWvSort(sk.k, cols);
   fitGrid($("wvscroll"), cols, sortRows(rows, cols, sk.k, sk.dir), sk.k, sk.dir, r => (r.mine ? ' class="me"' : ""), ["ros", "bid"]);   // on a phone the playoff games open under the row, as on Targets
 }
 
 /* ---- waivers --------------------------------------------------------------------------------*/
+// the sort menu follows whatever the table is sorted by (a header click included); "rank" is "ros" on the kicker/defense tables
+function syncWvSort(k, cols){
+  const s = $("wvsort"), kd = !!S.wvMode;
+  for(const o of s.options) o.hidden = o.value === "term" ? kd : o.value === "rk" ? kd : false;
+  s.value = [...s.options].some(o => o.value === k && !o.hidden) ? k : "";
+}
 const STARTABLE = {QB:18, RB:36, WR:36, TE:18};   // half again the league's starters: a player some roster would start that week
 function startTerm(p){
   const wk = (p.wrk2 || []), n = D.weeks.length, use = wk.filter(r => r && r <= (STARTABLE[p.pos] || 99)).length;
@@ -2143,6 +2155,7 @@ function renderWaivers(){
     {k:"rival", h:"Top rival", t:"The team that wants him most, and about what it would pay", v:x => x.rv, html:x => (x.rival ? `${esc(TEAMS[x.rival].abbrev || TEAMS[x.rival].name)} <span class="dimn">~$${x.rv}</span>${(HAB[x.rival] || {}).style === "big" ? ` <span class="chip r" title="Bids well above the league when it wants a player">big spender</span>` : (HAB[x.rival] || {}).style === "thrifty" ? ` <span class="chip g" title="Bids below the league">thrifty</span>` : ""}${x.outbid ? ` <span class="warn" title="Can outbid what he's worth to me">!</span>` : ""}` : `<span class="dimn">–</span>`)},
     {k:"term", h:"Startable", t:"How many of the weeks left he projects as a playable starter at his position (top QB18, RB36, WR36 or TE18 that week: half again the league's starters, so a flex or bye-week start). Long-term: 60% of them or more. Short-term: 2 or more. Fill-in: one", c:true,
       v:x => ({long:3, short:2, fill:1, none:0})[(x.st || x.term).k] * 100 + (x.st || x.term).use, html:x => termPill(x)},
+    hwCol(x => x.p),
     {k:"rk", h:"Rank", t:"His rank at the position over the rest of the regular season", c:true, v:x => (x.p.rr ? -x.p.rr : null), html:x => (x.p.rr ? `<b>${x.p.pos}${x.p.rr}</b>` : "–")},
     {k:"users", h:"Rivals", t:"Other teams he'd be a long-term starter for", v:x => x.users, html:x => String(x.users)},
     {k:"fits", h:"Fits", sep:true, v:x => x.g, html:x => `<span class="fitc">${x.role === "B" ? "Bench" : x.role === "F" ? "My flex" : "Starts"}</span>`, c:true},
@@ -2161,6 +2174,7 @@ function renderWaivers(){
     cols.sort((a, b) => (lead.has(a.k) ? 0 : sk0.has(a.k) ? 1 : 2) - (lead.has(b.k) ? 0 : sk0.has(b.k) ? 1 : 2));
   }
   const sk = S.wvSortK;
+  syncWvSort(sk.k, cols);
   fitGrid($("wvscroll"), cols, sortRows(list, cols, sk.k, sk.dir), sk.k, sk.dir, null, ["bid", "term"]);
 }
 
@@ -3430,6 +3444,7 @@ function boot(d){
   pickSeg("wvcols", "c", v => { S.wvCols = v; renderWaivers(); });
   pickSeg("wvterm", "t", v => { S.wvTerm = v; renderWaivers(); });
   onSort($("wvscroll"), () => (S.wvMode ? S.kdSortK : S.wvSortK), v => (S.wvMode ? (S.kdSortK = v) : (S.wvSortK = v)), renderWaivers);
+  $("wvsort").onchange = e => { const v = {k:e.target.value, dir:-1}; if(S.wvMode) S.kdSortK = v; else S.wvSortK = v; renderWaivers(); };
   $("wvq").oninput = e => { S.wvQ = e.target.value.trim(); renderWaivers(); };
   // players: every free agent or only the ones worth a bid; kickers and defenses: rostered ones too or not
   $("wvall").onclick = () => { if(S.wvMode) S.wvAll = !S.wvAll; else S.wvOnly = !S.wvOnly; renderWaivers(); };

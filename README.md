@@ -325,6 +325,12 @@ weeks or more, short-term 2 or more, fill-in one, and the filter buttons use tha
 count only weeks he would start for *me*, which left two players.) The bid still follows what he
 does for my lineup.
 
+**Sorting by Hayden Winks.** Every Waivers table (players, kickers, defenses) has a *Winks* column
+and a sort menu (*Sort: Hayden Winks*), which works on a phone too, where most columns sit under
+the row. Best first; players he didn't rank go last. Under *All* positions the FLEX ranks and the
+QB ranks are on different scales, so QBs sort among the top FLEX numbers: pick a position to
+compare like with like.
+
 **How long he helps.** Every remaining week is scored on its own, the points he adds to that
 week's lineup. A week counts at +1 or more. *Long-term*: useful in at least 60% of the weeks
 left, and valued at his full gain. *Short-term*: two or more weeks, valued at his gain times the
