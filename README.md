@@ -209,6 +209,17 @@ trade is then built and judged on the rosters as they would stand, so trades sta
   moved in real life, or an earlier banked trade it depended on was undone.
 - Nothing is sent to ESPN. This is a what-if.
 
+### Teams I know need a position
+
+In the builder, the needs chips under another team ("RB set", "QB short" …) are buttons: tap one
+to tag that team as needing the position, whatever its depth chart says, and it turns purple
+("RB · needs"); tap again to clear. Tags are kept on this device (`NEED`, `trade.need`).
+A tagged team counts a player coming in at that position as a starter of its own and values him
+15% over his price (`NEEDF`), and with that position coming in a fair price is enough to talk (no
+lineup gain needed); a deal that takes its only one at that position without sending one back is
+a no. Package cards and the builder say so ("SW needs a RB (your tag)"). Tagging the Silly
+Willys as needing a back on 11/13 took their realistic packages from 39 to 65.
+
 ### Ruling players out
 
 A player I know I can't get can be **ruled out**: the ✕ at the end of his row on Targets,
@@ -305,6 +316,14 @@ That is usually the answer to "surely a third team can make this work": a third 
 the missing piece, but it has to be paid with something of mine that starts for it.
 
 ### Waivers and FAAB
+
+**Every free agent is listed** (194 on 11/13), not only the ones worth a bid; *Only ones worth a bid*
+narrows it. Each row has his **Rank** at the position for the rest of the regular season and
+**Startable**: how many of the weeks left he projects as a playable starter at his position (top
+QB18, RB36, WR36 or TE18 that week, half again the league's starters). Long-term is 60% of the
+weeks or more, short-term 2 or more, fill-in one, and the filter buttons use that. (It used to
+count only weeks he would start for *me*, which left two players.) The bid still follows what he
+does for my lineup.
 
 **How long he helps.** Every remaining week is scored on its own, the points he adds to that
 week's lineup. A week counts at +1 or more. *Long-term*: useful in at least 60% of the weeks

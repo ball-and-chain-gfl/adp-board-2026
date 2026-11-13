@@ -90,6 +90,9 @@ button.b.sm{padding:5px 10px;font-size:12px}
 .need{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--panel2);color:var(--soft);white-space:nowrap;border:1px solid var(--line)}
 .need.g{background:var(--good2);color:var(--good);border-color:transparent}.need.r{background:var(--bad2);color:var(--bad);border-color:transparent}
 .needs{display:flex;flex-wrap:wrap;gap:5px}
+button.need{font:inherit;cursor:pointer}
+button.need:hover{box-shadow:0 0 0 1.5px #4b2e83 inset}
+.need.my{background:#ede7f7;color:#4b2e83;border-color:#4b2e83;font-weight:800}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--soft);white-space:nowrap}
 .chip.g{background:var(--good2);border-color:transparent;color:var(--good)}
@@ -984,6 +987,16 @@ function renderBank(){
 }
 /* Players I know I can't get. Ruled out = never a target, never in a suggested package. He can
    still be picked by hand in the builder, where he carries a tag. */
+/* Positions I know a team wants, whatever its depth chart says: NEED[teamId] = {RB:1}. Kept on
+   this device. A tagged team values a player at that position as a starter of its own, 15% over
+   his price, and a deal that brings it one needs less of a lineup gain to get a hearing; a deal
+   that takes one away from it without sending one back is a no. */
+let NEED = {};
+try { NEED = JSON.parse(localStorage.getItem("trade.need") || "{}") || {}; } catch(e){}
+const saveNeed = () => { try { localStorage.setItem("trade.need", JSON.stringify(NEED)); } catch(e){} };
+const needs = tid => NEED[tid] || {};
+const NEEDF = 1.15;
+const anyNeed = () => Object.values(NEED).some(o => Object.keys(o).length);
 let NOGO = {};
 try { NOGO = JSON.parse(localStorage.getItem("trade.nogo") || "{}") || {}; } catch(e){}
 const saveNogo = () => { try { localStorage.setItem("trade.nogo", JSON.stringify(NOGO)); } catch(e){} };
@@ -1523,8 +1536,12 @@ function stSel(p){
 }
 // short / set / deep at each position, by how many startable players a team holds
 function needsHtml(teamId){
-  return Object.keys(STARTN).map(pos => { const c = DEPTH[teamId][pos], n = spots(pos) || 1;
-    return `<span class="need ${c < n ? "r" : c > n ? "g" : ""}" title="${c} startable for ${plural(n, "spot")}">${pos === "DST" ? "DEF" : pos} ${c < n ? "short" : c > n ? "deep" : "set"}</span>`; }).join("");
+  const mine = teamId === ME, tag = needs(teamId);
+  return Object.keys(STARTN).map(pos => { const c = DEPTH[teamId][pos], n = spots(pos) || 1, lab = pos === "DST" ? "DEF" : pos;
+    if(!mine && tag[pos]) return `<button class="need my" data-needpos="${pos}" data-needteam="${teamId}" title="You've tagged this team as needing a ${lab}. Tap to clear">${lab} · needs</button>`;
+    const txt = `${lab} ${c < n ? "short" : c > n ? "deep" : "set"}`, cl = `need ${c < n ? "r" : c > n ? "g" : ""}`;
+    return mine ? `<span class="${cl}" title="${c} startable for ${plural(n, "spot")}">${txt}</span>`
+      : `<button class="${cl}" data-needpos="${pos}" data-needteam="${teamId}" title="${c} startable for ${plural(n, "spot")}. Tap if you know they want a ${lab}">${txt}</button>`; }).join("");
 }
 
 /* ---- percentile shading: how a number stacks up at his position across the whole pool ----*/
@@ -2084,12 +2101,20 @@ function renderKD(pos){
 }
 
 /* ---- waivers --------------------------------------------------------------------------------*/
+const STARTABLE = {QB:18, RB:36, WR:36, TE:18};   // half again the league's starters: a player some roster would start that week
+function startTerm(p){
+  const wk = (p.wrk2 || []), n = D.weeks.length, use = wk.filter(r => r && r <= (STARTABLE[p.pos] || 99)).length;
+  if(!use) return {k:"none", use};
+  if(use >= Math.max(3, Math.ceil(LONG * n))) return {k:"long", use};
+  if(use >= 2) return {k:"short", use};
+  return {k:"fill", use, wk:D.weeks[wk.findIndex(r => r && r <= (STARTABLE[p.pos] || 99))]};
+}
 function termPill(x){
-  const t = x.term, n = D.weeks.length;
+  const t = x.st || x.term, n = D.weeks.length;
   if(t.k === "long") return `<span class="tm long">Long-term</span><span class="tmw">${t.use} of ${n} wks</span>`;
   if(t.k === "short") return `<span class="tm short">Short-term</span><span class="tmw">${t.use} of ${n} wks</span>`;
   if(t.k === "fill") return `<span class="tm fill">1-wk fill-in</span><span class="tmw">${t.wk === D.weeks[0] ? "this week" : "wk " + t.wk + ", grab it then"}</span>`;
-  return `<span class="tm none">Bench only</span>`;
+  return `<span class="tm none">${x.st ? "Not startable" : "Bench only"}</span>`;
 }
 function renderWaivers(){
   const F = D.faab;
@@ -2102,10 +2127,10 @@ function renderWaivers(){
   let list = WAIV.filter(x => SKILL.includes(x.p.pos));
   if(S.wvPos !== "ALL") list = list.filter(x => x.p.pos === S.wvPos);
   if(S.wvQ){ const q = S.wvQ.toLowerCase(); list = list.filter(x => (x.p.n + " " + x.p.tm).toLowerCase().includes(q)); }
-  if(!S.wvAll) list = list.filter(x => x.bid > 0 || x.p.xp);
-  if(S.wvTerm) list = list.filter(x => x.term.k === S.wvTerm);
+  if(S.wvOnly) list = list.filter(x => x.bid > 0 || x.p.xp);
+  if(S.wvTerm) list = list.filter(x => x.st.k === S.wvTerm);
   $("wvcount").textContent = `My FAAB $${left[ME] || 0} · ${plural(list.length, "free agent")}`;
-  $("wvall").textContent = S.wvAll ? "Only ones worth a bid" : "Show every free agent";
+  $("wvall").textContent = S.wvOnly ? "Show every free agent" : "Only ones worth a bid";
   const top = WAIV.length ? Math.max(1, ...WAIV.map(x => x.bid)) : 1;
   // colour by how much of my budget it is, not by how it compares with a thin week's best
   const lvl = x => (!x.bid ? "d" : x.bid >= 0.1 * (left[ME] || 1) ? "a" : x.bid >= 0.03 * (left[ME] || 1) ? "b" : "c");
@@ -2116,8 +2141,9 @@ function renderWaivers(){
     {k:"bid", h:"Bid", t:"What beats the rival who wants him most, never more than he is worth to me", c:true, v:x => x.bid, html:x => `<span class="gr ${lvl(x)}">${x.bid ? "$" + x.bid : "–"}</span>`},
     {k:"cap", h:"Max", t:"The most he is worth to me: my FAAB left times his share", v:x => x.cap, html:x => (x.cap ? "$" + x.cap : "–")},
     {k:"rival", h:"Top rival", t:"The team that wants him most, and about what it would pay", v:x => x.rv, html:x => (x.rival ? `${esc(TEAMS[x.rival].abbrev || TEAMS[x.rival].name)} <span class="dimn">~$${x.rv}</span>${(HAB[x.rival] || {}).style === "big" ? ` <span class="chip r" title="Bids well above the league when it wants a player">big spender</span>` : (HAB[x.rival] || {}).style === "thrifty" ? ` <span class="chip g" title="Bids below the league">thrifty</span>` : ""}${x.outbid ? ` <span class="warn" title="Can outbid what he's worth to me">!</span>` : ""}` : `<span class="dimn">–</span>`)},
-    {k:"term", h:"Helps for", t:"Long-term: useful (+1 or more) in at least 60% of the weeks left. Short-term: 2 or more weeks. Fill-in: one week only, worth a bid only if it's this week", c:true,
-      v:x => ({long:3, short:2, fill:1, none:0})[x.term.k] * 100 + x.term.use, html:x => termPill(x)},
+    {k:"term", h:"Startable", t:"How many of the weeks left he projects as a playable starter at his position (top QB18, RB36, WR36 or TE18 that week: half again the league's starters, so a flex or bye-week start). Long-term: 60% of them or more. Short-term: 2 or more. Fill-in: one", c:true,
+      v:x => ({long:3, short:2, fill:1, none:0})[(x.st || x.term).k] * 100 + (x.st || x.term).use, html:x => termPill(x)},
+    {k:"rk", h:"Rank", t:"His rank at the position over the rest of the regular season", c:true, v:x => (x.p.rr ? -x.p.rr : null), html:x => (x.p.rr ? `<b>${x.p.pos}${x.p.rr}</b>` : "–")},
     {k:"users", h:"Rivals", t:"Other teams he'd be a long-term starter for", v:x => x.users, html:x => String(x.users)},
     {k:"fits", h:"Fits", sep:true, v:x => x.g, html:x => `<span class="fitc">${x.role === "B" ? "Bench" : x.role === "F" ? "My flex" : "Starts"}</span>`, c:true},
   ];
@@ -2421,8 +2447,13 @@ function sideJudge0(tid, out, inn){
   const holes = SKILL.filter(pos => d[pos] < d0[pos] && d[pos] < spots(pos));
   const after = swap(t.players, new Set(out), new Set(inn));
   const g = goalOf(tid), them = delta(W0S[tid], worth(after, true, false, true), g);
-  const ra = rolesOf(after, false, true);
-  const inV = inn.reduce((s,id) => s + val(P[id]) * useOf(ra[id], P[id].pos), 0);
+  const ra = rolesOf(after, false, true), tag = needs(tid);
+  // a position I've tagged them as needing: whoever comes in there starts for them and is worth a premium
+  const needIn = inn.filter(id => tag[P[id].pos]);
+  for(const id of needIn) if(ra[id] !== "S") ra[id] = "S";
+  // and they won't give one up without getting one back
+  for(const pos of Object.keys(tag)) if(out.some(id => P[id].pos === pos) && !inn.some(id => P[id].pos === pos) && !holes.includes(pos)) holes.push(pos);
+  const inV = inn.reduce((s,id) => s + val(P[id]) * useOf(ra[id], P[id].pos) * (tag[P[id].pos] ? NEEDF : 1), 0);
   const outV = out.reduce((s,id) => s + val(P[id]) * (KEEP[ROLE0[id]] || 0.75), 0);
   const ratio = outV ? inV / outV : 9;
   const starterBack = !out.some(id => ROLE0[id] === "S") || inn.some(id => ra[id] === "S" || ra[id] === "F");
@@ -2437,14 +2468,15 @@ function sideJudge0(tid, out, inn){
   const dead = inn.filter(id => ra[id] === "B" && spots(P[id].pos) <= 1);
   const lateral = new Set(out.concat(inn).map(id => P[id].pos)).size === 1;
   const wk = them.score / DEN(g);
-  const need = lateral ? [2.5, 1.5] : [0.75, 0.35];
+  let need = lateral ? [2.5, 1.5] : [0.75, 0.35];
+  if(needIn.length && !lateral) need = [0.35, 0];          // they want the position: a fair price is enough to talk
   let will = "long";
   if(!holes.length && starterBack && fairTop && starts && !dead.length){
     // which weeks it will give ground in depends on what it is playing for
     if(ratio >= 1.08 && wk >= need[0] && them.reg >= g.tr[0] && them.po >= g.tp[0]) will = "likely";
     else if(ratio >= 0.88 && wk >= need[1] && them.reg >= g.tr[1] && them.po >= g.tp[1]) will = "maybe";
   }
-  return {id:tid, out, inn, after, d, holes, them, ra, g, inV, outV, ratio, starterBack, fairTop, starts, dead, lateral, wk, need, will};
+  return {id:tid, out, inn, after, d, holes, them, ra, g, needIn, inV, outV, ratio, starterBack, fairTop, starts, dead, lateral, wk, need, will};
 }
 /* A deal is a list of legs, {from, to, ids}. Two teams: me -> them, them -> me. Three teams is
    a rotation: me -> C, C -> B, B -> me. Every other team is judged on its own roster; the deal's
@@ -2502,7 +2534,8 @@ function threeWays(mg, bg, B, others, quick, out){
     for(const a of tradeable(C)){
       const aV = P[a].v, aKeep = keepV([a]);
       for(const [toB, toC] of splits){
-        if(sumV(toB) + aV < 0.88 * bKeep || sumV(toC) < 0.88 * aKeep || Math.max(aV, maxV(toB)) < 0.6 * bTop || maxV(toC) < 0.6 * aV) continue;
+        const nx = anyNeed() ? NEEDF : 1;
+        if((sumV(toB) + aV) * nx < 0.88 * bKeep || sumV(toC) * nx < 0.88 * aKeep || Math.max(aV, maxV(toB)) < 0.6 * bTop || maxV(toC) < 0.6 * aV) continue;
         if(holed(B.id, bg, toB.concat([a])) || holed(C.id, [a], toC)) continue;
         const j = judgeDeal([{from:ME, to:C.id, ids:toC}, ...(toB.length ? [{from:ME, to:B.id, ids:toB}] : []), {from:C.id, to:B.id, ids:[a]}, {from:B.id, to:ME, ids:bg}], quick);
         if(j && j.will !== "long") out.push(j);
@@ -2627,7 +2660,7 @@ function pkChips(pk){
   const add = (txt, k) => { if(!seen.has(txt)){ seen.add(txt); out.push([txt, k]); } };
   for(const s of pk.sides){
     const ab = tName(s.id);
-    for(const pos of s.holes) add(`Leaves ${ab} short at ${pos}`, "r");
+    for(const pos of s.holes) add(needs(s.id)[pos] && s.d[pos] >= spots(pos) ? `${ab} needs its ${pos} (your tag)` : `Leaves ${ab} short at ${pos}`, "r");
     if(!s.starterBack) add(`${ab} loses a starter, gets none`, "r");
     if(!s.fairTop) add(`${ab} gives the best player for less`, "r");
     if(!s.starts) add(`${ab} only gets bench players`, "r");
@@ -2637,6 +2670,7 @@ function pkChips(pk){
   }
   for(const s of pk.sides){
     const ab = tName(s.id);
+    for(const id of s.needIn || []) add(`${ab} needs a ${P[id].pos === "DST" ? "DEF" : P[id].pos} (your tag)`, "g");
     for(const id of s.inn){ const p = P[id];
       if(p.okp && DEPP[s.id][p.pos] < spots(p.pos)) add(`Fills ${ab}'s ${p.pos} hole`, "g");
       else if(s.ra[id] === "S") add(`${short(p)} starts for ${ab}`, "g"); }
@@ -2710,7 +2744,8 @@ function renderDeal(){
     const fl = [], line = (k, t) => fl.push(`<div class="sg ${k}"><i></i><span>${t}</span></div>`);
     for(const s of j.sides){
       const ab = esc(tName(s.id));
-      for(const pos of s.holes) line("r", `Leaves ${ab} short at ${pos}: ${s.d[pos]} startable for ${plural(spots(pos), "spot")}`);
+      for(const pos of s.holes) line("r", needs(s.id)[pos] && s.d[pos] >= spots(pos) ? `${ab} needs a ${pos} (your tag) and would be giving one up` : `Leaves ${ab} short at ${pos}: ${s.d[pos]} startable for ${plural(spots(pos), "spot")}`);
+      for(const id of s.needIn || []) line("", `${ab} needs a ${P[id].pos === "DST" ? "DEF" : P[id].pos} (your tag): ${esc(short(P[id]))} starts for them`);
       if(!s.fairTop) line("r", `${ab} gives up the best player in its end of the deal for lesser pieces`);
       if(!s.starterBack) line("r", `${ab} gives up a starter and gets none back`);
       if(!s.starts) line("r", `${ab} only gets players who'd sit on its bench`);
@@ -2945,6 +2980,11 @@ function buildHabits(){
 }
 function buildWaivers(){
   buildHabits();
+  for(const pos of SKILL){
+    const all = Object.values(P).filter(p => p.pos === pos);
+    for(const p of all) p.wrk2 = D.weeks.map(() => 0);
+    D.weeks.forEach((w, i) => all.filter(p => p.eff[i] > 0).sort((a, b) => b.eff[i] - a.eff[i]).forEach((p, n) => (p.wrk2[i] = n + 1)));
+  }
   WAIV = [];
   if(!D.faab) return;
   const W = D.weeks.length, wt = i => (PO.includes(i) ? 1.5 : 1), denom = (REG.length + 1.5 * PO.length) || 1;
@@ -2985,7 +3025,7 @@ function buildWaivers(){
     let bid = g < 0.5 ? 0 : Math.max(min, Math.min(cap, need));
     // a fill-in for this week: a dollar or two, never a real bid
     if(me.term.k === "fill" && me.term.wk === D.weeks[0] && me.dw[0] >= USEFUL) bid = Math.max(min, Math.min(3, cap || min));
-    WAIV.push({p, g, raw:me.raw, term:me.term, dw:me.dw, d:dMe, role:rolesOf(mine.concat([p.id]), true)[p.id], cap, bid, rival, rv:Math.round(rv), users,
+    WAIV.push({p, g, raw:me.raw, term:me.term, st:SKILL.includes(p.pos) ? startTerm(p) : null, dw:me.dw, d:dMe, role:rolesOf(mine.concat([p.id]), true)[p.id], cap, bid, rival, rv:Math.round(rv), users,
       outbid:!!rival && need > cap && g >= 0.5 && me.term.k !== "fill"});
   }
   // who to cut for the best few: the player whose loss costs my lineup least once he is in
@@ -3276,6 +3316,14 @@ function boot(d){
   $("tops").onclick = e => {
     const x = e.target.closest("[data-no]"); if(x){ toggleNogo(x.dataset.no); return; }
     const b = e.target.closest(".top1"); if(b) dealsFor(b.dataset.id); };
+  // tag a team as needing a position, or clear it
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-needpos]"); if(!b) return;
+    const t = +b.dataset.needteam, pos = b.dataset.needpos, o = (NEED[t] = NEED[t] || {});
+    if(o[pos]) delete o[pos]; else o[pos] = 1;
+    if(!Object.keys(o).length) delete NEED[t];
+    saveNeed(); renderAll();
+  });
   // banked trades: undo one, undo all, or go and look at them
   document.addEventListener("click", e => {
     const u = e.target.closest("[data-unbank]");
@@ -3383,7 +3431,8 @@ function boot(d){
   pickSeg("wvterm", "t", v => { S.wvTerm = v; renderWaivers(); });
   onSort($("wvscroll"), () => (S.wvMode ? S.kdSortK : S.wvSortK), v => (S.wvMode ? (S.kdSortK = v) : (S.wvSortK = v)), renderWaivers);
   $("wvq").oninput = e => { S.wvQ = e.target.value.trim(); renderWaivers(); };
-  $("wvall").onclick = () => { S.wvAll = !S.wvAll; renderWaivers(); };
+  // players: every free agent or only the ones worth a bid; kickers and defenses: rostered ones too or not
+  $("wvall").onclick = () => { if(S.wvMode) S.wvAll = !S.wvAll; else S.wvOnly = !S.wvOnly; renderWaivers(); };
 }
 
 fetch("/api/trade", {cache:"no-cache"}).then(r => r.json()).then(d => {
