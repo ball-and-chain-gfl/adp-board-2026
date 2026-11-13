@@ -207,7 +207,8 @@ export default async function handler(req, res) {
     }
     let firstWeek = LAST_WEEK + 1;
     for (let w = 1; w <= LAST_WEEK; w++)
-      if (weekDates[w] && weekDates[w].every(d => d > now)) { firstWeek = w; break; }
+      if (weekDates[w] && weekDates[w].some(d => d > now)) { firstWeek = w; break; }
+    const done = g => g && g.date <= now;          // this team's game that week has kicked off
     const weeks = [];
     for (let w = firstWeek; w <= LAST_WEEK; w++) weeks.push(w);
     let rankWeek = LAST_WEEK;
@@ -551,13 +552,14 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         u.wk = weeks.map(w => {
           const g = (games[TEAM_ID[u.tm]] || {})[w];
           if (!g) return { w, o: "BYE", p: 0 };
+          if (done(g)) return { w, o: (g.home ? "" : "@") + TEAM[g.opp], p: 0, done: 1 };
           const opp = TEAM[g.opp];
           const x = { w, o: (g.home ? "" : "@") + opp, rk: softRk[opp] || null, p: r1(Math.max(0, lg + b[0] * (u.ppg - lg) + b[1] * (match(u.tm, opp) - lgM))) };
           if (pos === "DST") { const i = implied(opp, u.tm, w); x.sr = r3(projSack(u.tm, opp)); x.oi = r1(i.v); x.vg = i.vg; }
           else { const i = implied(u.tm, opp, w); x.it = r1(i.v); x.vg = i.vg; }
           return x;
         });
-        const live = u.wk.filter(x => x.o !== "BYE");
+        const live = u.wk.filter(x => x.o !== "BYE" && !x.done);
         // rest-of-season averages of those inputs
         if (pos === "DST") { u.sr = live.length ? mean(live.map(x => x.sr)) : null; u.oip = live.length ? mean(live.map(x => x.oi)) : null; }
         else u.ip = live.length ? mean(live.map(x => x.it)) : null;
@@ -592,6 +594,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     const slate = (proTeamId, pos, base) => weeks.map(w => {
       const g = (games[proTeamId] || {})[w];
       if (!g) return { w, o: "BYE", p: 0 };
+      if (done(g)) return { w, o: (g.home ? "" : "@") + TEAM[g.opp], p: 0, done: 1 };
       const d = (dvp[TEAM[g.opp]] || {})[pos];
       return { w, o: (g.home ? "" : "@") + TEAM[g.opp], rk: d ? d.rk : null, p: r1(base * (d ? d.m : 1)) };
     });
@@ -798,12 +801,12 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     for (const pl of Object.values(players)) {
       const eid = pl.t ? pl.id : pl.pos === "DST" ? eDst[pl.tm] : eIdx[norm(pl.n) + "|" + pl.pos];
       if (eid == null) continue;
-      const vals = weeks.map((w, i) => (espnProj[i] && espnProj[i][eid] ? espnProj[i][eid].v : null));
+      const vals = weeks.map((w, i) => (pl.wk[i] && pl.wk[i].done ? null : espnProj[i] && espnProj[i][eid] ? espnProj[i][eid].v : null));
       if (vals.every(v => v == null)) continue;
       const plays = vals.filter(v => v > 0);
       const healthy = plays.length ? mean(plays) : pl.base || 0;
       pl.wk = pl.wk.map((x, i) => {
-        if (x.o === "BYE") return x;
+        if (x.o === "BYE" || x.done) return x;
         const v = vals[i];
         return v > 0 ? { ...x, p: r1(v) } : v === 0 ? { ...x, p: r1(healthy), z: 1 } : { ...x, p: r1(healthy) };
       });

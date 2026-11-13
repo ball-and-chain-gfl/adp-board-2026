@@ -1018,7 +1018,7 @@ const avg = (arr, idx) => idx.length ? idx.reduce((s,i) => s + arr[i], 0) / idx.
 /* A player's points a game over a stretch of weeks. His bye is not a game: it is left out of the
    average, so a bye inside the stretch doesn't make him look like a worse player, and flagged
    with a BYE tag instead. (The lineup maths still knows he scores nothing that week.) */
-const playAvg = (p, idx) => { let s = 0, n = 0; for(const i of idx) if(p.wk[i].o !== "BYE"){ s += p.eff[i]; n++; } return n ? s / n : 0; };
+const playAvg = (p, idx) => { let s = 0, n = 0; for(const i of idx) if(p.wk[i].o !== "BYE" && !p.wk[i].done){ s += p.eff[i]; n++; } return n ? s / n : 0; };
 const short = p => p.pos === "DST" ? p.n : (p.n.replace(/ (Jr\.?|Sr\.?|II|III|IV|V)$/, "").split(" ").slice(1).join(" ") || p.n);
 const initial = p => (p.pos === "DST" || !p.n.includes(" ") ? p.n : p.n[0] + ". " + short(p));
 const ownAb = p => (p.t ? (TEAMS[p.t].abbrev || "T" + p.t) : "FA");
@@ -1213,7 +1213,7 @@ function lineupOf(ids, mine){
 function autoOut(p){
   // ESPN's projections already know who is out: he is back the first week ESPN gives him points
   if(p.ep){
-    const i = p.wk.findIndex(w => w.o !== "BYE" && !w.z);
+    const i = p.wk.findIndex(w => w.o !== "BYE" && !w.done && !w.z);
     return {back:i < 0 ? 99 : p.wk.slice(0, i).some(w => w.z) ? p.wk[i].w : D.weeks[0], first:1, espn:true};
   }
   const w0 = D.weeks[0], hurt = p.inj === "O" || p.inj === "IR" || p.inj === "SUS";
@@ -1230,7 +1230,7 @@ function recompute(){
   for(const p of Object.values(P)){
     const o = OV[p.id], au = (p.au = autoOut(p)); let tot = 0, raw = 0, back = false;
     p.eff = p.wk.map(w => {
-      if(w.o === "BYE") return 0;
+      if(w.o === "BYE" || w.done) return 0;              // a bye, or a game he has already played this week
       let a = 1;
       const c = o && o.w[w.w];                          // my call for this week, if I made one
       if(c === "O") a = 0;
@@ -1497,6 +1497,7 @@ function spark(p){
 function wkChip(p, i, lab){
   const w = p.wk[i], top = lab ? `<em>Wk ${w.w}</em>` : "";
   if(w.o === "BYE") return `<span class="wkc bye" style="background:#eef0f2">${top}<b>BYE</b><i>&nbsp;</i></span>`;
+  if(w.done) return `<span class="wkc bye" style="background:#eef0f2" title="Already played this week">${top}<b>${w.o}</b><i>played</i></span>`;
   const out = p.eff[i] === 0 && w.p > 0;
   return `<span class="wkc${out ? " out" : ""}" style="${out ? "background:#eef0f2" : rkBg(w.rk)}" title="${w.rk ? ord(w.rk) + " vs " + p.pos + " (32nd = softest)" : ""}">${top}<b>${w.o}</b><i>${out ? "OUT" : f1(p.eff[i])}</i></span>`;
 }
@@ -2325,7 +2326,7 @@ function renderLineupWeeks(){
   const head = x => { const o = oppOf(x.w); return `<b>Wk ${x.w}</b><i>${o ? "vs " + esc(tName(o)) : x.w >= 15 ? "playoffs" : ""}</i>`; };
   const total = x => x.rows.reduce((s, r) => s + r.pts, 0);
   const sitting = x => { const inn = new Set(x.rows.filter(r => r.p).map(r => r.p.id));
-    return [...usual].filter(id => !inn.has(id) && !(P[id].eff[x.wi] > 0)).map(id => { const p = P[id], g = p.wk[x.wi]; return {p, why:g.o === "BYE" ? "bye" : "out"}; }); };
+    return [...usual].filter(id => !inn.has(id) && !(P[id].eff[x.wi] > 0)).map(id => { const p = P[id], g = p.wk[x.wi]; return {p, why:g.o === "BYE" ? "bye" : g.done ? "played" : "out"}; }); };
   const cell = (r, x, big) => {
     if(!r.p) return `<div class="lwc empty"><span class="lwn">Waiver pickup</span><span class="lwm">no ${r.slot === "FLEX" ? "flex" : r.slot} available · ${f1(r.pts)}</span></div>`;
     const p = r.p, g = p.wk[x.wi], fill = !usual.has(p.id);
@@ -2796,7 +2797,7 @@ function renderDeal(){
       // the bench that week: everyone not in the lineup, with his week (or why he isn't playing)
       const inn = new Set(R1.filter(r => r.p).map(r => r.p.id));
       const bn = afterIds.filter(id => !inn.has(id)).map(id => P[id]).sort((a, b) => ORDER[a.pos] - ORDER[b.pos] || b.eff[wi] - a.eff[wi]);
-      const bline = p => { const g = p.wk[wi], why = g.o === "BYE" ? "BYE" : p.eff[wi] === 0 ? "OUT" : "";
+      const bline = p => { const g = p.wk[wi], why = g.o === "BYE" ? "BYE" : g.done ? "PLAYED" : p.eff[wi] === 0 ? "OUT" : "";
         return `<div class="lr ${before.has(p.id) ? "same" : "up"} bn"><span class="sl">BN</span><span class="now" style="grid-column:span 2">${img(p)}<em class="pos ${p.pos}">${p.pos === "DST" ? "DEF" : p.pos}</em> <span class="ln" data-pid="${p.id}">${esc(short(p))}</span><i>${why ? `<span class="wout">${why}</span>` : f1(p.eff[wi]) + " · " + g.o}</i></span><b>${before.has(p.id) ? "" : '<span class="newp">new</span>'}</b></div>`; };
       rest = bn.length ? `<div class="lrh">Bench, week ${w} · ${plural(bn.length, "player")}</div>` + bn.map(bline).join("") : "";
       const t0 = R0.reduce((s, r) => s + r.pts, 0), t1 = R1.reduce((s, r) => s + r.pts, 0), dv = t1 - t0;
@@ -3024,8 +3025,8 @@ function playerCard(id){
   }
   // schedule, one line a week
   const sched = D.weeks.map((w, i) => {
-    const g = p.wk[i], bye = g.o === "BYE", out = !bye && p.eff[i] === 0 && g.p > 0;
-    return `<div class="pcw${w >= 15 ? " po" : ""}${bye || out ? " off" : ""}" style="${bye || out ? "" : rkBg(g.rk)}" title="${g.rk ? ord(g.rk) + " of 32 vs " + p.pos + " (32nd = softest)" : ""}"><span>Wk ${w}</span><b>${bye ? "BYE" : g.o}</b><i>${bye ? "–" : out ? "out" : f1(p.eff[i])}</i></div>`;
+    const g = p.wk[i], bye = g.o === "BYE", played = !!g.done, out = !bye && !played && p.eff[i] === 0 && g.p > 0;
+    return `<div class="pcw${w >= 15 ? " po" : ""}${bye || out || played ? " off" : ""}" style="${bye || out || played ? "" : rkBg(g.rk)}" title="${g.rk ? ord(g.rk) + " of 32 vs " + p.pos + " (32nd = softest)" : ""}"><span>Wk ${w}</span><b>${bye ? "BYE" : g.o}</b><i>${bye ? "–" : played ? "played" : out ? "out" : f1(p.eff[i])}</i></div>`;
   }).join("");
   // games so far
   let log = "";

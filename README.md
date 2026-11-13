@@ -554,6 +554,13 @@ and playing after.
 
 ### Data
 
+**A week in progress.** The first week shown is the first with a game still to play, so the
+week stays in after Thursday's kickoff. A player whose game that week has already kicked off
+has the week marked `done` by the API: no projection, can't be started, left out of his
+per-game numbers like a bye, and labelled *played* on the schedule. Only weeks that are
+completely over must have full stats; before 11/13 the check also demanded them for the week
+in progress, and Thursday's game made the whole load fail.
+
 - `api/trade.js` builds the whole payload and edge-caches it for 30 minutes. It also carries
   each team's FAAB left (`faab`) and the expert notes (`experts`).
 - League rosters, records and lineup slots come through the GFL dashboard's ESPN proxy
