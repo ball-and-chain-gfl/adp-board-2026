@@ -392,7 +392,28 @@ Yahoo is unreachable or changes its markup, nobody gets the adjustment and every
 
 ### Where the projections come from
 
-**ESPN.** Every remaining week uses ESPN's own projected points for that player, read from
+**ESPN, Sleeper, or a mix: the switch in the header.** The feed carries both sites' number for
+every player and every remaining week (`wk[i].e` = ESPN, `wk[i].s` = Sleeper, next to the
+model's own `p`), and the *Projections* menu at the top right of the page picks which one
+everything runs on (`SRC`, kept on this device as `trade.src`; `applySrc()` rewrites every
+player's weeks and the page redraws, no reload):
+
+- **ESPN** (the default): ESPN's number.
+- **Sleeper**: Sleeper's number. Sleeper's projections are raw stat lines
+  (`/projections/nfl/<season>/<week>`), scored here by this league's rules: its full-PPR points
+  with the league's interception penalty for players, `kProj` for kickers (Sleeper's distance
+  buckets don't always add up to the makes, so the rest are priced at his average make) and
+  `dstPts` for defenses. A week Sleeper has no line for a player it knows is a zero.
+- **Mix of both**: the average of the two. **A zero is never averaged in**: when one site has
+  him out (0) and the other has him playing, the other's number is used on its own. He counts
+  as out only when neither has him playing. On 11/13 ESPN had Davante Adams at 0 from week 12
+  and Sleeper at 15.7: the mix uses 15.7, not 7.9.
+
+Anyone the chosen source doesn't cover keeps the model's numbers. The player card names the
+source and shows both sites' number for his next game. On 11/13 ESPN covered 393 of 415 players
+and Sleeper 415; `proj` in the payload carries both counts (`players`, `sleeper`).
+
+**ESPN's feed.** Every remaining week has ESPN's own projected points for that player, read from
 ESPN's public full-PPR default league (`leaguedefaults/3`, `kona_player_info`, one call per
 week, the 500 most-owned players). That league's scoring is the same as this one's, kickers
 and defenses included, and it needs no login, so free agents are covered too. The payload
@@ -405,11 +426,11 @@ says so in `proj` (`src`, players covered, weeks loaded): 392 of 415 players on 
   adds to my lineup a week, a trade's gain) still count the week he sits, because the lineup
   really is without him then.
 
-- A week ESPN projects at **zero** (out, or not expected to play) counts as out. It is flagged
+- A week the chosen source projects at **zero** (out, or not expected to play) counts as out. It is flagged
   `z` and still carries the player's average for the weeks he does play, so overruling it with
   *Healthy* under "My call" gives a real number.
-- `base` is ESPN's average over the weeks he plays; `own` keeps this tool's number for
-  reference.
+- `base` is the chosen source's average over the weeks he plays; `mb` keeps this tool's own
+  number for reference.
 - ESPN's projections already carry injuries, so the status-and-return-date logic only applies
   to the few players ESPN doesn't cover.
 

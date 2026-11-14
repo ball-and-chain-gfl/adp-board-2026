@@ -23,6 +23,12 @@ header{background:var(--panel);z-index:30;flex:none;border-bottom:1px solid var(
 .tabs{display:flex;gap:2px;background:var(--ink);padding:0 20px}
 .tab{padding:9px 14px;font-size:12.5px;font-weight:700;letter-spacing:.3px;text-decoration:none;color:#b9bcc0;border-bottom:3px solid transparent}
 .tab.on{color:#fff;border-bottom-color:var(--blue)}
+/* where the projections come from: ESPN, Sleeper or a mix */
+.srcw{margin-left:auto;align-self:center;display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:#b9bcc0;letter-spacing:.3px;min-width:0}
+.srcw[hidden]{display:none}
+.srcw select{font:inherit;font-size:12.5px;color:#fff;background:#2b2e33;border:1px solid #4a4e55;border-radius:6px;padding:4px 6px;min-height:28px;max-width:100%;cursor:pointer}
+.srcw select option{color:#111;background:#fff}
+@media (max-width:560px){ .srcw span{display:none} .tabs{padding:0 10px} .tab{padding:9px 9px} .srcw select{min-height:32px} }
 a.tab:hover{color:#fff}
 
 /* section switch: text tabs with a blue underline */
@@ -781,6 +787,8 @@ td select.st:hover,td select.rl:hover,td select.st:focus,td select.rl:focus{bord
 <div class="tabs">
   <a class="tab" href="/">ADP Board</a>
   <div class="tab on">Trade Analyzer</div>
+  <label class="srcw" id="srcw" hidden><span>Projections</span>
+    <select id="src" aria-label="Projections from"><option value="espn">ESPN</option><option value="sleeper">Sleeper</option><option value="mix">Mix of both</option></select></label>
 </div>
 </header>
 <nav class="sub" id="sub" hidden>
@@ -1250,6 +1258,52 @@ function lineupOf(ids, mine){
   return {rows, bench:spill.slice(spots("FLEX")).concat(bench)};
 }
 
+/* ---- where the projections come from --------------------------------------------------------
+   The feed carries, for every week ahead, ESPN's number (w.e) and Sleeper's (w.s) next to the
+   model's own. SRC picks ESPN, Sleeper, or the mix: the average of the two. A zero means that
+   source has him out that week. The mix never averages a zero in: when one has him out and the
+   other has him playing, the other's number stands alone; he is out only when neither has him
+   playing. Anyone the chosen source doesn't cover keeps the model's numbers. */
+let SRC = "espn";
+try { SRC = localStorage.getItem("trade.src") || "espn"; } catch(e){}
+const SRCN = {espn:"ESPN", sleeper:"Sleeper", mix:"ESPN and Sleeper"};
+const srcZero = () => (SRC === "mix" ? "ESPN and Sleeper project 0" : SRCN[SRC] + " projects 0");
+function srcVal(w){
+  const e = w.e, s = w.s;
+  if(SRC === "espn") return e == null ? null : e;
+  if(SRC === "sleeper") return s == null ? null : s;
+  if(e > 0 && s > 0) return (e + s) / 2;
+  if(e > 0) return e;
+  if(s > 0) return s;
+  return e === 0 || s === 0 ? 0 : null;
+}
+function applySrc(){
+  const pr = D.proj || {};
+  if(!pr.v) return;                                   // an older feed: ESPN's numbers are already in
+  if(!pr.sleeper || !pr.players) SRC = pr.sleeper ? "sleeper" : "espn";      // only one of them loaded
+  const t1 = x => Math.round(x * 10) / 10;
+  for(const p of Object.values(P)){
+    if(p.mb === undefined){ p.mb = p.base; for(const w of p.wk) w.m = w.p; }
+    const open = w => w.o !== "BYE" && !w.done;
+    const vals = p.wk.map(w => (open(w) ? srcVal(w) : null));
+    p.ep = vals.some(v => v != null) ? 1 : 0;
+    if(!p.ep){ p.base = p.mb; for(const w of p.wk){ w.p = w.m; delete w.z; } continue; }
+    const plays = vals.filter(v => v > 0), healthy = plays.length ? plays.reduce((s, v) => s + v, 0) / plays.length : p.mb || 0;
+    p.base = t1(healthy);
+    p.wk.forEach((w, i) => { if(!open(w)) return; const v = vals[i]; w.p = t1(v > 0 ? v : healthy); if(v === 0) w.z = 1; else delete w.z; });
+  }
+  const sel = $("src");
+  sel.value = SRC; $("srcw").hidden = false;
+  for(const o of sel.options) o.disabled = (o.value !== "espn" && !pr.sleeper) || (o.value !== "sleeper" && !pr.players);
+}
+// the two sources' numbers for his next game, for the player card
+function srcLine(p){
+  const w = p.wk.find(x => x.o !== "BYE" && !x.done);
+  if(!w || (w.e == null && w.s == null)) return "";
+  const f = v => (v == null ? "no projection" : v === 0 ? "out (0)" : f1(v));
+  return ` Week ${w.w}: ESPN ${f(w.e)}, Sleeper ${f(w.s)}.`;
+}
+
 /* ---- availability + the league view -------------------------------------------------------
    The feed sends a HEALTHY projection per week. This applies ESPN's status, or my own call
    when I have made one, then rebuilds everything that depends on it. */
@@ -1557,7 +1611,7 @@ function stSel(p){
   const cur = !o ? "" : full && runs.length === 1 && runs[0].s === "H" ? "H"
     : full && runs[0].s === "O" && runs[0].a === w0s && (runs.length === 1 || (runs.length === 2 && runs[1].s === "H")) ? "O:" + runs[0].b : "C";
   const nm = {"":"Active", Q:"Questionable", D:"Doubtful", O:"Out", IR:"On IR", SUS:"Suspended"}[p.inj || ""];
-  const bk = p.au.back, auto = !p.inj && !(p.ep && bk > D.weeks[0]) ? nm : bk > D.weeks[D.weeks.length - 1] ? (p.inj ? nm : "Out") + (p.au.unknown ? ", no return date" : p.ep ? ": ESPN projects 0" : " for season") : bk > D.weeks[0] ? `${nm}, back wk ${bk}` : nm;
+  const bk = p.au.back, auto = !p.inj && !(p.ep && bk > D.weeks[0]) ? nm : bk > D.weeks[D.weeks.length - 1] ? (p.inj ? nm : "Out") + (p.au.unknown ? ", no return date" : p.ep ? ": " + srcZero() : " for season") : bk > D.weeks[0] ? `${nm}, back wk ${bk}` : nm;
   const last = D.weeks[D.weeks.length - 1];
   let opts = `<option value=""${cur === "" ? " selected" : ""}>${auto}</option>`;
   if(p.inj) opts += `<option value="H"${cur === "H" ? " selected" : ""}>Healthy</option>`;
@@ -1944,7 +1998,7 @@ function renderTargets(){
     {k:"grade", h:"Sell", t:"How far the league's price for him is above what he projects", c:true, v:x => x.grade, html:x => gradeCell(x.grade, "s")},
     {k:"win", h:"When", t:"The best moment to sell, from the games he has next", c:true, v:x => winRank(x.p), html:x => winCell(x.p)},
     {k:"seen", h:"League sees", t:"What the league prices him at, a game: his season average and last three games, with some of the projection", sep:true, v:x => x.p.seen, html:x => `<b>${f1(x.p.seen)}</b>`},
-    {k:"proj", h:"Projects", t:"ESPN's projection a game from here: what I'd actually be giving up", v:x => x.p.base, html:x => f1(x.p.base)},
+    {k:"proj", h:"Projects", t:"His projection a game from here: what I'd actually be giving up", v:x => x.p.base, html:x => f1(x.p.base)},
     {k:"why", h:"Timing", nosort:true, html:x => `<span class="whyc">${esc(windowOf(x.p, "sell").why)}</span>`});
   if(mode !== "sell"){
     if(REG.length) cols.push({k:"reg", h:"+/wk", t:"What he adds to my lineup a week, weeks " + wkSpan(REG) + ". A minus is how far he is behind the starter he would have to beat", sep:true, v:x => signed(x.p, x.d, "reg"), html:x => gainCell(signed(x.p, x.d, "reg"))});
@@ -2105,7 +2159,7 @@ function renderKD(pos){
   const gapK = (r, k) => (best ? r.p[k === "reg" ? "ros" : "po"] - best[k === "reg" ? "ros" : "po"] : null);
   const dv = (r, k) => (r.mine ? null : r.x && (r.x.d[k] > 0.05 || !best) ? r.x.d[k] : r.x ? Math.min(0, gapK(r, k)) : gapK(r, k));
   const vg = (D.vegasWeeks || []).length ? ` Betting lines are used for week${D.vegasWeeks.length > 1 ? "s" : ""} ${D.vegasWeeks.join(" and ")}; later weeks use each team's scoring this season.` : "";
-  $("wvhint").innerHTML = ((D.proj || {}).src === "espn" ? "Projections are ESPN's, week by week. " : "") + (pos === "DST"
+  $("wvhint").innerHTML = ((D.proj || {}).src === "espn" ? (SRC === "mix" ? "Projections are ESPN's and Sleeper's averaged, week by week. " : "Projections are " + SRCN[SRC] + "'s, week by week. ") : "") + (pos === "DST"
     ? "The two columns Hayden Winks charts for defenses: <b>projected sack rate</b> (67% the opponents' sack rate allowed + 33% this defense's, last 8 games) and the <b>points opponents are expected to score</b>. <i>Strong</i> = high sack rate and low points, averaged over the remaining schedule."
     : "The two numbers Hayden Winks charts for kickers: the team's <b>implied points</b> and its <b>field-goal attempts a game</b>. <i>Smash</i> = both above the middle kicker. His study also found accuracy matters (0.44 correlation with points) but less than the team around him.") + vg;
   // where a number sits among all units at the position; `low` flips it when smaller is better
@@ -3147,7 +3201,7 @@ function playerCard(id){
   const read = skill ? sigChips(p).map(c => `<span class="chip ${c[1]}">${esc(c[0])}</span>`).join(" ") : "";
   // how the number is built
   const how = p.ep
-    ? `<b>${f1(p.base)}</b> a game in the weeks he plays. These are <b>ESPN's projections</b>, week by week, in this league's scoring.${p.wk.some(w => w.z) ? " A week ESPN projects at zero counts as out unless I overrule it under My call." : ""}${skill && p.g != null ? ` For reference: his workload is worth ${f1(p.xfp)} expected points a game, and he has scored ${f1(p.ppg)} a game over ${plural(p.g, "game")}.` : p.g != null ? ` So far: ${f1(p.ppg)} a game.` : ""}`
+    ? `<b>${f1(p.base)}</b> a game in the weeks he plays. These are ${SRC === "mix" ? "<b>ESPN's and Sleeper's projections averaged</b>" : "<b>" + SRCN[SRC] + "'s projections</b>"}, week by week, in this league's scoring.${SRC === "mix" ? " When one has him out and the other doesn't, the other's number is used on its own." : ""}${srcLine(p)}${p.wk.some(w => w.z) ? " A week projected at zero counts as out unless I overrule it under My call." : ""}${skill && p.g != null ? ` For reference: his workload is worth ${f1(p.xfp)} expected points a game, and he has scored ${f1(p.ppg)} a game over ${plural(p.g, "game")}.` : p.g != null ? ` So far: ${f1(p.ppg)} a game.` : ""}`
     : skill && p.g != null
     ? `<b>${f1(p.base)}</b> a game when healthy = half his workload (${f1(p.xfp)} expected points from his carries and targets${p.pos === "QB" ? ", passes and runs" : ""}) and half what he has scored (${f1(p.ppg)} a game over ${plural(p.g, "game")})${p.xp ? ", lifted to his last three games because the analysts flagged him this week" : Math.abs(p.rs || 0) >= 0.05 ? `, leaning on his last three because his role moved ${p.rs > 0 ? "up" : "down"} ${Math.round(Math.abs(p.rs) * 100)}%` : ""}. Each week is that rate times the matchup (how many points the opponent gives up to ${p.pos}s, up to ±20%), zero on a bye, and nothing while he's out.`
     : (D.kd || {})[p.pos] && p.g != null
@@ -3201,7 +3255,7 @@ function rangeForm(p){
   const runs = ovRuns(p.id);
   return `<div class="pcrange" data-id="${p.id}"><span class="rl0">For weeks</span>
       <select class="rga" aria-label="From week">${wk(D.weeks[0])}</select><span>to</span><select class="rgb" aria-label="Through week">${wk(D.weeks[0])}</select>
-      <select class="rgs" aria-label="Status"><option value="O">Out</option><option value="H">Playing</option><option value="">ESPN's status</option></select>
+      <select class="rgs" aria-label="Status"><option value="O">Out</option><option value="H">Playing</option><option value="">Automatic</option></select>
       <button class="b" data-range-set>Set</button></div>
     ${runs.length ? `<div class="pccalls">${runs.map(r => `<button class="rcall ${r.s}" data-range-del="${r.a}-${r.b}" title="Remove this call">${runText(r)} <i>×</i></button>`).join("")}</div>` : ""}`;
 }
@@ -3255,6 +3309,7 @@ const pickSeg = (id, attr, fn) => ($(id).onclick = e => {
 
 function boot(d){
   D = d; P = d.players; ME = d.me;
+  applySrc();
   d.teams.forEach(t => (TEAMS[t.id] = t));
   ORIG = Object.fromEntries(d.teams.map(t => [t.id, t.players.slice()]));
   for(const id of Object.keys(NOGO)) if(!P[id]) delete NOGO[id];
@@ -3385,6 +3440,7 @@ function boot(d){
     cycleNeed(+b.dataset.needteam, b.dataset.needpos); renderAll();
   });
   $("tmline").addEventListener("click", e => { if(e.target.closest("#tmclr")){ NEED = {}; saveNeed(); renderAll(); } });
+  $("src").onchange = e => { SRC = e.target.value; try { localStorage.setItem("trade.src", SRC); } catch(x){} applySrc(); renderAll(); if(S.view === "packages") renderPackages(); };
   // banked trades: undo one, undo all, or go and look at them
   document.addEventListener("click", e => {
     const u = e.target.closest("[data-unbank]");

@@ -236,7 +236,7 @@ export default async function handler(req, res) {
 
     // ---- Sleeper weekly stats, every week played so far
     const played = Math.max(1, Math.min(18, Math.min(+state.week || 1, firstWeek)));
-    const [weekly, txWeeks, espnNames, espnProj, hwLists] = await Promise.all([
+    const [weekly, txWeeks, espnNames, espnProj, hwLists, slpProj] = await Promise.all([
       Promise.all(Array.from({ length: played }, (_, i) =>
         getRetry(`${SLEEPER}/stats/nfl/${SEASON}/${i + 1}?season_type=regular&${SKILL_Q}`).catch(() => null))),
       // the league's transactions, a week at a time: every waiver bid, won or lost. Optional.
@@ -246,6 +246,8 @@ export default async function handler(req, res) {
         .then(r => (r.ok ? r.json() : [])).catch(() => []),
       Promise.all(weeks.map(w => espnWeek(w).catch(() => espnWeek(w)).catch(() => null))),   // one retry each
       winksLists(rankWeek).catch(() => ({})),
+      // Sleeper's projections for the same weeks (raw stat lines, scored below by this league's rules)
+      Promise.all(weeks.map(w => getRetry(`${SLEEPER}/projections/nfl/${SEASON}/${w}?season_type=regular&${SKILL_Q}`).then(a => (Array.isArray(a) && a.length > 100 ? a : null)).catch(() => null))),
     ]);
     /* Vegas implied points: over/under split by the spread. ESPN's scoreboard carries lines for
        the current week and the next; later weeks have none yet. vegas[TEAM][week] = points. */
@@ -291,6 +293,12 @@ export default async function handler(req, res) {
     const kPts = s => ((s.fgm_0_19 || 0) + (s.fgm_20_29 || 0) + (s.fgm_30_39 || 0)) * kItem(80, 3) + (s.fgm_40_49 || 0) * kItem(77, 4)
       + ((s.fgm_50_59 != null ? s.fgm_50_59 : s.fgm_50p || 0)) * kItem(198, 5) + (s.fgm_60p || 0) * kItem(201, 6)
       + (s.fgmiss || 0) * kItem(85, -1) + (s.xpm || 0) * kItem(86, 1) + (s.xpmiss || 0) * kItem(88, 0);
+    const kProj = s => {
+      const mk = { fgm_0_19: s.fgm_0_19, fgm_20_29: s.fgm_20_29, fgm_30_39: s.fgm_30_39, fgm_40_49: s.fgm_40_49, fgm_50_59: s.fgm_50_59, fgm_50p: s.fgm_50p, fgm_60p: s.fgm_60p };
+      const n = (s.fgm_0_19 || 0) + (s.fgm_20_29 || 0) + (s.fgm_30_39 || 0) + (s.fgm_40_49 || 0) + (s.fgm_50_59 != null ? s.fgm_50_59 : s.fgm_50p || 0) + (s.fgm_60p || 0);
+      const each = n ? kPts(mk) / n : kItem(80, 3);
+      return kPts({ ...s, fgmiss: s.fgmiss != null ? s.fgmiss : Math.max(0, (s.fga || 0) - (s.fgm || 0)) }) + Math.max(0, (s.fgm || 0) - n) * each;
+    };
     const KD = {}, PA = {}, PF = {}, SKD = {};
     weekly.forEach((rows, i) => {
       const w = i + 1;
@@ -634,7 +642,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     const info = {};
     for (const t of teamsInfo.teams || []) info[t.id] = t;
 
-    const players = {}, teams = [], used = new Set();
+    const players = {}, teams = [], used = new Set(), slpId = {};
     for (const t of roster.teams || []) {
       const ti = info[t.id] || {}, ov = (ti.record || {}).overall || {};
       const ids = [];
@@ -645,7 +653,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         const sr = seasonRow(pl.stats) || {};
         const inj = e.lineupSlotId === 21 ? "IR" : (ESPN_INJ[pl.injuryStatus] || "");
         const sp = pos === "K" || pos === "DST" ? null : (byKey[norm(pl.fullName) + "|" + pos] || byName[norm(pl.fullName)]);
-        if (sp) used.add(sp);
+        if (sp) { used.add(sp); slpId[pl.id] = sp.sid; }
         const base = baseOf(sp, sr.appliedAverage);
         players[pl.id] = {
           id: String(pl.id), n: pl.fullName, pos, tm: TEAM[pl.proTeamId] || "FA", inj, t: t.id,
@@ -657,6 +665,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
         if (pos === "K" || pos === "DST") {
           const u = kdOf(pos, pl.fullName, pl.proTeamId);
           if (u && u.wk) { u.used = true; Object.assign(players[pl.id], kdBlock(u)); }
+          if (u && pos === "K") slpId[pl.id] = u.sid;
         }
         ids.push(String(pl.id));
       }
@@ -787,31 +796,45 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
     }
     const experts = { ok: Object.fromEntries(AUTHORS.map(([who], i) => [who, !!authorPages[i]])), picks };
 
-    /* ---- ESPN's projections replace the model's, wherever ESPN has one ------------------------
-       Each remaining week takes ESPN's projected points. A week ESPN projects at zero (out, or
-       not expected to play) is flagged `z` and carries the player's average for the weeks he
-       does play, so the page can show him at zero by default and still answer "what if he's
-       healthy" when I overrule it. `base` becomes that average; `own` keeps the model's number
-       for reference. The model stays as the fallback for anyone ESPN doesn't cover. */
+    /* ---- ESPN's and Sleeper's projections, side by side ---------------------------------------
+       Every remaining week carries ESPN's projected points as `e` and Sleeper's as `s`, both in
+       this league's scoring, next to the model's own `p`. Zero means that source has him out (or
+       not expected to play) that week; a missing field means the source doesn't cover him at all.
+       The page picks ESPN, Sleeper or a mix of the two, and falls back to the model for anyone
+       the chosen source doesn't cover. */
     const eIdx = {}, eDst = {};
     for (const m of espnProj) for (const [id, x] of Object.entries(m || {})) {
       if (x.pos === "DST") eDst[TEAM[x.tm]] = id; else if (x.n) eIdx[norm(x.n) + "|" + x.pos] = id;
     }
-    let espnN = 0;
+    // Sleeper: points by week for everyone it projects, and who it knows at all
+    const sName = {}, sSeen = new Set(), sDst = {}, sVals = weeks.map(() => ({}));
+    slpProj.forEach((rows, i) => {
+      for (const x of rows || []) {
+        const pl = x.player || {}, pos = pl.position, s = x.stats || {}, has = s.pts_ppr != null || s.gp != null;
+        if (pos === "DEF") { const tm = fix(x.team || pl.team || x.player_id); sDst[tm] = 1; if (has) sVals[i]["D|" + tm] = dstPts(s); continue; }
+        if (pos !== "K" && !SKILL.includes(pos)) continue;
+        const key = norm(((pl.first_name || "") + " " + (pl.last_name || "")).trim()) + "|" + pos;
+        if (!sName[key] || (has && !sName[key].has)) sName[key] = { id: x.player_id, has };
+        sSeen.add(String(x.player_id));
+        if (has) sVals[i][x.player_id] = pos === "K" ? kProj(s) : (s.pts_ppr || 0) + intAdj * (s.pass_int || 0);
+      }
+    });
+    const tenth = v => (v > 0 ? Math.max(0.1, r1(v)) : 0);
+    let espnN = 0, slpN = 0;
     for (const pl of Object.values(players)) {
+      const open = pl.wk.map(x => x.o !== "BYE" && !x.done);
       const eid = pl.t ? pl.id : pl.pos === "DST" ? eDst[pl.tm] : eIdx[norm(pl.n) + "|" + pl.pos];
-      if (eid == null) continue;
-      const vals = weeks.map((w, i) => (pl.wk[i] && pl.wk[i].done ? null : espnProj[i] && espnProj[i][eid] ? espnProj[i][eid].v : null));
-      if (vals.every(v => v == null)) continue;
-      const plays = vals.filter(v => v > 0);
-      const healthy = plays.length ? mean(plays) : pl.base || 0;
-      pl.wk = pl.wk.map((x, i) => {
-        if (x.o === "BYE" || x.done) return x;
-        const v = vals[i];
-        return v > 0 ? { ...x, p: r1(v) } : v === 0 ? { ...x, p: r1(healthy), z: 1 } : { ...x, p: r1(healthy) };
-      });
-      pl.own = pl.base; pl.base = r1(healthy); pl.ep = 1; delete pl.xpRole;
-      espnN++;
+      if (eid != null) {
+        const vals = weeks.map((w, i) => (open[i] && espnProj[i] && espnProj[i][eid] ? espnProj[i][eid].v : null));
+        if (vals.some(v => v != null)) { espnN++; vals.forEach((v, i) => { if (v != null) pl.wk[i].e = tenth(v); }); }
+      }
+      const sid = pl.pos === "DST" ? "D|" + pl.tm : pl.sid || slpId[pl.id] || (sName[norm(pl.n) + "|" + pl.pos] || {}).id;
+      const known = pl.pos === "DST" ? sDst[pl.tm] : sid != null && sSeen.has(String(sid));
+      if (known) {
+        // a week Sleeper loaded but has no line for him is a week it projects him at nothing
+        const vals = weeks.map((w, i) => (open[i] && slpProj[i] ? sVals[i][sid] || 0 : null));
+        if (vals.some(v => v != null)) { slpN++; vals.forEach((v, i) => { if (v != null) pl.wk[i].s = tenth(v); }); }
+      }
     }
 
     /* Winks' rank this week, on every player he ranked: hw = {f: FLEX rank, p: "RB12"} for a back,
@@ -838,7 +861,7 @@ doc: a.rec >= 8 ? a.air / a.rec : null, cs: a.tatt ? a.att / a.tatt : 0,
       through: played, minG, weeks, playoffs: [15, 16, 17], slots,
       scoring: { rec: recPts != null ? recPts : null, int: intPts != null ? intPts : null },
       sched: lgSched, playoffTeams: (((settings.settings || {}).scheduleSettings || {}).playoffTeamCount) || 6,
-      opps, kd: kdModel, vegasWeeks: [...new Set(Object.values(vegas).flatMap(m => Object.keys(m).map(Number)))].sort((a, b) => a - b), proj: { src: espnN ? "espn" : "model", players: espnN, weeks: espnProj.filter(Boolean).length },
+      opps, kd: kdModel, vegasWeeks: [...new Set(Object.values(vegas).flatMap(m => Object.keys(m).map(Number)))].sort((a, b) => a - b), proj: { v: 2, src: espnN ? "espn" : "model", players: espnN, weeks: espnProj.filter(Boolean).length, sleeper: slpN, sweeks: slpProj.filter(Boolean).length },
       deadline: ((settings.settings || {}).tradeSettings || {}).deadlineDate || null,
       // first and last kickoff of each week ahead: which weeks are over before the trade deadline
       weekTimes: Object.fromEntries(weeks.filter(w => weekDates[w]).map(w => [w, [Math.min(...weekDates[w]), Math.max(...weekDates[w])]])),
