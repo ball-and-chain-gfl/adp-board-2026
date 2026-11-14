@@ -209,16 +209,24 @@ trade is then built and judged on the rosters as they would stand, so trades sta
   moved in real life, or an earlier banked trade it depended on was undone.
 - Nothing is sent to ESPN. This is a what-if.
 
-### Teams I know need a position
+### Teams I know need (or don't need) a position
 
-In the builder, the needs chips under another team ("RB set", "QB short" …) are buttons: tap one
-to tag that team as needing the position, whatever its depth chart says, and it turns purple
-("RB · needs"); tap again to clear. Tags are kept on this device (`NEED`, `trade.need`).
-A tagged team counts a player coming in at that position as a starter of its own and values him
-15% over his price (`NEEDF`), and with that position coming in a fair price is enough to talk (no
-lineup gain needed); a deal that takes its only one at that position without sending one back is
-a no. Package cards and the builder say so ("SW needs a RB (your tag)"). Tagging the Silly
-Willys as needing a back on 11/13 took their realistic packages from 39 to 65.
+The **Teams** tab lists every other team (logo, record, what it's playing for, how many packages
+with it a team could say yes to) with a chip a position. Untouched, a chip shows the depth by the
+numbers ("RB set 2 of 2" = 2 startable for 2 spots; red short, green deep). Each tap moves it on:
+**needs** (purple) → **doesn't need** (grey, dashed) → back to the numbers. *Clear all* wipes them.
+The same chips sit under the partner team in the builder and cycle the same way. Tags are kept on
+this device (`NEED`, `trade.need`: 1 = needs, -1 = doesn't need).
+
+- **Needs**: a player coming in at that position starts for them and is valued 15% over his price
+  (`NEEDF`); with that position coming in a fair price is enough to talk (no lineup gain
+  needed); a deal that takes its only one there without sending one back is a no.
+- **Doesn't need**: a player coming in there sits on their bench (worth little to them), and
+  losing one there never counts as leaving a hole (the search's `holed()` agrees).
+
+Package cards and the builder say so ("SW needs a RB (your tag)", "SW doesn't need a WR (your
+tag)"). On 11/13, tagging every team as not needing a WR took the packages from 1,182 to 1,122;
+needing one took them to 1,307.
 
 ### Ruling players out
 
